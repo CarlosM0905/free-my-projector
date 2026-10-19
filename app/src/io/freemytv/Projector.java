@@ -25,8 +25,22 @@ final class Projector {
         {"Imagem", "Picture", "sparkles", "bridge:com.droidlogic.tv.settings/.pqsettings.PictrueModeActivity"},
         {"Efeitos de som", "Sound effects", "speaker", "bridge:com.droidlogic.tv.settings/.tvoption.TvOptionActivity"},
         {"Timer para desligar", "Sleep timer", "bedtime", BRIDGE + "/.Temporizador"},
-        {"Padrão de teste", "Test pattern", "check", "pe.carlos.atajos/.Patron"},
     };
+
+    /**
+     * Control Center switches (like tvOS's Match Content, Enhance Dialogue and Reduce Loud Sounds): the frame rate
+     * follows the video (AFR, from the Wanbo ROM's wanbo-tweaks), dialog clarity and the volume leveler (Amlogic's
+     * effects, applied live by Puente Wanbo). On: the icon lights up in the accent color.
+     */
+    private static final String[][] TOGGLES = {
+        {"Hz automático", "Match frame rate", "sync", "toggle:afr"},
+        {"Diálogos", "Enhance dialogue", "bell", "toggle:dialogo"},
+        {"Volume uniforme", "Reduce loud sounds", "speaker", "toggle:agc"},
+    };
+    private static final String SOUND = BRIDGE + ".SONIDO";
+    private static final String AFR_OFF = "/data/local/tmp/afr.off";
+    private static volatile Boolean afrOn;   // read once through the TV's own ADB (the file isn't readable by apps)
+    private static final java.util.Map<String, long[]> OPTIMISTIC = new java.util.HashMap<>();   // key → {on, until}
 
     static List<HomeApps.Item> items(Context c) {
         List<HomeApps.Item> out = new ArrayList<>();
@@ -36,7 +50,88 @@ final class Projector {
             if (d[3].startsWith("bridge:") && !exists(c.getPackageManager(), component(d[3].substring(7)))) continue;
             out.add(HomeApps.action(HomeApps.PROJECTOR, d[3], Ui.tr(d[0], d[1]), d[2]));
         }
+        if (!hasStatus()) return out;   // the switches are the Wanbo ROM's (AFR) and its helper's (sound)
+        boolean sound = !c.getPackageManager().queryBroadcastReceivers(new Intent(SOUND).setPackage(BRIDGE), 0).isEmpty();
+        for (String[] d : TOGGLES) {
+            if (!d[3].equals("toggle:afr") && !sound) continue;
+            out.add(HomeApps.action(HomeApps.PROJECTOR, d[3], Ui.tr(d[0], d[1]), d[2]));
+        }
+        if (afrOn == null) checkAfr(c);
         return out;
+    }
+
+    // MARK: - Switches
+
+    static boolean isToggle(String key) {
+        return key.startsWith("toggle:");
+    }
+
+    static boolean isOn(Context c, String key) {
+        synchronized (OPTIMISTIC) {   // just switched: show the new state until the system confirms it
+            long[] o = OPTIMISTIC.get(key);
+            if (o != null && System.currentTimeMillis() < o[1]) return o[0] == 1;
+        }
+        android.content.ContentResolver cr = c.getContentResolver();
+        switch (key) {
+            case "toggle:afr":
+                return afrOn == null || afrOn;
+            case "toggle:dialogo":
+                return android.provider.Settings.Global.getInt(cr, "fmp_dialogo", 0) > 0;
+            case "toggle:agc":
+                return android.provider.Settings.Global.getInt(cr, "fmp_agc",
+                        android.provider.Settings.Global.getInt(cr, "db_id_sound_effect_agc_on", 0)) > 0;
+            default:
+                return false;
+        }
+    }
+
+    /** Flips a switch: the tile shows the new state right away; the change is applied in the background. */
+    static void toggle(Context c, String key) {
+        final Context app = c.getApplicationContext();
+        final boolean on = !isOn(app, key);
+        synchronized (OPTIMISTIC) {
+            OPTIMISTIC.put(key, new long[] {on ? 1 : 0, System.currentTimeMillis() + 5000});
+        }
+        if (key.equals("toggle:afr")) {
+            afrOn = on;
+            new Thread(() -> {
+                try (Adb adb = Adb.connect(app, 5000, null)) {
+                    adb.shell(on ? "rm -f " + AFR_OFF : "touch " + AFR_OFF + "; echo set 6000 > /sys/class/lcd/frame_rate");
+                } catch (Exception e) {
+                    AppLog.w("AFR switch: " + e.getMessage());
+                }
+            }, "afr").start();
+        } else {
+            String effect = key.substring("toggle:".length());
+            app.sendBroadcast(new Intent(SOUND).setClassName(BRIDGE, BRIDGE + ".Sonido")
+                    .putExtra("efecto", effect).putExtra("valor", on ? (effect.equals("dialogo") ? 2 : 1) : 0));
+        }
+    }
+
+    private static void checkAfr(Context c) {
+        final Context app = c.getApplicationContext();
+        afrOn = true;
+        new Thread(() -> {
+            try (Adb adb = Adb.connect(app, 5000, null)) {
+                afrOn = !adb.shell("[ -f " + AFR_OFF + " ] && echo off").contains("off");
+            } catch (Exception e) {
+                AppLog.w("AFR state: " + e.getMessage());
+            }
+        }, "afr-state").start();
+    }
+
+    /** The sleep timer's tile shows how long is left ("42 min") while it runs (Puente publishes the time). */
+    static String label(Context c, HomeApps.Item it) {
+        if (!it.key.equals(CONTROLS[3][3])) return it.label;
+        long at = android.provider.Settings.Global.getLong(c.getContentResolver(), "fmp_apagado", 0);
+        long left = at - System.currentTimeMillis();
+        return left > 0 ? ((left + 59_999) / 60_000) + " min" : it.label;
+    }
+
+    /** The sleep timer is on (its tile lights up like a switch). */
+    static boolean timerOn(Context c, HomeApps.Item it) {
+        return it.key.equals(CONTROLS[3][3])
+                && android.provider.Settings.Global.getLong(c.getContentResolver(), "fmp_apagado", 0) > System.currentTimeMillis();
     }
 
     /** The keystone shortcut (first control), or null if this device has no keystone screen. */

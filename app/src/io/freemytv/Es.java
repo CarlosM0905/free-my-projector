@@ -42,9 +42,12 @@ final class Es {
         // Projector controls (Projector.java)
         t("Keystone", "Keystone");
         t("Picture", "Imagen");
-        t("Sound effects", "Efectos de sonido");
+        t("Sound effects", "Sonido");
         t("Sleep timer", "Temporizador");
         t("Test pattern", "Patrón de prueba");
+        t("Match frame rate", "Hz automático");
+        t("Enhance dialogue", "Diálogos");
+        t("Reduce loud sounds", "Volumen parejo");
         t("Projector", "Proyector");
         t("Processor", "Procesador");
         t("Fan", "Ventilador");

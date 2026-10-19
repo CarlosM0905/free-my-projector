@@ -168,6 +168,9 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private final RectF weatherCard = new RectF(), quotesCard = new RectF(), projectorCard = new RectF();
     /** Free My Projector: a third drawer card with the projector's status, only where it can be read. */
     private final boolean projectorStatus = Projector.hasStatus();
+    private long drawerRefreshAt;
+    /** tvOS's accent blue, for switches that are on. */
+    private static final int ACCENT = 0xFF0A84FF;
     private final Spring drawer = new Spring(0.46f, 0.92f, 0);
     private boolean drawerOpen;
     private int drawerIndex;
@@ -567,6 +570,11 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         boolean nightMoving = tickNight(up);
 
         if (drawerMoving || sheetMoving || motionDirty) updateMotion();
+        // Control Center: switches, the timer and the projector's status are redrawn once a second while it's open.
+        if (drawerOpen && up - drawerRefreshAt > 1000) {
+            drawerRefreshAt = up;
+            drawerDirty = true;
+        }
         // Opening and closing the drawer only moves the cached layers: redrawing the glass on every frame made the TV
         // drop frames (measured: ~50 ms of GPU per frame). The app tiles have no glass; the top buttons fade out as
         // they rise; the drawer is drawn resting in place; the glass shelf is redrawn once the drawer stops, so the
@@ -1343,14 +1351,18 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             c.drawRoundRect(cell, r, r, fill);
         }
         boolean off = it.kind == HomeApps.INPUT && !it.connected;
-        int ink = blend(tone(off ? 0xFF8E8E93 : L_INK, off ? 0x6BFFFFFF : 0xF2FFFFFF), INK, f);
+        // Control Center: a switch that's on (or the sleep timer while it runs) lights up in the accent color.
+        boolean lit = it.kind == HomeApps.PROJECTOR && (Projector.isToggle(it.key)
+                ? Projector.isOn(getContext(), it.key) : Projector.timerOn(getContext(), it));
+        int ink = blend(lit ? ACCENT : tone(off ? 0xFF8E8E93 : L_INK, off ? 0x6BFFFFFF : 0xF2FFFFFF), lit ? ACCENT : INK, f);
         Symbols.draw(getContext(), c, it.symbol, cx, cell.top + cell.height() * 0.4f, 34 * k * s, ink);
         drawerLabel.setColor(ink);
         drawerLabel.setTextSize(23 * k * s);
-        float room = cell.width() - 16 * k, wide = drawerLabel.measureText(it.label);
+        String name = it.kind == HomeApps.PROJECTOR ? Projector.label(getContext(), it) : it.label;
+        float room = cell.width() - 16 * k, wide = drawerLabel.measureText(name);
         // A long name ("Home Settings", an input you renamed) shrinks a little before it gets cut.
         if (wide > room) drawerLabel.setTextSize(Math.max(18 * k * s, 23 * k * s * room / wide));
-        String label = TextUtils.ellipsize(it.label, new TextPaint(drawerLabel), room, TextUtils.TruncateAt.END).toString();
+        String label = TextUtils.ellipsize(name, new TextPaint(drawerLabel), room, TextUtils.TruncateAt.END).toString();
         c.drawText(label, cx, cell.top + cell.height() * 0.8f, drawerLabel);
         drawerLabel.setTextSize(23 * k);
     }
@@ -1689,6 +1701,22 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
                 } else {
                     if (okDown && !e.isCanceled()) activate();
                     okDown = false;
+                }
+                return true;
+            case KeyEvent.KEYCODE_MENU:
+                // Free My Projector: the remote's settings button (≡▢) opens the drawer as a Control Center (tvOS's TV
+                // button), focused on the first projector control; pressed again, it closes it.
+                if (down && e.getRepeatCount() == 0 && !sheetOpen) {
+                    if (drawerOpen) {
+                        closeDrawer();
+                    } else {
+                        openDrawer();
+                        if (drawerOpen && drawerInputs < drawerItems.size()) {
+                            drawerIndex = drawerInputs;
+                            for (int i = 0; i < drawerFocus.length; i++) drawerFocus[i].snap(i == drawerIndex ? 1 : 0);
+                        }
+                    }
+                    retarget(false);
                 }
                 return true;
             case KeyEvent.KEYCODE_BACK:
