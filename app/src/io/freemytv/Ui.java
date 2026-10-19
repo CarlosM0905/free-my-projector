@@ -75,6 +75,14 @@ final class Ui {
         return !"pt".equals(Locale.getDefault().getLanguage());
     }
 
+    /**
+     * BitmapShader.setFilterMode is Android 13+; before that the Paint's FILTER_BITMAP_FLAG decides, so on Android 9–12
+     * (projectors) this does nothing instead of crashing the screensaver.
+     */
+    static void filter(android.graphics.BitmapShader s, int mode) {
+        if (android.os.Build.VERSION.SDK_INT >= 33) s.setFilterMode(mode);
+    }
+
     /** "es" in config.properties, or "auto" with the TV in Spanish. */
     static boolean spanish() {
         String lang = Config.LANGUAGE.trim().toLowerCase(Locale.ROOT);

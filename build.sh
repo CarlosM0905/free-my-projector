@@ -63,6 +63,7 @@ final class Config {
     static final String CURRENCY = "$(prop currency USD)";
     static final String TEMPERATURE = "$(prop temperature auto)";
     static final boolean DISABLE_ASSISTANT = $ASSIST;
+    static final String THEME = "$(prop theme auto)";
 }
 EOF
 

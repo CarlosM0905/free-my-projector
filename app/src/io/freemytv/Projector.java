@@ -39,6 +39,12 @@ final class Projector {
         return out;
     }
 
+    /** The keystone shortcut (first control), or null if this device has no keystone screen. */
+    static HomeApps.Item keystone(Context c) {
+        List<HomeApps.Item> all = items(c);
+        return !all.isEmpty() && all.get(0).key.equals(CONTROLS[0][3]) ? all.get(0) : null;
+    }
+
     static Intent intent(String target) {
         Intent i = new Intent(Intent.ACTION_MAIN).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
         if (target.startsWith("bridge:")) {

@@ -227,6 +227,9 @@ final class HomeData {
      * Uses the last weather fetched (it moves ~1 min a day); without data, 6:00 and 18:00.
      */
     boolean isNight(long now) {
+        String theme = Config.THEME.trim().toLowerCase(java.util.Locale.ROOT);   // Free My Projector: fixed look
+        if (theme.startsWith("dark") || theme.startsWith("oscuro")) return true;
+        if (theme.startsWith("light") || theme.startsWith("claro")) return false;
         long t = Shaders.timeOfDay(now, 0);
         long rise = Shaders.timeOfDay(weather.sunrise, 6 * 60 * 60_000L);
         long set = Shaders.timeOfDay(weather.sunset, 18 * 60 * 60_000L);

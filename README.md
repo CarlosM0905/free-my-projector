@@ -19,7 +19,8 @@ El README del proyecto original está en [README-original.md](README-original.md
   - Atajos a **Keystone**, **Imagen** (modo, color, nitidez, reducción de ruido), **Efectos de sonido** (ecualizador, DTS, VirtualX), **Temporizador de apagado** y **Patrón de prueba**.
   - Una tarjeta con el **estado del equipo**: temperatura del procesador, ventilador, lámpara y frecuencia del panel (se ve cambiar a 48 o 50 Hz si tienes AFR).
 - **Clima** por hora, amanecer y atardecer, y **precios cripto**.
-- **Claro de día, oscuro de noche**, según la puesta de sol de tu ciudad, y un **protector de pantalla** con las portadas y un reloj grande.
+- **Modo oscuro fijo, claro fijo o automático** (claro de día, oscuro desde la puesta de sol), y un **protector de pantalla** con las portadas y un reloj grande.
+- **Botón de Keystone** arriba a la derecha en vez de *TV en vivo* (los proyectores no tienen antena).
 - **Un botón para volver.** *Original* devuelve tu inicio anterior (por ejemplo Projectivy), tu protector de pantalla y las apps tal como estaban.
 
 ## Qué cambia respecto al original
@@ -80,6 +81,7 @@ Todo está en `config.properties` (no se sube a git):
 | `language` | `auto` (sigue al proyector), `es`, `en` o `pt` | `es` |
 | `currency` | Moneda de los precios cripto | `USD` |
 | `temperature` | `C`, `F` o `auto` | `C` |
+| `theme` | `auto` (claro de día, oscuro de noche), `dark` o `light` | `dark` |
 
 **La clave de TMDB:** crea una cuenta gratis en [themoviedb.org](https://www.themoviedb.org/signup), entra a [Settings → API](https://www.themoviedb.org/settings/api) y pide una clave de desarrollador. Pega la *API Key* después de `tmdb_key=`.
 
