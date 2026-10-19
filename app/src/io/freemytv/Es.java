@@ -115,7 +115,7 @@ final class Es {
         return s != null ? s : english;
     }
 
-    static final String[] TABS = {"Explorar", "Películas", "Series"};
+    static final String[] TABS = {"Explorar", "Películas", "Series", "A continuación"};
     static final String[] PERIOD_LABEL = {"PARA ESTA MAÑANA", "PARA ESTA TARDE", "PARA ESTA NOCHE"};
 
     /** TMDB returns these TV genres in English even when asked for Spanish. */

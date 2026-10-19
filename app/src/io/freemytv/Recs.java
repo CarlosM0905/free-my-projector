@@ -110,6 +110,10 @@ final class Recs {
     private volatile boolean light;     // light design: builds only the cards (all three tabs' cards fit in memory)
     private volatile long failedAt, keyStamp;
     private volatile boolean listEnglish;   // the saved list came in English (titles, genres and texts)
+    /** Up Next: the titles opened from the home screen, latest first (its own file: survives new lists and versions). */
+    private final SharedPreferences seen;
+    private final List<Pick> history = new ArrayList<>();
+    private static final int HISTORY_MAX = 12;
 
     private Recs(Context c) {
         context = c;
@@ -123,6 +127,38 @@ final class Recs {
             listEnglish = cache.getBoolean("english", false);
             keyStamp = cache.getLong("keyStamp", 0);
         } catch (Exception ignored) {
+        }
+        seen = c.getSharedPreferences("up_next", Context.MODE_PRIVATE);
+        try {
+            history.addAll(parse(new JSONArray(seen.getString("picks", "[]"))));
+        } catch (Exception ignored) {
+        }
+    }
+
+    // MARK: - Up Next (like tvOS): what was opened from the home screen, to pick it up again
+
+    /** The latest 3 opened titles whose app is still on the TV. */
+    List<Pick> upNext() {
+        List<Pick> out = new ArrayList<>();
+        synchronized (history) {
+            for (Pick p : history) if (out.size() < 3 && p.pkg != null && installed(p.pkg)) out.add(p);
+        }
+        return out;
+    }
+
+    /** A title was opened: it goes first in Up Next. */
+    void remember(Pick p) {
+        if (p == null || p.pkg == null) return;
+        synchronized (history) {
+            for (int i = history.size() - 1; i >= 0; i--) if (key(history.get(i)).equals(key(p))) history.remove(i);
+            history.add(0, p);
+            while (history.size() > HISTORY_MAX) history.remove(history.size() - 1);
+            try {
+                JSONArray a = new JSONArray();
+                for (Pick h : history) a.put(json(h));
+                seen.edit().putString("picks", a.toString()).apply();
+            } catch (Exception ignored) {
+            }
         }
     }
 
@@ -683,16 +719,18 @@ final class Recs {
     private void save() {
         try {
             JSONArray a = new JSONArray();
-            for (Pick p : picks) {
-                a.put(new JSONObject().put("id", p.id).put("kind", p.kind).put("title", p.title).put("backdrop", p.backdrop)
-                        .put("meta", p.meta).put("app", p.app == null ? "" : p.app).put("pkg", p.pkg == null ? "" : p.pkg)
-                        .put("link", p.link == null ? "" : p.link).put("detailed", p.detailed));
-            }
+            for (Pick p : picks) a.put(json(p));
             cache.edit().putString("picks", a.toString()).putInt("period", period).putLong("listAt", listAt)
                     .putBoolean("english", listEnglish)
                     .putLong("keyStamp", keyStamp).putInt("version", CACHE_VERSION).apply();
         } catch (Exception ignored) {
         }
+    }
+
+    private static JSONObject json(Pick p) throws org.json.JSONException {
+        return new JSONObject().put("id", p.id).put("kind", p.kind).put("title", p.title).put("backdrop", p.backdrop)
+                .put("meta", p.meta).put("app", p.app == null ? "" : p.app).put("pkg", p.pkg == null ? "" : p.pkg)
+                .put("link", p.link == null ? "" : p.link).put("detailed", p.detailed);
     }
 
     private static List<Pick> parse(JSONArray a) {
