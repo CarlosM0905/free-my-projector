@@ -69,8 +69,12 @@ EOF
 # --- Build
 "$BT/aapt2$EXE" compile --dir app/res -o out/res.zip
 # Fonts uncompressed: Android reads them straight from the APK.
+# On Windows, aapt2 writes asset paths with backslashes (assets/symbols\home.png) and Android can't find them, so
+# there the assets go in afterwards with jar (forward slashes; -0 keeps them uncompressed, fonts included).
+ASSETS="-A app/assets"; [ -n "$EXE" ] && ASSETS=""
 "$BT/aapt2$EXE" link -o out/base.apk -I "$AJ" --manifest app/AndroidManifest.xml --java out/gen out/res.zip \
-  --min-sdk-version "$MIN_API" --target-sdk-version 33 -A app/assets -0 ttf
+  --min-sdk-version "$MIN_API" --target-sdk-version 33 $ASSETS -0 ttf
+[ -n "$EXE" ] && "${JAVA_HOME:+$JAVA_HOME/bin/}jar" -u -0 -f out/base.apk -C app assets
 "$JAVAC" -nowarn -Xlint:-options -source 8 -target 8 -bootclasspath "$AJ$SEP$BT/core-lambda-stubs.jar" -classpath "$AJ" \
   -d out/classes $(find app/src out/gen -name '*.java')
 "$BT/d8$BAT" --release --min-api "$MIN_API" --lib "$AJ" --output out $(find out/classes -name '*.class')

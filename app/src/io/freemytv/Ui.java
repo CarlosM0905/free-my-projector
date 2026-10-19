@@ -22,6 +22,8 @@ import java.util.Locale;
 final class Ui {
     private Ui() {}
 
+    /** Light drawing for projectors and old TV boxes (Android < 12): no blurred shadows, which their GPUs can't keep up with. */
+    static final boolean LITE = android.os.Build.VERSION.SDK_INT < 31;
     /** Spanish (Free My Projector): config.properties "language=es", or "auto" with the TV in Spanish. */
     static volatile boolean es = spanish();
     /**

@@ -124,6 +124,11 @@ final class HomeMode {
             if (dream.isEmpty()) dream = defaultDream(adb);
             JSONObject latest = state(c);
             latest.put("originalHome", home).put("originalDream", dream);
+            // The screensaver chosen in the settings (not just the system default), so "original" puts it back.
+            String chosen = adb.shell("settings get secure screensaver_components").trim();
+            if (!latest.has("originalDreamSetting") && chosen.contains("/") && !chosen.contains(PKG + "/")) {
+                latest.put("originalDreamSetting", chosen);
+            }
             save(c, latest);
             if (metrics(latest, ORIGINAL) == null && !home.isEmpty()) {
                 busy(c, Ui.tr("Medindo o Início original…", "Measuring the original home screen…"));
@@ -137,11 +142,15 @@ final class HomeMode {
             List<String> targets = targets(home, dream);
             Set<String> disabled = new HashSet<>(stringList(state(c), "disabled"));
             Set<String> present = packages(adb, "");
+            // Already off before us (e.g. a ROM that disabled the setup wizard): not ours, so "original" leaves it off.
+            Set<String> wasOff = packages(adb, "-d");
+            List<String> offBefore = new ArrayList<>();
+            for (String pkg : targets) if (wasOff.contains(pkg)) offBefore.add(pkg);
             int done = 0;
             for (String pkg : targets) {
                 done++;
                 busy(c, Ui.tr("Desligando apps (", "Turning off apps (") + done + "/" + targets.size() + ")…");
-                if (PROTECTED.contains(pkg) || !present.contains(pkg)) continue;
+                if (PROTECTED.contains(pkg) || !present.contains(pkg) || wasOff.contains(pkg)) continue;
                 String out = adb.shell("pm disable-user --user 0 " + pkg);
                 if (out.contains("disabled-user")) disabled.add(pkg);
                 else AppLog.w("could not turn off " + pkg + ": " + out.trim());
@@ -149,7 +158,7 @@ final class HomeMode {
             Watchdog.clear(c);
             s = state(c);
             s.put("mode", FREE).put("since", System.currentTimeMillis()).put("homeReverted", false)
-                    .put("disabled", new JSONArray(sorted(disabled)));
+                    .put("disabled", new JSONArray(sorted(disabled))).put("offBefore", new JSONArray(offBefore));
             save(c, s);
             notice(c, Ui.tr("Free My TV ligado: Início e tela de descanso novos, " + disabled.size() + " apps desligados.",
                     "Free My TV is on: new home screen and screensaver, " + disabled.size() + " apps turned off."));
@@ -169,8 +178,10 @@ final class HomeMode {
             busy(c, Ui.tr("Religando os apps…", "Turning the apps back on…"));
             String home = s.optString("originalHome", "");
             Set<String> toEnable = new HashSet<>(stringList(s, "disabled"));
+            List<String> offBefore = stringList(s, "offBefore");   // already off before Free mode: they stay off
             for (String pkg : targets(home, s.optString("originalDream", ""))) {
-                if (!Arrays.asList(DEBLOAT).contains(pkg) && !Arrays.asList(ASSISTANT).contains(pkg)) toEnable.add(pkg);
+                if (!Arrays.asList(DEBLOAT).contains(pkg) && !Arrays.asList(ASSISTANT).contains(pkg)
+                        && !offBefore.contains(pkg)) toEnable.add(pkg);
             }
             Set<String> present = packages(adb, "");
             int done = 0;
@@ -185,7 +196,9 @@ final class HomeMode {
             }
             busy(c, Ui.tr("Devolvendo o Início original…", "Restoring the original home screen…"));
             boolean homeOk = restoreHome(adb, home);
-            adb.shell("settings delete secure screensaver_components");
+            String chosenDream = s.optString("originalDreamSetting", "");
+            if (!chosenDream.isEmpty()) adb.shell("settings put secure screensaver_components " + chosenDream);
+            else adb.shell("settings delete secure screensaver_components");
             s = state(c);
             s.put("mode", ORIGINAL).put("since", System.currentTimeMillis()).put("homeReverted", false)
                     .put("disabled", new JSONArray(failed));
@@ -211,6 +224,11 @@ final class HomeMode {
 
     /** The recorded home screen; without one, Google TV's; without that, the system picks (we leave the role). */
     private static boolean restoreHome(Adb adb, String home) throws IOException {
+        if (home.isEmpty()) {   // not recorded (Android 9, see otherLauncher): the other launcher on the projector
+            String other = otherLauncher(adb.shell("cmd package query-activities --brief --user 0"
+                    + " -a android.intent.action.MAIN -c android.intent.category.HOME"));
+            if (other != null) home = other;
+        }
         if (home.isEmpty() && adb.shell("pm path " + packageOf(GOOGLE_HOME)).contains("package:")) home = GOOGLE_HOME;
         if (!home.isEmpty()) {
             adb.shell("pm enable " + packageOf(home));
@@ -226,7 +244,8 @@ final class HomeMode {
             try (Adb adb = Adb.connect(app, 10_000, null)) {
                 JSONObject s = state(app);
                 String home = s.optString("originalHome", "");
-                adb.shell("pm enable " + GOOGLE_SETUP);
+                if (!stringList(s, "offBefore").contains(GOOGLE_SETUP)) adb.shell("pm enable " + GOOGLE_SETUP);
+                if (!home.isEmpty()) adb.shell("pm enable " + packageOf(home));
                 restoreHome(adb, home);
                 String homePkg = packageOf(home);
                 JSONArray kept = new JSONArray();
@@ -321,14 +340,31 @@ final class HomeMode {
     /** The home screen in use now ("package/activity"): the HOME role holder, among the TV's home screens. */
     private static String currentHome(Adb adb) throws IOException {
         String holder = homeHolder(adb);
-        if (holder == null || holder.equals(PKG)) return null;
         String list = adb.shell("cmd package query-activities --brief --user 0 -a android.intent.action.MAIN"
                 + " -c android.intent.category.HOME");
+        if (holder == null) return otherLauncher(list);
+        if (holder.equals(PKG)) return null;
         for (String line : list.split("\n")) {
             line = line.trim();
             if (line.startsWith(holder + "/")) return line;
         }
         return null;
+    }
+
+    /**
+     * Android 9 forgets the preferred home screen when another one (us) is installed, so Home asks which to use; then
+     * the original is the one other real launcher (not us, not the settings' fallback screen). Null if there are more.
+     */
+    private static String otherLauncher(String queryActivities) {
+        String only = null;
+        for (String line : queryActivities.split("\n")) {
+            line = line.trim();
+            if (!line.contains("/") || line.contains(" ") || line.startsWith(PKG + "/") || line.contains("FallbackHome")
+                    || line.startsWith(GOOGLE_SETUP + "/")) continue;   // setup wizard's recovery screen: not a launcher
+            if (only != null) return null;
+            only = line;
+        }
+        return only;
     }
 
     /**

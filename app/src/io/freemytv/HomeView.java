@@ -521,10 +521,18 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         gridLabel = new TextPaint(Ui.text(Ui.medium, 24 * k, 0x99FFFFFF));
         gridLabel.setTextAlign(Paint.Align.CENTER);
         toastPaint = new TextPaint(Ui.text(Ui.medium, 26 * k, 0xF2FFFFFF));
-        shadow.setMaskFilter(new BlurMaskFilter(26 * k, BlurMaskFilter.Blur.NORMAL));
-        shadowSoft.setMaskFilter(new BlurMaskFilter(12 * k, BlurMaskFilter.Blur.NORMAL));
-        shadowDeep.setMaskFilter(new BlurMaskFilter(30 * k, BlurMaskFilter.Blur.NORMAL));
-        halo.setMaskFilter(new BlurMaskFilter(22 * k, BlurMaskFilter.Blur.NORMAL));
+        // Projectors (Android < 12, weak GPUs like the Amlogic T972's Mali-G31): blurred shadows are re-rasterized on the
+        // CPU every frame a card grows with focus (measured 46 ms per frame, 92 % janky → 7 ms, 5 % without them).
+        // Unblurred they look like grey slabs, so there they aren't drawn at all (a transparent color filter).
+        if (!Ui.LITE) {
+            shadow.setMaskFilter(new BlurMaskFilter(26 * k, BlurMaskFilter.Blur.NORMAL));
+            shadowSoft.setMaskFilter(new BlurMaskFilter(12 * k, BlurMaskFilter.Blur.NORMAL));
+            shadowDeep.setMaskFilter(new BlurMaskFilter(30 * k, BlurMaskFilter.Blur.NORMAL));
+            halo.setMaskFilter(new BlurMaskFilter(22 * k, BlurMaskFilter.Blur.NORMAL));
+        } else {
+            android.graphics.ColorFilter none = new android.graphics.PorterDuffColorFilter(0, android.graphics.PorterDuff.Mode.SRC_IN);
+            for (Paint p : new Paint[] {shadow, shadowSoft, shadowDeep, halo}) p.setColorFilter(none);
+        }
         border.setStyle(Paint.Style.STROKE);
         border.setStrokeWidth(2 * k);
         rim.setStyle(Paint.Style.STROKE);

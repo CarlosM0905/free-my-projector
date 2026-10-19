@@ -124,9 +124,11 @@ final class HomeApps {
     static List<Item> shelf(Context c, boolean extract) {
         List<Item> items = new ArrayList<>();
         PackageManager pm = c.getPackageManager();
+        Set<String> keys = new HashSet<>();
         for (String[] d : SHELF) {
             if (items.size() >= MAX_SHELF) break;
             if (launchIntent(pm, d[2]) == null) continue;
+            if (!keys.add(d[0])) continue;   // one per service (projectors can have both builds, e.g. two YouTubes)
             Item it = new Item();
             it.kind = APP;
             it.key = d[0];
