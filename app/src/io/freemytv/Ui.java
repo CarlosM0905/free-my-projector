@@ -22,7 +22,13 @@ import java.util.Locale;
 final class Ui {
     private Ui() {}
 
-    static final Locale PT = new Locale("pt", "BR");
+    /** Spanish (Free My Projector): config.properties "language=es", or "auto" with the TV in Spanish. */
+    static volatile boolean es = spanish();
+    /**
+     * The non-English locale: Spanish (Peru) or Portuguese (Brazil). Both write dates and hours the same way
+     * ("domingo, 19 de octubre", 24 h), so the upstream "en ? US : PT" branches work for Spanish unchanged.
+     */
+    static final Locale PT = es ? new Locale("es", "PE") : new Locale("pt", "BR");
     /** English or Portuguese, from config.properties ("language") or, with "auto", the TV's own language. */
     static volatile boolean en = english();
     static Typeface thin, light, displayMedium, displaySemibold, regular, medium, semibold;
@@ -61,9 +67,18 @@ final class Ui {
     /** "en"/"pt" in config.properties, or "auto": Portuguese when the TV is set to Portuguese, English otherwise. */
     static boolean english() {
         String lang = Config.LANGUAGE.trim().toLowerCase(Locale.ROOT);
+        if (spanish()) return false;
         if (lang.startsWith("pt")) return false;
         if (lang.startsWith("en")) return true;
         return !"pt".equals(Locale.getDefault().getLanguage());
+    }
+
+    /** "es" in config.properties, or "auto" with the TV in Spanish. */
+    static boolean spanish() {
+        String lang = Config.LANGUAGE.trim().toLowerCase(Locale.ROOT);
+        if (lang.startsWith("es")) return true;
+        if (!lang.startsWith("auto") && !lang.isEmpty()) return false;
+        return "es".equals(Locale.getDefault().getLanguage());
     }
 
     private static boolean has(AssetManager a, String path) {
@@ -121,7 +136,7 @@ final class Ui {
     }
 
     static String tr(String pt, String english) {
-        return en ? english : pt;
+        return en ? english : es ? Es.tr(english) : pt;
     }
 
     /** "21:47" (in English, "9:47", like the iPhone in the US). */

@@ -60,7 +60,10 @@ final class Recs {
     /** Service name on TMDB (part of the name, lowercase) → TV app (HomeApps key, package). */
     private static final String[][] SERVICES = {
         {"netflix", "netflix", "com.netflix.ninja"},
+        {"netflix", "netflix", "com.netflix.mediaclient"},             // projectors: the phone build
         {"prime video", "prime", "com.amazon.amazonvideo.livingroom"},
+        {"prime video", "prime", "com.amazon.avod.thirdpartyclient"},  // projectors: the phone build
+        {"crunchyroll", "crunchyroll", "com.crunchyroll.crunchyroid"},
         {"disney", "disney", "com.disney.disneyplus"},
         {"hulu", "hulu", "com.hulu.livingroomplus"},
         {"paramount", "paramount", "com.cbs.ott"},
@@ -151,7 +154,7 @@ final class Recs {
     String error() { return error; }
 
     static String periodLabel() {
-        return (Ui.en ? PERIOD_LABEL_EN : PERIOD_LABEL)[period(System.currentTimeMillis())];
+        return (Ui.en ? PERIOD_LABEL_EN : Ui.es ? Es.PERIOD_LABEL : PERIOD_LABEL)[period(System.currentTimeMillis())];
     }
 
     private static int period(long now) {
@@ -415,7 +418,7 @@ final class Recs {
 
     /** Language of titles and genres; the services come from the region. */
     private static String lang() {
-        return Ui.en ? "en-US" : "pt-BR";
+        return Ui.en ? "en-US" : Ui.es ? "es-MX" : "pt-BR";
     }
 
     private static void alternate(List<Pick> out, java.util.Set<String> seen, List<Pick> a, List<Pick> b, int max) {
@@ -488,13 +491,13 @@ final class Recs {
     };
 
     private static String genre(String name) {
-        for (String[] g : GENRES_PT) if (g[0].equalsIgnoreCase(name)) return g[1];
+        for (String[] g : Ui.es ? Es.GENRES : GENRES_PT) if (g[0].equalsIgnoreCase(name)) return g[1];
         return name;
     }
 
     /** The same for lists saved earlier ("Série · Action & Adventure · …" in Portuguese). */
     private static String fixGenres(String meta) {
-        for (String[] g : GENRES_PT) {
+        for (String[] g : Ui.es ? Es.GENRES : GENRES_PT) {
             meta = meta.replace(" · " + g[0] + " ·", " · " + g[1] + " ·");
             if (meta.endsWith(" · " + g[0])) meta = meta.substring(0, meta.length() - g[0].length()) + g[1];
         }
@@ -523,12 +526,16 @@ final class Recs {
         return best;
     }
 
-    private static String[] service(String name) {
+    /** The TV app for a TMDB service; with several builds of one service (TV / phone), the one that is installed. */
+    private String[] service(String name) {
         String n = name.toLowerCase(Locale.ROOT);
+        String[] first = null;
         for (String[] s : SERVICES) {
-            if (s[0].equals("max") ? n.matches(".*\\bmax\\b.*") : n.contains(s[0])) return s;
+            if (!(s[0].equals("max") ? n.matches(".*\\bmax\\b.*") : n.contains(s[0]))) continue;
+            if (installed(s[2])) return s;
+            if (first == null) first = s;
         }
-        return null;
+        return first;
     }
 
     private boolean installed(String pkg) {

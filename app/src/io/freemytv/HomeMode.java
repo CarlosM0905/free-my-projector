@@ -70,7 +70,11 @@ final class HomeMode {
         "com.tcl.useragreement", "com.tcl.factory.view", "com.tcl.guard", "com.tcl.t_solo",
         "com.google.android.gms", "com.google.android.gsf", "com.android.vending", "com.google.android.apps.mediashell",
         "com.google.android.tv.remote.service", "com.google.android.inputmethod.latin", "com.google.android.webview",
-        "com.android.tv.settings", "com.android.systemui", "android", PKG));
+        "com.android.tv.settings", "com.android.systemui", "android", PKG,
+        // Wanbo / Amlogic projectors: keystone and lamp/fan control, picture and sound, inputs, and the ROM's helpers
+        "com.luxcine_3", "com.droidlogic", "com.droidlogic.tv.settings", "com.droidlogic.tvinput",
+        "com.droidlogic.keystone", "com.droidlogic.BluetoothRemote", "com.android.webview", "com.android.settings",
+        "pe.carlos.puente", "pe.carlos.atajos", "org.liskovsoft.androidtv.rukeyboard"));
 
     /** One switch at a time (jobs can overlap: a boot check and a button press). */
     private static final Object RUN = new Object();
@@ -213,7 +217,7 @@ final class HomeMode {
             if (adb.shell("cmd package set-home-activity " + home).contains("Success")) return true;
         }
         adb.shell("cmd role remove-role-holder --user 0 android.app.role.HOME " + PKG);
-        return !adb.shell("cmd role get-role-holders --user 0 android.app.role.HOME").contains(PKG);
+        return !PKG.equals(homeHolder(adb));
     }
 
     /** Safety net: our home screen crashed 3 times in a row. Only the home screen goes back; the rest stays. */
@@ -277,7 +281,7 @@ final class HomeMode {
                         fixed.add(pkg);
                     }
                 }
-                if (!reverted && !adb.shell("cmd role get-role-holders --user 0 android.app.role.HOME").contains(PKG)) {
+                if (!reverted && !PKG.equals(homeHolder(adb))) {
                     adb.shell("cmd package set-home-activity " + HOME_ACTIVITY);
                     fixed.add(Ui.tr("o Início", "the home screen"));
                 }
@@ -316,8 +320,8 @@ final class HomeMode {
 
     /** The home screen in use now ("package/activity"): the HOME role holder, among the TV's home screens. */
     private static String currentHome(Adb adb) throws IOException {
-        String holder = adb.shell("cmd role get-role-holders --user 0 android.app.role.HOME").trim();
-        if (holder.isEmpty() || holder.contains(PKG)) return null;
+        String holder = homeHolder(adb);
+        if (holder == null || holder.equals(PKG)) return null;
         String list = adb.shell("cmd package query-activities --brief --user 0 -a android.intent.action.MAIN"
                 + " -c android.intent.category.HOME");
         for (String line : list.split("\n")) {
@@ -325,6 +329,21 @@ final class HomeMode {
             if (line.startsWith(holder + "/")) return line;
         }
         return null;
+    }
+
+    /**
+     * The package that owns the home screen now, or null. Android 10+ has the HOME role; Android 9 (projectors) doesn't,
+     * so there it's the activity that answers the Home intent (the one set with set-home-activity).
+     */
+    private static String homeHolder(Adb adb) throws IOException {
+        String role = adb.shell("cmd role get-role-holders --user 0 android.app.role.HOME").trim();
+        if (role.matches("[A-Za-z][\\w.]*")) return role;
+        if (role.isEmpty() && android.os.Build.VERSION.SDK_INT >= 29) return null;
+        String[] lines = adb.shell("cmd package resolve-activity --brief --user 0 -a android.intent.action.MAIN"
+                + " -c android.intent.category.HOME").trim().split("\n");
+        String last = lines[lines.length - 1].trim();
+        int slash = last.indexOf('/');
+        return slash > 0 && !last.startsWith("android/") ? last.substring(0, slash) : null;
     }
 
     /** The system's default screensaver ("package/service"), or "". */

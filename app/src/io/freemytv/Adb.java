@@ -41,6 +41,8 @@ final class Adb implements Closeable {
     private static final int CNXN = 0x4e584e43, AUTH = 0x48545541, OPEN = 0x4e45504f, OKAY = 0x59414b4f,
             CLSE = 0x45534c43, WRTE = 0x45545257, STLS = 0x534c5453;
     private static final int VERSION = 0x01000001, MAX_DATA = 256 * 1024;
+    /** 5555: standard network debugging. 3333: what Wanbo projectors (Amlogic) ship open from the factory. */
+    private static final int[] PORTS = {5555, 3333};
     private static final int AUTH_TOKEN = 1, AUTH_SIGNATURE = 2, AUTH_RSAPUBLICKEY = 3;
     /** Start of the PKCS#1 block of a SHA-1 signature (adbd treats the token as if it were the digest). */
     private static final byte[] SHA1_PREFIX = {0x30, 0x21, 0x30, 0x09, 0x06, 0x05, 0x2b, 0x0e, 0x03, 0x02, 0x1a, 0x05, 0x00, 0x04, 0x14};
@@ -67,13 +69,18 @@ final class Adb implements Closeable {
     /** Connects and authenticates. If the TV doesn't know our key yet, waits up to `approvalMs` for you to accept. */
     static Adb connect(Context c, int approvalMs, Approval approval) throws IOException {
         KeyPair keys = keys(c);
-        Socket s = new Socket();
-        try {
-            s.connect(new InetSocketAddress("127.0.0.1", 5555), 3000);
-        } catch (IOException e) {
-            s.close();
-            throw new IOException("debugging is off on the TV (port 5555 closed)");
+        Socket s = null;
+        for (int port : PORTS) {
+            Socket t = new Socket();
+            try {
+                t.connect(new InetSocketAddress("127.0.0.1", port), 3000);
+                s = t;
+                break;
+            } catch (IOException e) {
+                t.close();
+            }
         }
+        if (s == null) throw new IOException("debugging is off on the TV (ports 5555 and 3333 closed)");
         s.setSoTimeout(10_000);
         Adb adb = new Adb(s);
         try {

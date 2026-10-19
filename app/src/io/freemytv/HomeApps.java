@@ -79,10 +79,19 @@ final class HomeApps {
      * (YouTube); empty = the art's colors as they are. Last, a visual size tweak for the logo. Edit freely.
      */
     private static final String[][] SHELF = {
+        // Projectors (Wanbo and other Android 9+ boxes without Google TV certification): the apps they actually run
+        {"youtube", "YouTube", "org.smarttube.stable", "FF0033", "", "1"},
+        {"disney", "Disney+", "com.disney.disneyplus", "1838C8", "", "1"},
+        {"crunchyroll", "Crunchyroll", "com.crunchyroll.crunchyroid", "F47521", "", "1"},
+        {"netflix", "Netflix", "com.netflix.mediaclient", "E50914", "", "1"},
+        {"prime", "Prime Video", "com.amazon.avod.thirdpartyclient", "1A98FF", "tint", "0.96"},
+        {"auramusic", "AuraMusic", "com.auramusic.app", "E0245E", "", "1"},
+        {"twitch", "Twitch", "com.fgl27.twitch", "9146FF", "", "1"},
+        {"kodi", "Kodi", "org.xbmc.kodi", "17B2E7", "", "1"},
+        // Google TV (upstream)
         {"netflix", "Netflix", "com.netflix.ninja", "E50914", "", "1"},
         {"youtube", "YouTube", "com.google.android.youtube.tv", "FF0033", "play", "1"},
         {"prime", "Prime Video", "com.amazon.amazonvideo.livingroom", "1A98FF", "tint", "0.96"},
-        {"disney", "Disney+", "com.disney.disneyplus", "1838C8", "", "1"},
         {"max", "Max", "com.wbd.stream", "6C3BE0", "", "1.32"},
         {"appletv", "Apple TV", "com.apple.atve.androidtv.appletv", "B8BCC6", "", "1.1"},
         {"hulu", "Hulu", "com.hulu.livingroomplus", "1CE783", "", "1"},
@@ -91,12 +100,13 @@ final class HomeApps {
         {"globoplay", "Globoplay", "com.globo.globotv", "FF5A1F", "tint", "1"},
         {"spotify", "Spotify", "com.spotify.tv.android", "1DB954", "", "1"},
     };
-    private static final int MAX_SHELF = 8;
+    private static final int MAX_SHELF = 9;
     /** Live TV apps of some brands (the antenna's channels open through the standard Android request first). */
     static final String[] LIVE_TV_APPS = {"com.tcl.tv", "com.google.android.tv", "com.mediatek.wwtv.tvcenter", "com.sony.dtv.tvx"};
     /** Kept out of "All Apps" (only hidden, still installed). Add the ones your TV shows that you never use. */
     private static final Set<String> HIDDEN = new HashSet<>(java.util.Arrays.asList(
             "com.google.android.play.games",        // Google Play Games
+            "com.google.android.youtube.tv",        // Wanbo ROM: stand-in that opens SmartTube (already on the shelf)
             "com.tcl.t_solo",                       // TCL: T-Solo
             "com.tcl.waterfall.overseas",           // TCL Channel
             "com.tcl.dashboard",                    // TCL Home

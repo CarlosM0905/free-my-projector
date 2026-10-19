@@ -388,7 +388,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     }
 
     private static String[] tabs() {
-        return Ui.en ? TABS_EN : TABS;
+        return Ui.en ? TABS_EN : Ui.es ? Es.TABS : TABS;
     }
 
     @Override public void onData() {
