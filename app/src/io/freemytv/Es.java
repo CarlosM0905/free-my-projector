@@ -39,6 +39,13 @@ final class Es {
         t("Series", "Series");
         t("now", "ahora");
 
+        // Projector controls (Projector.java)
+        t("Keystone", "Keystone");
+        t("Picture", "Imagen");
+        t("Sound effects", "Efectos de sonido");
+        t("Sleep timer", "Temporizador");
+        t("Test pattern", "Patrón de prueba");
+
         // Switching the home screen (HomeMode)
         t("Free My TV's home screen ran into a problem.\nGoing back to the TV's original home screen…",
                 "El inicio de Free My Projector tuvo un problema.\nVolviendo al inicio original…");
