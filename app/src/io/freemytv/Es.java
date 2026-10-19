@@ -22,7 +22,7 @@ final class Es {
         t("All Apps", "Todas las apps");
         t("Settings", "Ajustes");
         t("Home Settings", "Ajustes del inicio");
-        t("TV Settings", "Ajustes del proyector");
+        t("TV Settings", "Ajustes TV");
         t("HDMI Inputs", "Entradas HDMI");
         t("Inputs", "Entradas");
         t("Shortcuts", "Atajos");
@@ -45,16 +45,21 @@ final class Es {
         t("Sound effects", "Efectos de sonido");
         t("Sleep timer", "Temporizador");
         t("Test pattern", "Patrón de prueba");
+        t("Projector", "Proyector");
+        t("Processor", "Procesador");
+        t("Fan", "Ventilador");
+        t("Lamp", "Lámpara");
+        t("Panel", "Panel");
 
         // Switching the home screen (HomeMode)
-        t("Free My TV's home screen ran into a problem.\nGoing back to the TV's original home screen…",
+        t("Free My Projector's home screen ran into a problem.\nGoing back to the TV's original home screen…",
                 "El inicio de Free My Projector tuvo un problema.\nVolviendo al inicio original…");
         t("Measuring the original home screen…", "Midiendo el inicio original…");
         t("Switching the home screen and screensaver…", "Cambiando el inicio y el protector de pantalla…");
         t("Android didn't accept the new home screen", "Android no aceptó el nuevo inicio");
         t("Turning off apps (", "Desactivando apps (");
-        t("Measuring Free My TV…", "Midiendo Free My Projector…");
-        t("Couldn't turn on Free My TV: ", "No se pudo activar Free My Projector: ");
+        t("Measuring Free My Projector…", "Midiendo Free My Projector…");
+        t("Couldn't turn on Free My Projector: ", "No se pudo activar Free My Projector: ");
         t("Turning the apps back on…", "Reactivando las apps…");
         t("Turning apps back on (", "Reactivando apps (");
         t("Restoring the original home screen…", "Restaurando el inicio original…");
@@ -63,14 +68,14 @@ final class Es {
         t("the original home screen", "el inicio original");
         t("Original mode, but I couldn't turn back on: ", "Modo original, pero no pude reactivar: ");
         t("Couldn't go back to the original: ", "No se pudo volver al original: ");
-        t("Free My TV's home screen crashed 3 times in a row; I switched back to the original one.",
+        t("Free My Projector's home screen crashed 3 times in a row; I switched back to the original one.",
                 "El inicio de Free My Projector se cerró 3 veces seguidas; volví al original.");
         t("the home screen", "el inicio");
         t("the screensaver", "el protector de pantalla");
-        t("Couldn't check Free My TV: ", "No se pudo revisar Free My Projector: ");
+        t("Couldn't check Free My Projector: ", "No se pudo revisar Free My Projector: ");
         t("The TV update turned back on ", "La actualización del proyector reactivó ");
         t("Turned off what was missing: ", "Se desactivó lo que faltaba: ");
-        t("The TV was updated; Free My TV is still on.", "El proyector se actualizó; Free My Projector sigue activo.");
+        t("The TV was updated; Free My Projector is still on.", "El proyector se actualizó; Free My Projector sigue activo.");
         t("Connecting…", "Conectando…");
         t("Accept “Allow USB debugging?” on the TV (tick “Always allow”).",
                 "Acepta «¿Permitir la depuración USB?» en la pantalla (marca «Permitir siempre»).");
@@ -129,6 +134,12 @@ final class Es {
         if (code >= 71 && code <= 77 || code == 85 || code == 86) return "Nieve";
         if (code >= 95) return "Tormenta";
         return "Lluvia";
+    }
+
+    /** The notice after switching on (it has a number in the middle, so it can't be a table entry). */
+    static String turnedOn(int apps) {
+        return "Free My Projector activo: nuevo inicio y protector de pantalla, "
+                + (apps == 1 ? "1 app desactivada." : apps + " apps desactivadas.");
     }
 
     /** "hace 12 min" / "hace 2 h". */

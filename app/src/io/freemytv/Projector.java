@@ -51,6 +51,58 @@ final class Projector {
         return ComponentName.unflattenFromString(flat);
     }
 
+    // MARK: - Status card (drawer): processor temperature, fan, lamp and panel refresh rate
+
+    private static final String SOC = "/sys/class/thermal/thermal_zone0/temp";
+    private static final String FAN = "/sys/class/jixin-feng/PWM";          // Wanbo: duty in ns of a 40000 ns period
+    private static final String LAMP = "/sys/class/jixin-pwm/PWM";          // Wanbo: LED drive, 1.26 M = full, 2.65 M = dimmest
+    private static final String PANEL = "/sys/class/lcd/frame_rate";        // Amlogic LCD: "get frame_rate: 60.00Hz, ..."
+    private static final float FAN_PERIOD = 40000, LAMP_FULL = 1_260_000, LAMP_DIM = 2_650_000;
+
+    /** The rows that can be read on this device: {label pt, label en, value}. Empty off a projector. */
+    static List<String[]> status() {
+        List<String[]> rows = new ArrayList<>();
+        long soc = number(read(SOC));
+        if (soc > 0) rows.add(new String[] {"Processador", "Processor", Math.round(soc / 1000f) + " °C"});
+        long fan = number(read(FAN));
+        if (fan > 0) rows.add(new String[] {"Ventilador", "Fan", Math.round(100 * Math.min(1, fan / FAN_PERIOD)) + " %"});
+        long lamp = number(read(LAMP));
+        if (lamp >= LAMP_FULL * 0.9f && lamp <= LAMP_DIM * 1.1f) {
+            float brightness = 1 - (lamp - LAMP_FULL) / (LAMP_DIM - LAMP_FULL) * 0.5f;   // the dimmest step is about half
+            rows.add(new String[] {"Lâmpada", "Lamp", Math.round(100 * Math.max(0.5f, Math.min(1, brightness))) + " %"});
+        }
+        String panel = read(PANEL);
+        java.util.regex.Matcher m = panel == null ? null : java.util.regex.Pattern.compile("([0-9.]+)\\s*Hz").matcher(panel);
+        if (m != null && m.find()) {
+            float hz = Float.parseFloat(m.group(1));
+            rows.add(new String[] {"Tela", "Panel", (Math.abs(hz - Math.round(hz)) < 0.05f ? String.valueOf(Math.round(hz))
+                    : String.format(java.util.Locale.ROOT, "%.2f", hz)) + " Hz"});
+        }
+        return rows;
+    }
+
+    /** The drawer shows the card only where these files exist (a projector), so a TV keeps the original layout. */
+    static boolean hasStatus() {
+        return new java.io.File(FAN).canRead() || new java.io.File(PANEL).canRead();
+    }
+
+    private static String read(String path) {
+        try (java.io.BufferedReader r = new java.io.BufferedReader(new java.io.FileReader(path))) {
+            return r.readLine();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static long number(String s) {
+        if (s == null) return -1;
+        try {
+            return Long.parseLong(s.trim());
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+
     /** The hidden screen exists (it isn't exported, so resolveActivity can't see it from here). */
     private static boolean exists(PackageManager pm, ComponentName cn) {
         try {

@@ -165,7 +165,9 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private int drawerInputs;          // how many leading items are inputs (the rest are shortcuts)
     private Spring[] drawerFocus = new Spring[0];
     private RectF[] drawerRects = new RectF[0];
-    private final RectF weatherCard = new RectF(), quotesCard = new RectF();
+    private final RectF weatherCard = new RectF(), quotesCard = new RectF(), projectorCard = new RectF();
+    /** Free My Projector: a third drawer card with the projector's status, only where it can be read. */
+    private final boolean projectorStatus = Projector.hasStatus();
     private final Spring drawer = new Spring(0.46f, 0.92f, 0);
     private boolean drawerOpen;
     private int drawerIndex;
@@ -1233,6 +1235,12 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         float cardsTop = CARDS_TOP * k, split = left + (right - left) * 0.585f;
         weatherCard.set(left, cardsTop, split - 16 * k, cardsTop + CARDS_H * k);
         quotesCard.set(split + 16 * k, cardsTop, right, cardsTop + CARDS_H * k);
+        if (projectorStatus) {   // weather · crypto · projector
+            float a = left + (right - left) * 0.43f, b = left + (right - left) * 0.705f;
+            weatherCard.set(left, cardsTop, a - 16 * k, cardsTop + CARDS_H * k);
+            quotesCard.set(a + 16 * k, cardsTop, b - 16 * k, cardsTop + CARDS_H * k);
+            projectorCard.set(b + 16 * k, cardsTop, right, cardsTop + CARDS_H * k);
+        }
         drawerDirty = true;
     }
 
@@ -1296,6 +1304,20 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         if (top >= 0) drawDrawerTile(c, top);
         drawWeatherCard(c, weatherCard);
         drawQuotesCard(c, quotesCard);
+        if (projectorStatus) drawProjectorCard(c, projectorCard);
+    }
+
+    /** Free My Projector: processor temperature, fan, lamp and the panel's refresh rate (it follows AFR). */
+    private void drawProjectorCard(Canvas c, RectF r) {
+        drawerCard(c, r);
+        float x = r.left + 34 * k, right = r.right - 34 * k;
+        c.drawText(Ui.tr("Projetor", "Projector"), x, r.top + 54 * k, cardTitle);
+        List<String[]> rows = Projector.status();
+        for (int i = 0; i < rows.size() && i < 4; i++) {
+            float base = r.top + (110 + 52 * i) * k;
+            c.drawText(Ui.tr(rows.get(i)[0], rows.get(i)[1]), x, base, cardText);
+            c.drawText(rows.get(i)[2], right, base, pricePaint);
+        }
     }
 
     /** Square drawer button: symbol and name; an input with no device is dimmed. Focused: white, with dark text. */
@@ -1354,15 +1376,19 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         fill.setColor(tone(0x1A000000, 0x24FFFFFF));
         c.drawRoundRect(split - k, r.top + 34 * k, split + k, r.bottom - 34 * k, k, k, fill);
         float hx = split + 30 * k, hw = (r.right - 30 * k - hx) / 6;
-        for (int i = 0; i < wx.hours.size() && i < 6; i++) {
+        int fit = Math.max(3, Math.min(6, (int) ((r.right - 30 * k - hx) / (70 * k))));   // narrower with the projector card
+        hw = (r.right - 30 * k - hx) / fit;
+        for (int i = 0; i < wx.hours.size() && i < fit; i++) {
             float hc = hx + hw * (i + 0.5f);
             c.drawText(HomeData.hour(wx.hours.get(i)), hc, r.top + 96 * k, hourPaint);
             Symbols.draw(getContext(), c, Symbols.weather(wx.hourCode.get(i), wx.hourDay.get(i)), hc, r.top + 142 * k, 30 * k, drawerInk(0.9f));
             c.drawText(HomeData.degrees(wx.hourTemp.get(i)), hc, r.top + 196 * k, hourTemp);
         }
         float sx = hx, base = r.top + 258 * k;
-        if (wx.sunrise != 0) sx = sunItem(c, "sunrise", Ui.tr("Nascer ", "Sunrise ") + Ui.time(wx.sunrise), sx, base) + 36 * k;
-        if (wx.sunset != 0) sunItem(c, "sunset", Ui.tr("Pôr do sol ", "Sunset ") + Ui.time(wx.sunset), sx, base);
+        // Narrow card (next to the projector's): just the times; the icons already say sunrise and sunset.
+        String rise = projectorStatus ? "" : Ui.tr("Nascer ", "Sunrise "), set = projectorStatus ? "" : Ui.tr("Pôr do sol ", "Sunset ");
+        if (wx.sunrise != 0) sx = sunItem(c, "sunrise", rise + Ui.time(wx.sunrise), sx, base) + 36 * k;
+        if (wx.sunset != 0) sunItem(c, "sunset", set + Ui.time(wx.sunset), sx, base);
     }
 
     private float sunItem(Canvas c, String symbol, String label, float x, float base) {
@@ -1384,7 +1410,9 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             float base = r.top + (110 + 52 * i) * k, mid = base - cap / 2;
             float gw = Glyphs.width(getContext(), HomeData.COINS[i], cap);
             Glyphs.coin(getContext(), c, HomeData.COINS[i], x + 14 * k, mid, cap, tone(L_DIM, 0xCCFFFFFF));
-            c.drawText(HomeData.COIN_NAMES[i], x + Math.max(gw, 28 * k) / 2 + 30 * k, base, cardText);
+            // Narrow card (next to the projector's): the ticker instead of the name, so it doesn't run into the price.
+            String coin = projectorStatus ? HomeData.COINS[i] : HomeData.COIN_NAMES[i];
+            c.drawText(coin, x + Math.max(gw, 28 * k) / 2 + 30 * k, base, cardText);
             c.drawText(HomeData.brl(data.prices[i]), right - 128 * k, base, pricePaint);
             double change = data.changes[i];
             if (Double.isNaN(change)) continue;
