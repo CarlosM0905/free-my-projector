@@ -34,8 +34,8 @@ final class Projector {
      */
     private static final String[][] TOGGLES = {
         {"Hz automático", "Match frame rate", "sync", "toggle:afr"},
-        {"Diálogos", "Enhance dialogue", "bell", "toggle:dialogo"},
-        {"Volume uniforme", "Reduce loud sounds", "speaker", "toggle:agc"},
+        {"Diálogos", "Enhance dialogue", "voice", "toggle:dialogo"},
+        {"Volume uniforme", "Reduce loud sounds", "leveler", "toggle:agc"},
     };
     private static final String SOUND = BRIDGE + ".SONIDO";
     private static final String AFR_OFF = "/data/local/tmp/afr.off";
