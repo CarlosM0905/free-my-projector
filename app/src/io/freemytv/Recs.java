@@ -44,6 +44,7 @@ final class Recs {
         int id;
         String kind;            // "movie" or "tv"
         String title, backdrop, meta = "", app, pkg;
+        String link;            // opens the title itself in its app (null: just the app)
         boolean detailed;
     }
 
@@ -53,7 +54,7 @@ final class Recs {
     private static final String IMAGES = "https://image.tmdb.org/t/p/original";
     private static final long LIST_EVERY = 6 * 3600_000L;
     /** Bump when what is saved for each title changes (the saved list is discarded and fetched again). */
-    private static final int CACHE_VERSION = 3;
+    private static final int CACHE_VERSION = 4;
     private static final int MANHA = 0, TARDE = 1, NOITE = 2;
     static final String[] PERIOD_LABEL = {"PARA ESTA MANHÃ", "PARA ESTA TARDE", "PARA ESTA NOITE"};
     static final String[] PERIOD_LABEL_EN = {"THIS MORNING", "THIS AFTERNOON", "TONIGHT"};
@@ -480,7 +481,53 @@ final class Recs {
         }
         if (p.app != null) parts.add(SERVICE_NAME.get(p.app));
         p.meta = String.join(" · ", parts);
+        if (p.app != null) {
+            try {
+                p.link = link(p);
+            } catch (Exception e) {
+                AppLog.w("link for " + p.title + ": " + e.getMessage());
+            }
+        }
         p.detailed = true;
+    }
+
+    // MARK: - Deep links: the title's page in its app, from the service IDs that Wikidata keeps for each TMDB title
+
+    /** Service key → {Wikidata property, link with %s for the ID}. */
+    private static final Map<String, String[]> LINKS = new HashMap<>();
+    static {
+        LINKS.put("disney", new String[] {"P13902", "https://www.disneyplus.com/browse/%s"});
+        LINKS.put("netflix", new String[] {"P1874", "https://www.netflix.com/title/%s"});
+        LINKS.put("prime", new String[] {"P8055", "https://watch.amazon.com/detail?asin=%s"});
+        LINKS.put("crunchyroll", new String[] {"P11330", "crunchyroll://series/%s"});
+    }
+
+    /**
+     * The link to the title in its app, or null. A title can have several IDs on one service; the ones marked with
+     * qualifiers are variants ("Sing-Along" versions, other regions), so the plain one wins.
+     */
+    private static String link(Pick p) throws Exception {
+        String[] l = LINKS.get(p.app);
+        if (l == null) return null;
+        String query = "SELECT ?v (COUNT(?q) AS ?n) WHERE { ?i wdt:" + (p.kind.equals("tv") ? "P4983" : "P4947") + " \"" + p.id
+                + "\"; p:" + l[0] + " ?s. ?s ps:" + l[0] + " ?v; wikibase:rank ?r. FILTER(?r != wikibase:DeprecatedRank) "
+                + "OPTIONAL { ?s ?q ?x. FILTER(STRSTARTS(STR(?q), \"http://www.wikidata.org/prop/qualifier/\")) } } "
+                + "GROUP BY ?v ORDER BY ?n LIMIT 1";
+        HttpURLConnection c = (HttpURLConnection) new URL("https://query.wikidata.org/sparql?query="
+                + URLEncoder.encode(query, "UTF-8")).openConnection();
+        c.setConnectTimeout(8000);
+        c.setReadTimeout(10000);
+        c.setRequestProperty("Accept", "application/sparql-results+json");
+        c.setRequestProperty("User-Agent", "FreeMyProjector/1.0 (https://github.com/CarlosM0905/free-my-projector)");
+        try {
+            if (c.getResponseCode() != 200) throw new IOException("Wikidata returned HTTP " + c.getResponseCode());
+            JSONArray rows = new JSONObject(read(c.getInputStream())).getJSONObject("results").getJSONArray("bindings");
+            if (rows.length() == 0) return null;
+            String id = rows.getJSONObject(0).getJSONObject("v").getString("value");
+            return String.format(Locale.ROOT, l[1], id);
+        } finally {
+            c.disconnect();
+        }
     }
 
     /** TV genres that TMDB returns in English even in pt-BR. */
@@ -639,7 +686,7 @@ final class Recs {
             for (Pick p : picks) {
                 a.put(new JSONObject().put("id", p.id).put("kind", p.kind).put("title", p.title).put("backdrop", p.backdrop)
                         .put("meta", p.meta).put("app", p.app == null ? "" : p.app).put("pkg", p.pkg == null ? "" : p.pkg)
-                        .put("detailed", p.detailed));
+                        .put("link", p.link == null ? "" : p.link).put("detailed", p.detailed));
             }
             cache.edit().putString("picks", a.toString()).putInt("period", period).putLong("listAt", listAt)
                     .putBoolean("english", listEnglish)
@@ -661,6 +708,7 @@ final class Recs {
             p.meta = fixGenres(o.optString("meta"));
             p.app = o.optString("app").isEmpty() ? null : o.optString("app");
             p.pkg = o.optString("pkg").isEmpty() ? null : o.optString("pkg");
+            p.link = o.optString("link").isEmpty() ? null : o.optString("link");
             p.detailed = o.optBoolean("detailed");
             out.add(p);
         }

@@ -63,6 +63,7 @@ final class HomeApps {
     static final class Item {
         int kind;
         String key, label, pkg, inputId, number;
+        String uri;         // apps: a page inside the app (a movie on Disney+); null = the app's start
         String symbol;      // icon for the shortcuts and special cards
         Bitmap tile;        // 16:9 card (apps and specials)
         Bitmap logo;        // colored logo with no background (shelf); null = use the card
@@ -291,7 +292,10 @@ final class HomeApps {
         Intent intent;
         switch (it.kind) {
             case APP:
-                intent = launchIntent(a.getPackageManager(), it.pkg);
+                intent = it.uri == null ? null : new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(it.uri))
+                        .addCategory(Intent.CATEGORY_BROWSABLE).setPackage(it.pkg);
+                if (intent != null && intent.resolveActivity(a.getPackageManager()) == null) intent = null;
+                if (intent == null) intent = launchIntent(a.getPackageManager(), it.pkg);
                 if (intent != null) intent.addFlags(Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
                 break;
             case LIVE_TV:
