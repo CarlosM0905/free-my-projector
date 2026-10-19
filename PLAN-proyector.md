@@ -46,3 +46,34 @@ Panel "Proyector" en el cajón lateral, reutilizando lo que ya construimos:
 - Rendimiento del Canvas a 1080p en el Mali-G31 (Spotify ya mostró el límite térmico del GPU).
 - Perder la configuración de Projectivy: no se toca; el fork se prueba aparte y el cambio de Home es reversible con un botón.
 - TMDB necesita una clave gratuita de Carlos (themoviedb.org).
+
+---
+
+# Etapa 2 — Funciones al estilo tvOS (2026-10-19)
+
+**Regla de diseño:** nada de filas, tarjetas ni pantallas nuevas que rompan el look limpio. Cada función usa una superficie que ya existe, como lo hace tvOS (el sistema del Apple TV).
+
+| tvOS | Free My Projector | Superficie que usa |
+|---|---|---|
+| Centro de control (botón TV) | El cajón inferior, abierto con el botón de ajustes del control (≡▢) | Cajón (ya existe) |
+| Temporizador de apagado (tvOS 18) | Estado en el mismo botón ("42 min") | Botón del cajón |
+| Igualar contenido (frecuencia) | Interruptor del AFR | Cajón |
+| Realzar diálogos | Interruptor de Dialog Clarity (DTS de Amlogic) | Cajón |
+| Reducir sonidos fuertes | Interruptor del nivelador AGC | Cajón |
+| Ahora suena | Carátula + pausa/siguiente de AuraMusic, Spotify, etc. (sesiones multimedia) | Tarjeta del cajón, solo si suena algo |
+| A continuación (app TV) | Lo que dejaste a medias (Watch Next de Android TV) | Pestaña nueva junto a Explorar / Películas / Series |
+| Top Shelf | Al enfocar una app del estante, las portadas grandes muestran su contenido (canales de Android TV) | Zona de portadas (ya existe) |
+| Búsqueda (app TV) | Pestaña con lupa, teclado de una fila, recientes y resultados de TMDB filtrados a tus apps | Pestaña |
+| Actualizaciones automáticas | En segundo plano con verificación de firma; aviso discreto | Ajustes del inicio → Avisos |
+
+## Orden
+1. **Centro de control:** botón ≡▢ abre el cajón; tarjeta "Proyector" en vivo; estado del temporizador; interruptores AFR / Realzar diálogos / Reducir sonidos fuertes (investigar cómo aplicar Dialog Clarity y AGC en vivo: hoy solo se aplican al arrancar desde `db_id_sound_effect_*`).
+2. **A continuación:** pestaña con `TvContract.WatchNextPrograms` (permiso `READ_EPG_DATA` vía ADB interno).
+3. **Top Shelf:** programas de los canales de cada app (`TvContract.PreviewPrograms`) en la zona de portadas al enfocar su ícono.
+4. **Actualizaciones automáticas:** GitHub Releases (SmartTube, AuraMusic, TV Bro, Twitch) y APKPure (Spotify); firma fijada; instalación por el ADB interno; aviso.
+5. **Ahora suena:** `MediaSessionManager` (requiere habilitar el listener de notificaciones por ADB).
+6. **Búsqueda:** pestaña con lupa y teclado lineal dibujado en el Canvas.
+7. **ROM v5:** integrar como app de sistema cuando Carlos decida quedarse con él.
+
+## Verificación de cada paso
+Probar en el Wanbo con el control: rendimiento (`dumpsys gfxinfo` del proceso `io.freemytv:home`, < 10 % de cuadros tardíos), sin cierres (`logcat -b crash`), ida y vuelta a Original, y capturas en modo oscuro.
