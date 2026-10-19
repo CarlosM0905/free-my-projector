@@ -15,8 +15,9 @@ El README del proyecto original está en [README-original.md](README-original.md
 
 - **Tus apps en un estante.** SmartTube, Disney+, Crunchyroll, Netflix, Prime Video, AuraMusic, Twitch, Kodi, Spotify… las que tengas instaladas.
 - **Recomendaciones de tus apps.** Lo que está en tendencia esta semana y los estrenos, solo de los servicios que tienes, en tu país y en español (TMDB).
-- **Panel del proyector** en el cajón inferior:
-  - Atajos a **Keystone**, **Imagen** (modo, color, nitidez, reducción de ruido), **Efectos de sonido** (ecualizador, DTS, VirtualX), **Temporizador de apagado** y **Patrón de prueba**.
+- **Centro de control** como el de tvOS: se abre con el botón ≡ del control (o bajando al cajón).
+  - Atajos a **Keystone**, **Imagen** (modo, color, nitidez, reducción de ruido), **Sonido** (ecualizador, DTS, VirtualX) y **Temporizador** (muestra los minutos que quedan).
+  - Interruptores que se aplican al instante y se iluminan en azul: **Hz automático** (la pantalla sigue los cuadros por segundo del video), **Diálogos** (realza las voces) y **Volumen parejo** (evita los saltos de volumen).
   - Una tarjeta con el **estado del equipo**: temperatura del procesador, ventilador, lámpara y frecuencia del panel (se ve cambiar a 48 o 50 Hz si tienes AFR).
 - **Clima** por hora, amanecer y atardecer, y **precios cripto**.
 - **Modo oscuro fijo, claro fijo o automático** (claro de día, oscuro desde la puesta de sol), y un **protector de pantalla** con las portadas y un reloj grande.
