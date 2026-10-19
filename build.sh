@@ -7,7 +7,7 @@ cd "$(dirname "$0")"
 # --- Tools
 SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
 if [ -z "$SDK" ]; then
-  for d in "$HOME/Library/Android/sdk" "$HOME/Android/Sdk" /opt/homebrew/share/android-commandlinetools \
+  for d in "$HOME/Library/Android/sdk" "$HOME/Android/Sdk" "${LOCALAPPDATA:-/nonexistent}/Android/Sdk" /opt/homebrew/share/android-commandlinetools \
            /usr/local/share/android-commandlinetools /usr/lib/android-sdk; do
     if [ -d "$d/build-tools" ]; then SDK="$d"; break; fi
   done
@@ -16,6 +16,12 @@ fi
 BT="$SDK/build-tools/$(ls "$SDK/build-tools" | sort -V | tail -1)"
 AJ="$(ls -d "$SDK"/platforms/android-*/android.jar 2>/dev/null | sort -V | tail -1 || true)"
 [ -f "${AJ:-}" ] || { echo "Android platform not found. Run: sdkmanager \"platforms;android-34\""; exit 1; }
+# Windows (Git Bash): the SDK tools are .exe/.bat
+EXE=""; BAT=""
+if [ -f "$BT/aapt2.exe" ]; then EXE=".exe"; BAT=".bat"; fi
+# Free My Projector: runs on Android 9 (API 28) and up; the glass shaders turn on by themselves on Android 13+.
+MIN_API="${MIN_API:-28}"
+SEP=":"; [ -n "$EXE" ] && SEP=";"
 JAVAC="${JAVA_HOME:+$JAVA_HOME/bin/}javac"
 KEYTOOL="${JAVA_HOME:+$JAVA_HOME/bin/}keytool"
 command -v "$JAVAC" >/dev/null 2>&1 || { echo "JDK not found. Install JDK 17 and set JAVA_HOME."; exit 1; }
@@ -61,20 +67,21 @@ final class Config {
 EOF
 
 # --- Build
-"$BT/aapt2" compile --dir app/res -o out/res.zip
+"$BT/aapt2$EXE" compile --dir app/res -o out/res.zip
 # Fonts uncompressed: Android reads them straight from the APK.
-"$BT/aapt2" link -o out/base.apk -I "$AJ" --manifest app/AndroidManifest.xml --java out/gen out/res.zip \
-  --min-sdk-version 31 --target-sdk-version 33 -A app/assets -0 ttf
-"$JAVAC" -nowarn -Xlint:-options -source 8 -target 8 -bootclasspath "$AJ:$BT/core-lambda-stubs.jar" -classpath "$AJ" \
+"$BT/aapt2$EXE" link -o out/base.apk -I "$AJ" --manifest app/AndroidManifest.xml --java out/gen out/res.zip \
+  --min-sdk-version "$MIN_API" --target-sdk-version 33 -A app/assets -0 ttf
+"$JAVAC" -nowarn -Xlint:-options -source 8 -target 8 -bootclasspath "$AJ$SEP$BT/core-lambda-stubs.jar" -classpath "$AJ" \
   -d out/classes $(find app/src out/gen -name '*.java')
-"$BT/d8" --release --min-api 31 --lib "$AJ" --output out $(find out/classes -name '*.class')
-(cd out && zip -qj base.apk classes.dex)
-"$BT/zipalign" -f -p 4 out/base.apk out/aligned.apk
+"$BT/d8$BAT" --release --min-api "$MIN_API" --lib "$AJ" --output out $(find out/classes -name '*.class')
+if command -v zip >/dev/null 2>&1; then (cd out && zip -qj base.apk classes.dex)
+else (cd out && "${JAVA_HOME:+$JAVA_HOME/bin/}jar" uf base.apk classes.dex); fi   # Git Bash on Windows has no zip
+"$BT/zipalign$EXE" -f -p 4 out/base.apk out/aligned.apk
 
 # --- Sign with your own key (created once; updates need the same key, so keep freemytv.keystore)
 if [ ! -f freemytv.keystore ]; then
   "$KEYTOOL" -genkeypair -keystore freemytv.keystore -alias freemytv -keyalg RSA -keysize 2048 -validity 20000 \
     -storepass freemytv -keypass freemytv -dname "CN=Free My TV" >/dev/null 2>&1
 fi
-"$BT/apksigner" sign --ks freemytv.keystore --ks-pass pass:freemytv --key-pass pass:freemytv --out FreeMyTV.apk out/aligned.apk
+"$BT/apksigner$BAT" sign --ks freemytv.keystore --ks-pass pass:freemytv --key-pass pass:freemytv --out FreeMyTV.apk out/aligned.apk
 echo "Built FreeMyTV.apk ($(du -h FreeMyTV.apk | cut -f1)). Install: adb install -r FreeMyTV.apk"
