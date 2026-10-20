@@ -45,6 +45,12 @@ final class Es {
         t("Sound effects", "Sonido");
         t("Sleep timer", "Apagado");
         t("Audio only", "Solo audio");
+        t("← → to move · ↓ to hide · OK when done", "← → para mover · ↓ para ocultar · OK para terminar");
+        t("%s is in All Apps now", "%s ahora está en Todas las apps");
+        t("Back on the home screen", "De vuelta en el inicio");
+        t("New episode", "Episodio nuevo");
+        t("New today", "Nuevo hoy");
+        t("New on %s", "Nuevo el %s");
         t("The projector is running hot (%d °C). Make sure its vents aren't blocked.",
                 "El proyector está muy caliente (%d °C). Revisa que las rejillas de ventilación estén libres.");
         t("Cinema mode", "Modo cine");

@@ -126,12 +126,7 @@ final class HomeApps {
      */
     static List<Item> shelf(Context c, boolean extract) {
         List<Item> items = new ArrayList<>();
-        PackageManager pm = c.getPackageManager();
-        Set<String> keys = new HashSet<>();
-        for (String[] d : SHELF) {
-            if (items.size() >= MAX_SHELF) break;
-            if (launchIntent(pm, d[2]) == null) continue;
-            if (!keys.add(d[0])) continue;   // one per service (projectors can have both builds, e.g. two YouTubes)
+        for (String[] d : shelfDefs(c)) {
             Item it = new Item();
             it.kind = APP;
             it.key = d[0];
@@ -147,6 +142,63 @@ final class HomeApps {
             items.add(it);
         }
         return items;
+    }
+
+    /**
+     * The shelf's apps: installed, one per service (projectors can have both builds, e.g. two YouTubes), in the order you
+     * left them (hold OK on the shelf, like tvOS), without the ones you hid; up to MAX_SHELF.
+     */
+    private static List<String[]> shelfDefs(Context c) {
+        PackageManager pm = c.getPackageManager();
+        android.content.SharedPreferences ui = c.getSharedPreferences("home-ui", Context.MODE_PRIVATE);
+        final List<String> order = split(ui.getString("shelfOrder", ""));
+        Set<String> hidden = new HashSet<>(split(ui.getString("shelfHidden", "")));
+        List<String[]> defs = new ArrayList<>();
+        Set<String> keys = new HashSet<>();
+        for (String[] d : SHELF) {
+            if (launchIntent(pm, d[2]) == null || !keys.add(d[0]) || hidden.contains(d[0])) continue;
+            defs.add(d);
+        }
+        // Stable: apps you never moved keep SHELF's order, after the ones you did.
+        Collections.sort(defs, (a, b) -> Integer.compare(rank(order, a[0]), rank(order, b[0])));
+        return defs.size() > MAX_SHELF ? new ArrayList<>(defs.subList(0, MAX_SHELF)) : defs;
+    }
+
+    private static int rank(List<String> order, String key) {
+        int i = order.indexOf(key);
+        return i < 0 ? Integer.MAX_VALUE : i;
+    }
+
+    private static List<String> split(String s) {
+        List<String> out = new ArrayList<>();
+        for (String k : s.split(",")) if (!k.isEmpty()) out.add(k);
+        return out;
+    }
+
+    /** The shelf's new order (after moving an app). */
+    static void saveOrder(Context c, List<Item> shelf) {
+        List<String> keys = new ArrayList<>();
+        for (Item it : shelf) keys.add(it.key);
+        c.getSharedPreferences("home-ui", Context.MODE_PRIVATE).edit()
+                .putString("shelfOrder", android.text.TextUtils.join(",", keys)).apply();
+    }
+
+    /** Takes an app off the shelf (it moves to All Apps) or puts it back (at the end). */
+    static void setHidden(Context c, String key, boolean hide) {
+        android.content.SharedPreferences ui = c.getSharedPreferences("home-ui", Context.MODE_PRIVATE);
+        List<String> hidden = split(ui.getString("shelfHidden", ""));
+        hidden.remove(key);
+        if (hide) hidden.add(key);
+        List<String> order = split(ui.getString("shelfOrder", ""));
+        if (!hide && order.remove(key)) order.add(key);
+        ui.edit().putString("shelfHidden", android.text.TextUtils.join(",", hidden))
+                .putString("shelfOrder", android.text.TextUtils.join(",", order)).apply();
+    }
+
+    /** The service key of a shelf app (hidden or not), or null for any other app. */
+    static String shelfKey(String pkg) {
+        for (String[] d : SHELF) if (d[2].equals(pkg)) return d[0];
+        return null;
     }
 
     /** Live TV, the HDMI inputs with a device sending a signal, and All Apps. */
@@ -262,7 +314,7 @@ final class HomeApps {
     static List<Item> others(Context c) {
         PackageManager pm = c.getPackageManager();
         Set<String> skip = new HashSet<>();
-        for (String[] d : SHELF) skip.add(d[2]);
+        for (String[] d : shelfDefs(c)) skip.add(d[2]);   // the ones you hid, or that didn't fit, are listed here
         skip.addAll(java.util.Arrays.asList(LIVE_TV_APPS));
         skip.add(c.getPackageName());
         skip.addAll(HIDDEN);

@@ -14,9 +14,10 @@ El README del proyecto original está en [README-original.md](README-original.md
 ## Qué tiene
 
 - **Tus apps en un estante.** SmartTube, Disney+, Crunchyroll, Netflix, Prime Video, AuraMusic, Twitch, Kodi, Spotify… las que tengas instaladas.
+  - **Edítalo como en tvOS:** mantén OK sobre una app y empieza a temblar; ← → la mueve, ↓ la oculta (pasa a Todas las apps) y OK termina. Para devolver una app oculta, mantén OK sobre ella en Todas las apps.
 - **Recomendaciones de tus apps.** Lo que está en tendencia esta semana y los estrenos, solo de los servicios que tienes, en tu país y en español (TMDB). Al elegir una, se abre **directo en la película o serie** dentro de su app (Disney+, Netflix, Prime Video, Crunchyroll), con los IDs que guarda Wikidata; si no lo tiene, se abre la app.
 - **Top Shelf**, como en tvOS: al pasar por Disney+, Netflix, Prime Video o Crunchyroll en el estante, las tarjetas de arriba muestran lo recomendado de esa app; sube y ábrelo directo.
-- **A continuación**, como en tvOS: una pestaña con lo último que abriste desde el inicio, para retomarlo. Aparece cuando abres el primer título.
+- **A continuación**, como en tvOS: una pestaña con lo último que abriste desde el inicio, para retomarlo. Aparece cuando abres el primer título. Las series muestran **Episodio nuevo** cuando sale uno después de que la viste (o "Nuevo el viernes" si falta menos de una semana).
 - **Centro de control** como el de tvOS: se abre con el botón ≡ del control (o bajando al cajón).
   - Atajos a **Keystone**, **Imagen** (modo, color, nitidez, reducción de ruido), **Sonido** (ecualizador, DTS, VirtualX) y **Apagado** (temporizador; muestra los minutos que quedan).
   - **Solo audio**: apaga la lámpara y la música sigue sonando (Spotify, AuraMusic, podcasts). Menos calor y ruido, y el LED dura más. Cualquier botón, el volumen incluido, trae la imagen de vuelta.
@@ -29,7 +30,7 @@ El README del proyecto original está en [README-original.md](README-original.md
 - **Sonidos suaves al navegar**, como en tvOS: un tic al moverte, dos notas al abrir y al volver.
 - **Modo oscuro fijo, claro fijo o automático** (claro de día, oscuro desde la puesta de sol), y un **protector de pantalla** con las portadas y un reloj grande.
 - **Botón de Keystone** arriba a la derecha en vez de *TV en vivo* (los proyectores no tienen antena).
-- **Buscar**, como en tvOS: una pestaña con teclado de una sola fila; muestra solo películas y series que están en tus apps y las abre directo.
+- **Buscar**, como en tvOS: una pestaña con teclado de una sola fila; muestra solo películas y series que están en tus apps y las abre directo. De fondo, el paisaje del día del protector.
 - **Ahora suena**, como en tvOS: mientras Spotify, AuraMusic u otra app reproduce algo, la canción y el artista aparecen arriba a la derecha en lugar de las cotizaciones.
 - **Resplandor de color y botón de red** (ideas de [Clean Your TV](https://github.com/Gathin23/cleanyourtv)): al pasar por una app del estante sube un brillo suave de su color, y un botón arriba muestra el WiFi y la señal.
 - **Movimiento reducido** en los ajustes del inicio, para proyectores con GPU justa: el foco y el fondo cambian sin animación.

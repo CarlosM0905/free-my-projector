@@ -46,6 +46,8 @@ final class Recs {
         String title, backdrop, meta = "", app, pkg;
         String link;            // opens the title itself in its app (null: just the app)
         boolean detailed;
+        long seenAt;            // Up Next: when it was opened
+        String fresh;           // Up Next: "New episode" / "New on Friday" (shows only), or null
     }
 
     interface Listener { void onRecs(); }
@@ -133,6 +135,7 @@ final class Recs {
             history.addAll(parse(new JSONArray(seen.getString("picks", "[]"))));
         } catch (Exception ignored) {
         }
+        for (Pick h : history) if (h.seenAt == 0) h.seenAt = System.currentTimeMillis();   // saved before seenAt existed
     }
 
     // MARK: - Up Next (like tvOS): what was opened from the home screen, to pick it up again
@@ -143,7 +146,55 @@ final class Recs {
         synchronized (history) {
             for (Pick p : history) if (out.size() < 3 && p.pkg != null && installed(p.pkg)) out.add(p);
         }
+        checkEpisodes(out);
         return out;
+    }
+
+    private volatile long episodesAt;
+
+    /**
+     * Up Next, like the Apple TV app: a show you watched gets "New episode" once one airs after you opened it, or
+     * "New on Friday" when the next one is less than a week away. Asked to TMDB at most every 6 hours.
+     */
+    private void checkEpisodes(List<Pick> shown) {
+        long now = System.currentTimeMillis();
+        if (!hasKey(context) || (now - episodesAt >= 0 && now - episodesAt < 6 * 3600_000L)) return;
+        episodesAt = now;
+        final List<Pick> shows = new ArrayList<>();
+        for (Pick p : shown) if ("tv".equals(p.kind)) shows.add(p);
+        if (shows.isEmpty()) return;
+        io.execute(() -> {
+            boolean changed = false;
+            java.text.SimpleDateFormat day = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.ROOT);
+            for (Pick p : shows) {
+                try {
+                    JSONObject o = get("/tv/" + p.id + "?language=" + lang());
+                    String fresh = null;
+                    JSONObject last = o.optJSONObject("last_episode_to_air"), next = o.optJSONObject("next_episode_to_air");
+                    long seenDay = day.parse(day.format(new java.util.Date(p.seenAt))).getTime();
+                    if (last != null && !last.optString("air_date").isEmpty()
+                            && day.parse(last.optString("air_date")).getTime() > seenDay) {
+                        fresh = Ui.tr("Episódio novo", "New episode");
+                    } else if (next != null && !next.optString("air_date").isEmpty()) {
+                        long at = day.parse(next.optString("air_date")).getTime();
+                        long today = day.parse(day.format(new java.util.Date())).getTime();
+                        if (at == today) {
+                            fresh = Ui.tr("Novo hoje", "New today");
+                        } else if (at > today && at - today < 7 * 86_400_000L) {
+                            String wd = new java.text.SimpleDateFormat("EEEE", Ui.en ? java.util.Locale.US : Ui.PT).format(new java.util.Date(at));
+                            fresh = String.format(Ui.tr("Novo na %s", "New on %s"), wd);
+                        }
+                    }
+                    if (!java.util.Objects.equals(fresh, p.fresh)) {
+                        p.fresh = fresh;
+                        changed = true;
+                    }
+                } catch (Exception e) {
+                    AppLog.w("episodes " + p.title + ": " + e.getMessage());
+                }
+            }
+            if (changed) notifyListeners();
+        });
     }
 
     /**
@@ -222,6 +273,8 @@ final class Recs {
         if (p == null || p.pkg == null) return;
         synchronized (history) {
             for (int i = history.size() - 1; i >= 0; i--) if (key(history.get(i)).equals(key(p))) history.remove(i);
+            p.seenAt = System.currentTimeMillis();
+            p.fresh = null;   // opened again: caught up
             history.add(0, p);
             while (history.size() > HISTORY_MAX) history.remove(history.size() - 1);
             try {
@@ -743,6 +796,42 @@ final class Recs {
         prune(f.getParentFile());
     }
 
+    private volatile Backdrop landscape;
+    private volatile boolean landscapeLight, landscapeLoading;
+
+    /**
+     * Free My Projector: the landscape of the day (the screensaver's newest photo) as the background when there are no
+     * cards (Search, or no TMDB key). Null while it loads; the listeners hear when it's ready.
+     */
+    Backdrop landscape() {
+        Backdrop b = landscape;
+        if (b != null && landscapeLight == light) return b;
+        if (landscapeLoading) return null;
+        landscapeLoading = true;
+        io.execute(() -> {
+            try {
+                List<Landscapes.Photo> photos = Landscapes.ready(context);
+                if (photos.isEmpty()) {
+                    Landscapes.refresh(context, this::notifyListeners);
+                    return;
+                }
+                Bitmap bm = BitmapFactory.decodeFile(photos.get(0).file.getPath());   // 1920×1080, Backdrop's size
+                if (bm == null) return;
+                boolean forLight = light;
+                Backdrop made = Backdrop.make(bm, forLight);
+                if (forLight != light) return;
+                landscapeLight = forLight;
+                landscape = made;
+                notifyListeners();
+            } catch (RuntimeException | OutOfMemoryError e) {
+                AppLog.w("landscape background: " + e.getMessage());
+            } finally {
+                landscapeLoading = false;
+            }
+        });
+        return null;
+    }
+
     /** Reads the original (≥ 1920 wide) and builds the backdrop (Backdrop: cards plus frosted and glass versions). */
     private void loadImage(Pick p) {
         synchronized (images) {
@@ -801,7 +890,7 @@ final class Recs {
     private static JSONObject json(Pick p) throws org.json.JSONException {
         return new JSONObject().put("id", p.id).put("kind", p.kind).put("title", p.title).put("backdrop", p.backdrop)
                 .put("meta", p.meta).put("app", p.app == null ? "" : p.app).put("pkg", p.pkg == null ? "" : p.pkg)
-                .put("link", p.link == null ? "" : p.link).put("detailed", p.detailed);
+                .put("link", p.link == null ? "" : p.link).put("detailed", p.detailed).put("seenAt", p.seenAt);
     }
 
     private static List<Pick> parse(JSONArray a) {
@@ -819,6 +908,7 @@ final class Recs {
             p.pkg = o.optString("pkg").isEmpty() ? null : o.optString("pkg");
             p.link = o.optString("link").isEmpty() ? null : o.optString("link");
             p.detailed = o.optBoolean("detailed");
+            p.seenAt = o.optLong("seenAt");
             out.add(p);
         }
         return out;
