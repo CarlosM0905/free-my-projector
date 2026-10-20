@@ -66,7 +66,8 @@ final class Es {
         t("On", "Activado");
         t("Off", "Desactivado");
         t("Focus", "Enfoque");
-        t("← → to focus · OK when done", "← → para enfocar · OK para terminar");
+        t("Focusing…", "Enfocando…");
+        t("OK: autofocus  ·  ← →: manual  ·  Back: done", "OK: autoenfoque  ·  ← →: manual  ·  Atrás: terminar");
         t("← → to move · ↓ to hide · OK when done", "← → para mover · ↓ para ocultar · OK para terminar");
         t("%s is in All Apps now", "%s ahora está en Todas las apps");
         t("Back on the home screen", "De vuelta en el inicio");

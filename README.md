@@ -23,7 +23,7 @@ El README del proyecto original está en [README-original.md](README-original.md
 - **A continuación**, como en tvOS: una pestaña con lo último que abriste desde el inicio, para retomarlo. Aparece cuando abres el primer título. Las series muestran **Episodio nuevo** cuando sale uno después de que la viste (o "Nuevo el viernes" si falta menos de una semana).
 - **Centro de control** como el de tvOS: se abre con el botón ≡ del control (o bajando al cajón).
   - Atajos a **Keystone**, **Imagen** (modo, color, nitidez, reducción de ruido), **Sonido** (ecualizador, DTS, VirtualX) y **Apagado** (temporizador; muestra los minutos que quedan).
-  - **Enfoque**: una pantalla con texto fino en el centro y las esquinas; ← → mueven la lente (mantén para seguir) y OK termina.
+  - **Enfoque**: una pantalla con texto fino en el centro y las esquinas. **OK = autoenfoque** (la cámara del proyector mira la imagen y ajusta la lente en unos 5 s), ← → mueven la lente a mano (mantén para seguir) y Atrás termina.
   - **Solo audio**: apaga la lámpara y la música sigue sonando (Spotify, AuraMusic, podcasts). Menos calor y ruido, y el LED dura más. Cualquier botón, el volumen incluido, trae la imagen de vuelta.
   - Interruptores que se aplican al instante y se iluminan en azul: **Hz auto** (la pantalla sigue los cuadros por segundo del video), **Diálogos** (realza las voces) y **Nivelar** (evita los saltos de volumen).
   - **Modo cine**, un solo botón para ver una película: activa Hz auto y Diálogos y apaga Nivelar (aplana la banda sonora). Al apagarlo vuelve todo como estaba.

@@ -15,7 +15,7 @@ import java.util.concurrent.Executors;
 /**
  * Free My Projector: manual focus from the Control Center. A pattern of fine text and lines fills the screen; ← and →
  * step the lens motor (Wanbo: /sys/class/jixin-mx166l/len_goback and len_goforward, root only, so through the TV's own
- * ADB), holding moves it continuously. OK or Back leaves.
+ * ADB), holding moves it continuously. OK runs the autofocus; Back leaves.
  */
 public final class FocusActivity extends Activity {
     static final String MOTOR = "/sys/class/jixin-mx166l/";
@@ -54,11 +54,40 @@ public final class FocusActivity extends Activity {
             if (down) step(code == KeyEvent.KEYCODE_DPAD_RIGHT);
             return true;
         }
-        if (code == KeyEvent.KEYCODE_DPAD_CENTER || code == KeyEvent.KEYCODE_ENTER || code == KeyEvent.KEYCODE_BACK) {
+        if (code == KeyEvent.KEYCODE_DPAD_CENTER || code == KeyEvent.KEYCODE_ENTER) {
+            if (!down) auto();
+            return true;
+        }
+        if (code == KeyEvent.KEYCODE_BACK) {
             if (!down) finish();
             return true;
         }
         return super.dispatchKeyEvent(e);
+    }
+
+    static volatile boolean focusing;
+
+    /**
+     * Autofocus, as Wanbo's own settings do it: the projector's camera looks at the picture and jfocus moves the lens
+     * until it's sharp (about 5 s).
+     */
+    private void auto() {
+        if (focusing) return;
+        focusing = true;
+        getWindow().getDecorView().findViewById(android.R.id.content).invalidate();
+        final Context app = getApplicationContext();
+        motor.execute(() -> {
+            try {
+                if (adb == null) adb = Adb.connect(app, 5000, null);
+                adb.shell("setprop jx.sensor.status steady; setprop ctl.start jfocus; sleep 1; "
+                        + "for i in 1 2 3 4 5 6 7 8 9 10 11 12; do [ \"$(getprop init.svc.jfocus)\" = running ] || break; sleep 1; done");
+            } catch (Exception e) {
+                AppLog.w("autofocus: " + e.getMessage());
+            } finally {
+                focusing = false;
+                runOnUiThread(() -> getWindow().getDecorView().invalidate());
+            }
+        });
     }
 
     /** One step of the lens; held, the steps queue up (at most a few, so it stops when you let go). */
@@ -107,7 +136,10 @@ public final class FocusActivity extends Activity {
             big.setTextSize(64 * k);
             c.drawText(Ui.tr("Foco", "Focus"), w / 2, h / 2 - 150 * k, big);
             hint.setTextSize(30 * k);
-            c.drawText(Ui.tr("← → para focar · OK para terminar", "← → to focus · OK when done"), w / 2, h / 2 + 250 * k, hint);
+            c.drawText(focusing ? Ui.tr("Focando…", "Focusing…")
+                    : Ui.tr("OK: foco automático  ·  ← →: manual  ·  Voltar: terminar", "OK: autofocus  ·  ← →: manual  ·  Back: done"),
+                    w / 2, h / 2 + 250 * k, hint);
+            if (focusing) postInvalidateDelayed(500);
             block(c, w / 2 - 300 * k, h / 2 - 90 * k, k);
             float m = 60 * k;
             block(c, m, m, k);
