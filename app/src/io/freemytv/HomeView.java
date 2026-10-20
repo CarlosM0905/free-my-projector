@@ -342,6 +342,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         if (tvInputs != null) tvInputs.registerCallback(inputCallback, handler);
         handler.postDelayed(tick, 15_000);
         checkNotices();
+        Updates.check(getContext(), text -> post(() -> showToast(text)));
         reload();
         updatePalette();
         updatePicks();

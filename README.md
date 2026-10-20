@@ -24,6 +24,7 @@ El README del proyecto original está en [README-original.md](README-original.md
 - **Clima** por hora, amanecer y atardecer, y **precios cripto**.
 - **Modo oscuro fijo, claro fijo o automático** (claro de día, oscuro desde la puesta de sol), y un **protector de pantalla** con las portadas y un reloj grande.
 - **Botón de Keystone** arriba a la derecha en vez de *TV en vivo* (los proyectores no tienen antena).
+- **Actualizaciones solas** de SmartTube, SmartTwitchTV y AuraMusic: una vez al día, mientras estás en el inicio, baja la última versión estable de su GitHub oficial y la instala solo si es más nueva y viene firmada por el mismo autor que la que tienes. Te avisa con un mensaje corto.
 - **Un botón para volver.** *Original* devuelve tu inicio anterior (por ejemplo Projectivy), tu protector de pantalla y las apps tal como estaban.
 
 ## Qué cambia respecto al original
