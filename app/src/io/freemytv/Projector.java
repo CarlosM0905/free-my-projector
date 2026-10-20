@@ -25,6 +25,7 @@ final class Projector {
         {"Imagem", "Picture", "sparkles", "bridge:com.droidlogic.tv.settings/.pqsettings.PictrueModeActivity"},
         {"Efeitos de som", "Sound effects", "speaker", "bridge:com.droidlogic.tv.settings/.tvoption.TvOptionActivity"},
         {"Timer para desligar", "Sleep timer", "bedtime", BRIDGE + "/.Temporizador"},
+        {"Só áudio", "Audio only", "music", "io.freemytv/.AudioOnly"},
     };
 
     /**
@@ -36,6 +37,7 @@ final class Projector {
         {"Hz automático", "Match frame rate", "sync", "toggle:afr"},
         {"Diálogos", "Enhance dialogue", "voice", "toggle:dialogo"},
         {"Volume uniforme", "Reduce loud sounds", "leveler", "toggle:agc"},
+        {"Modo cinema", "Cinema mode", "movie", "toggle:cine"},
     };
     private static final String SOUND = BRIDGE + ".SONIDO";
     private static final String AFR_OFF = "/data/local/tmp/afr.off";
@@ -48,12 +50,13 @@ final class Projector {
             Intent i = intent(d[3]);
             if (i.resolveActivity(c.getPackageManager()) == null) continue;
             if (d[3].startsWith("bridge:") && !exists(c.getPackageManager(), component(d[3].substring(7)))) continue;
+            if (d[3].endsWith(".AudioOnly") && !AudioOnly.supported()) continue;
             out.add(HomeApps.action(HomeApps.PROJECTOR, d[3], Ui.tr(d[0], d[1]), d[2]));
         }
         if (!hasStatus()) return out;   // the switches are the Wanbo ROM's (AFR) and its helper's (sound)
         boolean sound = !c.getPackageManager().queryBroadcastReceivers(new Intent(SOUND).setPackage(BRIDGE), 0).isEmpty();
         for (String[] d : TOGGLES) {
-            if (!d[3].equals("toggle:afr") && !sound) continue;
+            if (!d[3].equals("toggle:afr") && !sound) continue;   // cinema mode also sets the sound
             out.add(HomeApps.action(HomeApps.PROJECTOR, d[3], Ui.tr(d[0], d[1]), d[2]));
         }
         if (afrOn == null) checkAfr(c);
@@ -75,6 +78,8 @@ final class Projector {
         switch (key) {
             case "toggle:afr":
                 return afrOn == null || afrOn;
+            case "toggle:cine":
+                return prefs(c).getBoolean("cine", false);
             case "toggle:dialogo":
                 return android.provider.Settings.Global.getInt(cr, "fmp_dialogo", 0) > 0;
             case "toggle:agc":
@@ -92,7 +97,9 @@ final class Projector {
         synchronized (OPTIMISTIC) {
             OPTIMISTIC.put(key, new long[] {on ? 1 : 0, System.currentTimeMillis() + 5000});
         }
-        if (key.equals("toggle:afr")) {
+        if (key.equals("toggle:cine")) {
+            cinema(app, on);
+        } else if (key.equals("toggle:afr")) {
             afrOn = on;
             new Thread(() -> {
                 try (Adb adb = Adb.connect(app, 5000, null)) {
@@ -106,6 +113,29 @@ final class Projector {
             app.sendBroadcast(new Intent(SOUND).setClassName(BRIDGE, BRIDGE + ".Sonido")
                     .putExtra("efecto", effect).putExtra("valor", on ? (effect.equals("dialogo") ? 2 : 1) : 0));
         }
+    }
+
+    /**
+     * Cinema mode, one button for a movie (like a tvOS Focus): frame rate follows the video, clearer dialogue, and the
+     * loudness leveler off (it flattens the soundtrack). Turning it off puts back what was on before.
+     */
+    private static void cinema(Context app, boolean on) {
+        android.content.SharedPreferences p = prefs(app);
+        String[] keys = {"toggle:afr", "toggle:dialogo", "toggle:agc"};
+        boolean[] want = {true, true, false};
+        if (on) {
+            android.content.SharedPreferences.Editor e = p.edit().putBoolean("cine", true);
+            for (String k : keys) e.putBoolean("before:" + k, isOn(app, k));
+            e.apply();
+        } else {
+            p.edit().putBoolean("cine", false).apply();
+            for (int i = 0; i < keys.length; i++) want[i] = p.getBoolean("before:" + keys[i], want[i]);
+        }
+        for (int i = 0; i < keys.length; i++) if (isOn(app, keys[i]) != want[i]) toggle(app, keys[i]);
+    }
+
+    private static android.content.SharedPreferences prefs(Context c) {
+        return c.getSharedPreferences("projector", Context.MODE_PRIVATE);
     }
 
     private static void checkAfr(Context c) {
@@ -161,7 +191,7 @@ final class Projector {
     private static final float FAN_PERIOD = 40000, LAMP_FULL = 1_260_000, LAMP_DIM = 2_650_000;
 
     /** The rows that can be read on this device: {label pt, label en, value}. Empty off a projector. */
-    static List<String[]> status() {
+    static List<String[]> status(Context c) {
         List<String[]> rows = new ArrayList<>();
         long soc = number(read(SOC));
         if (soc > 0) rows.add(new String[] {"Processador", "Processor", Math.round(soc / 1000f) + " °C"});
@@ -170,7 +200,9 @@ final class Projector {
         long lamp = number(read(LAMP));
         if (lamp >= LAMP_FULL * 0.9f && lamp <= LAMP_DIM * 1.1f) {
             float brightness = 1 - (lamp - LAMP_FULL) / (LAMP_DIM - LAMP_FULL) * 0.5f;   // the dimmest step is about half
-            rows.add(new String[] {"Lâmpada", "Lamp", Math.round(100 * Math.max(0.5f, Math.min(1, brightness))) + " %"});
+            long hours = Heat.lampHours(c);   // counted since Free My Projector was installed
+            rows.add(new String[] {"Lâmpada", "Lamp", Math.round(100 * Math.max(0.5f, Math.min(1, brightness))) + " %"
+                    + (hours > 0 ? "  ·  " + hours + " h" : "")});
         }
         String panel = read(PANEL);
         java.util.regex.Matcher m = panel == null ? null : java.util.regex.Pattern.compile("([0-9.]+)\\s*Hz").matcher(panel);

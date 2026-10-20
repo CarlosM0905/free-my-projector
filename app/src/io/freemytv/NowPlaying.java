@@ -22,7 +22,11 @@ final class NowPlaying {
     private NowPlaying() {}
 
     /** Only here so Android shares the media sessions with the home screen. */
-    public static final class Listener extends NotificationListenerService {}
+    public static final class Listener extends NotificationListenerService {
+        @Override public void onListenerConnected() {
+            Heat.start(this);   // the system keeps this process alive, so the heat notice works over any app
+        }
+    }
 
     static final class Track {
         String title, artist;

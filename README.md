@@ -18,9 +18,12 @@ El README del proyecto original está en [README-original.md](README-original.md
 - **Top Shelf**, como en tvOS: al pasar por Disney+, Netflix, Prime Video o Crunchyroll en el estante, las tarjetas de arriba muestran lo recomendado de esa app; sube y ábrelo directo.
 - **A continuación**, como en tvOS: una pestaña con lo último que abriste desde el inicio, para retomarlo. Aparece cuando abres el primer título.
 - **Centro de control** como el de tvOS: se abre con el botón ≡ del control (o bajando al cajón).
-  - Atajos a **Keystone**, **Imagen** (modo, color, nitidez, reducción de ruido), **Sonido** (ecualizador, DTS, VirtualX) y **Temporizador** (muestra los minutos que quedan).
-  - Interruptores que se aplican al instante y se iluminan en azul: **Hz automático** (la pantalla sigue los cuadros por segundo del video), **Diálogos** (realza las voces) y **Volumen parejo** (evita los saltos de volumen).
-  - Una tarjeta con el **estado del equipo**: temperatura del procesador, ventilador, lámpara y frecuencia del panel (se ve cambiar a 48 o 50 Hz si tienes AFR).
+  - Atajos a **Keystone**, **Imagen** (modo, color, nitidez, reducción de ruido), **Sonido** (ecualizador, DTS, VirtualX) y **Apagado** (temporizador; muestra los minutos que quedan).
+  - **Solo audio**: apaga la lámpara y la música sigue sonando (Spotify, AuraMusic, podcasts). Menos calor y ruido, y el LED dura más. Cualquier botón, el volumen incluido, trae la imagen de vuelta.
+  - Interruptores que se aplican al instante y se iluminan en azul: **Hz auto** (la pantalla sigue los cuadros por segundo del video), **Diálogos** (realza las voces) y **Nivelar** (evita los saltos de volumen).
+  - **Modo cine**, un solo botón para ver una película: activa Hz auto y Diálogos y apaga Nivelar (aplana la banda sonora). Al apagarlo vuelve todo como estaba.
+  - Una tarjeta con el **estado del equipo**: temperatura del procesador, ventilador, lámpara con sus **horas de uso** (contadas desde que instalas la app) y frecuencia del panel (se ve cambiar a 48 o 50 Hz si tienes AFR).
+  - **Aviso de calor**: si el procesador pasa de 82 °C, aparece un aviso sobre cualquier app para que revises las rejillas (como mucho uno cada media hora).
 - **Clima** por hora, amanecer y atardecer, y **precios cripto**.
 - **Protector de paisajes**, como los fondos aéreos del Apple TV y la Mac: una foto de paisaje a pantalla completa cada minuto (las fotos del día de Bing, con el nombre del lugar) y un recuadro de vidrio con la hora, la fecha, el clima y lo que suena. También en **marco**, como el modo Arte de The Frame, o con las portadas de las recomendaciones. Se elige en los ajustes del inicio, y se activa al instante con **Atrás** en el inicio, como en el Apple TV.
 - **Sonidos suaves al navegar**, como en tvOS: un tic al moverte, dos notas al abrir y al volver.

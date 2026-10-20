@@ -90,6 +90,16 @@
             </intent-filter>
         </activity>
 
+        <!-- Free My Projector: "Audio only" (lamp off, the music keeps playing). -->
+        <activity
+            android:name=".AudioOnly"
+            android:process=":home"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:screenOrientation="landscape"
+            android:theme="@style/FreeMyTV.Home" />
+
         <service
             android:name=".Screensaver"
             android:process=":home"

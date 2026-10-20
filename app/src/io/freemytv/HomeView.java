@@ -1391,7 +1391,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         drawerCard(c, r);
         float x = r.left + 34 * k, right = r.right - 34 * k;
         c.drawText(Ui.tr("Projetor", "Projector"), x, r.top + 54 * k, cardTitle);
-        List<String[]> rows = Projector.status();
+        List<String[]> rows = Projector.status(getContext());
         for (int i = 0; i < rows.size() && i < 4; i++) {
             float base = r.top + (110 + 52 * i) * k;
             c.drawText(Ui.tr(rows.get(i)[0], rows.get(i)[1]), x, base, cardText);

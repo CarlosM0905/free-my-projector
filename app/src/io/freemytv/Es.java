@@ -43,9 +43,15 @@ final class Es {
         t("Keystone", "Keystone");
         t("Picture", "Imagen");
         t("Sound effects", "Sonido");
-        t("Sleep timer", "Temporizador");
+        t("Sleep timer", "Apagado");
+        t("Audio only", "Solo audio");
+        t("The projector is running hot (%d °C). Make sure its vents aren't blocked.",
+                "El proyector está muy caliente (%d °C). Revisa que las rejillas de ventilación estén libres.");
+        t("Cinema mode", "Modo cine");
+        t("The lamp turns off and the music keeps playing. Any button brings the picture back.",
+                "La lámpara se apaga y la música sigue. Cualquier botón trae la imagen de vuelta.");
         t("Test pattern", "Patrón de prueba");
-        t("Match frame rate", "Hz automático");
+        t("Match frame rate", "Hz auto");
         t("Motion", "Movimiento");
         t("Screensaver style", "Estilo del protector");
         t("Landscapes", "Paisajes");
@@ -64,7 +70,7 @@ final class Es {
         t("Searching…", "Buscando…");
         t("Nothing on your apps.", "Nada en tus apps.");
         t("Enhance dialogue", "Diálogos");
-        t("Reduce loud sounds", "Volumen parejo");
+        t("Reduce loud sounds", "Nivelar");
         t("Projector", "Proyector");
         t("Processor", "Procesador");
         t("Fan", "Ventilador");
