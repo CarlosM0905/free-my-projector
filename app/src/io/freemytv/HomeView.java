@@ -2,6 +2,7 @@ package io.freemytv;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
@@ -1811,9 +1812,24 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             zone = Z_SHELF;
             retarget(false);
         } else {
+            startScreensaver();
             return;
         }
         click.back();
+    }
+
+    /**
+     * Like the Apple TV: Back on the home screen (with nothing left to close) starts the screensaver right away, through
+     * the system's own launcher for it (it runs whichever screensaver is chosen, ours by default).
+     */
+    private void startScreensaver() {
+        try {
+            getContext().startActivity(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_DESK_DOCK)
+                    .setClassName("com.android.systemui", "com.android.systemui.Somnambulator")
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        } catch (RuntimeException e) {
+            AppLog.w("screensaver: " + e.getMessage());
+        }
     }
 
     private void move(int dx, int dy) {
