@@ -1309,18 +1309,32 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         if (!same) drawerDirty = true;
     }
 
+    /**
+     * Free My Projector: the shortcuts scroll sideways when they don't fit (like a tvOS row), so each keeps a size
+     * where its name reads whole; `drawerShift` is how far they've scrolled.
+     */
+    private float drawerShift, drawerClipL, drawerClipR;
+    private static final float MIN_TILE = 150;
+
     private void layoutDrawer() {
         int n = drawerItems.size();
         float left = MARGIN * k, right = CONTENT_R * k;
         float gap = 18 * k, groupGap = 56 * k;
         int groups = drawerInputs > 0 && drawerInputs < n ? 2 : 1;
-        float tw = Math.min(230 * k, (right - left - Math.max(0, n - groups) * gap - (groups - 1) * groupGap) / Math.max(1, n));
+        float tw = Math.max(MIN_TILE * k,
+                Math.min(230 * k, (right - left - Math.max(0, n - groups) * gap - (groups - 1) * groupGap) / Math.max(1, n)));
         float x = left, top = ROW_TOP * k;
+        drawerClipL = left;
         for (int i = 0; i < n; i++) {
-            if (i == drawerInputs && i > 0) x += groupGap - gap;
+            if (i == drawerInputs && i > 0) {
+                x += groupGap - gap;
+                drawerClipL = x;
+                x -= drawerShift;
+            }
             drawerRects[i].set(x, top, x + tw, top + ROW_H * k);
             x += tw + gap;
         }
+        drawerClipR = right;
         float cardsTop = CARDS_TOP * k, split = left + (right - left) * 0.585f;
         weatherCard.set(left, cardsTop, split - 16 * k, cardsTop + CARDS_H * k);
         quotesCard.set(split + 16 * k, cardsTop, right, cardsTop + CARDS_H * k);
@@ -1331,6 +1345,22 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
             projectorCard.set(b + 16 * k, cardsTop, right, cardsTop + CARDS_H * k);
         }
         drawerDirty = true;
+    }
+
+    /** Scrolls the shortcuts so the focused one is fully in view (a tile's width of room before the edge). */
+    private boolean followDrawer() {
+        if (drawerIndex < drawerInputs || drawerIndex >= drawerRects.length) return false;
+        RectF r = drawerRects[drawerIndex];
+        float room = 24 * k, before = drawerShift;
+        if (r.left < drawerClipL + room) drawerShift -= drawerClipL + room - r.left;
+        if (r.right > drawerClipR - room) drawerShift += r.right - (drawerClipR - room);
+        RectF last = drawerRects[drawerRects.length - 1];
+        float max = Math.max(0, drawerShift + last.right - drawerClipR);
+        drawerShift = Math.max(0, Math.min(max, drawerShift));
+        if (drawerIndex == drawerInputs) drawerShift = 0;
+        if (Math.abs(drawerShift - before) < 0.5f) return false;
+        layoutDrawer();
+        return true;
     }
 
     private void openDrawer() {
@@ -1386,11 +1416,11 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         pricePaint.setColor(drawerInk(0.95f));
         float titleBase = ROW_TITLE * k;
         if (drawerInputs > 0) c.drawText(Ui.tr("Entradas", "Inputs"), drawerRects[0].left + 4 * k, titleBase, rowTitle);
-        if (drawerInputs < drawerItems.size()) c.drawText(Ui.tr("Atalhos", "Shortcuts"), drawerRects[drawerInputs].left + 4 * k, titleBase, rowTitle);
+        if (drawerInputs < drawerItems.size()) c.drawText(Ui.tr("Atalhos", "Shortcuts"), drawerClipL + 4 * k, titleBase, rowTitle);   // stays put when the row scrolls
         int top = -1;
         for (int i = 0; i < drawerItems.size(); i++) if (drawerFocus[i].value > 0.02f && (top < 0 || drawerFocus[i].value > drawerFocus[top].value)) top = i;
-        for (int i = 0; i < drawerItems.size(); i++) if (i != top) drawDrawerTile(c, i);
-        if (top >= 0) drawDrawerTile(c, top);
+        for (int i = 0; i < drawerItems.size(); i++) if (i != top) drawClippedTile(c, i);
+        if (top >= 0) drawClippedTile(c, top);
         drawWeatherCard(c, weatherCard);
         drawQuotesCard(c, quotesCard);
         if (projectorStatus) drawProjectorCard(c, projectorCard);
@@ -1407,6 +1437,20 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
             c.drawText(Ui.tr(rows.get(i)[0], rows.get(i)[1]), x, base, cardText);
             c.drawText(rows.get(i)[2], right, base, pricePaint);
         }
+    }
+
+    /** A shortcut is cut where its row ends (it scrolls); a little room is left for the focused one to grow. */
+    private void drawClippedTile(Canvas c, int i) {
+        if (i < drawerInputs || drawerShift <= 0 && drawerRects[drawerRects.length - 1].right <= drawerClipR) {
+            drawDrawerTile(c, i);
+            return;
+        }
+        RectF r = drawerRects[i];
+        if (r.right < drawerClipL - 40 * k || r.left > drawerClipR + 40 * k) return;
+        c.save();
+        c.clipRect(drawerClipL - 14 * k, r.top - 40 * k, drawerClipR + 30 * k, r.bottom + 40 * k);
+        drawDrawerTile(c, i);
+        c.restore();
     }
 
     /** Square drawer button: symbol and name; an input with no device is dimmed. Focused: white, with dark text. */
@@ -1528,6 +1572,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         boolean tilesChanged = aim(tileFocus, !sheetOpen && zone == Z_SHELF ? shelfIndex : -1, snap);
         boolean statusChanged = aim(statusFocus, !sheetOpen && zone == Z_STATUS ? statusIndex : -1, snap);
         boolean drawerChanged = aim(drawerFocus, !sheetOpen && zone == Z_DRAWER ? drawerIndex : -1, snap);
+        if (zone == Z_DRAWER && followDrawer()) drawerChanged = true;
         boolean heroChanged = heroFocus.target != (!sheetOpen && zone == Z_HERO ? 1 : 0);
         heroFocus.target = !sheetOpen && zone == Z_HERO ? 1 : 0;
         if (snap) heroFocus.snap(heroFocus.target);
