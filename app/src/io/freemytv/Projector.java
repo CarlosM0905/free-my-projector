@@ -40,6 +40,7 @@ final class Projector {
         {"Diálogos", "Enhance dialogue", "voice", "toggle:dialogo"},
         {"Volume uniforme", "Reduce loud sounds", "leveler", "toggle:agc"},
         {"Modo cinema", "Cinema mode", "movie", "toggle:cine"},
+        {"Lâmpada", "Lamp", "sunny", "toggle:lamp"},
     };
     private static final String SOUND = BRIDGE + ".SONIDO";
     private static final String AFR_OFF = "/data/local/tmp/afr.off";
@@ -59,6 +60,10 @@ final class Projector {
         if (!hasStatus()) return out;   // the switches are the Wanbo ROM's (AFR) and its helper's (sound)
         boolean sound = !c.getPackageManager().queryBroadcastReceivers(new Intent(SOUND).setPackage(BRIDGE), 0).isEmpty();
         for (String[] d : TOGGLES) {
+            if (d[3].equals("toggle:lamp")) {
+                if (Lamp.supported()) out.add(HomeApps.action(HomeApps.PROJECTOR, d[3], Ui.tr(d[0], d[1]), d[2]));
+                continue;
+            }
             if (!d[3].equals("toggle:afr") && !sound) continue;   // cinema mode also sets the sound
             out.add(HomeApps.action(HomeApps.PROJECTOR, d[3], Ui.tr(d[0], d[1]), d[2]));
         }
@@ -81,6 +86,8 @@ final class Projector {
         switch (key) {
             case "toggle:afr":
                 return afrOn == null || afrOn;
+            case "toggle:lamp":
+                return !Lamp.mode(c).equals("normal");
             case "toggle:cine":
                 return prefs(c).getBoolean("cine", false);
             case "toggle:dialogo":
@@ -96,6 +103,10 @@ final class Projector {
     /** Flips a switch: the tile shows the new state right away; the change is applied in the background. */
     static void toggle(Context c, String key) {
         final Context app = c.getApplicationContext();
+        if (key.equals("toggle:lamp")) {   // three modes, not on/off: it reads the saved mode right away
+            Lamp.next(app);
+            return;
+        }
         final boolean on = !isOn(app, key);
         synchronized (OPTIMISTIC) {
             OPTIMISTIC.put(key, new long[] {on ? 1 : 0, System.currentTimeMillis() + 5000});
@@ -155,6 +166,7 @@ final class Projector {
 
     /** The sleep timer's tile shows how long is left ("42 min") while it runs (Puente publishes the time). */
     static String label(Context c, HomeApps.Item it) {
+        if (it.key.equals("toggle:lamp")) return Lamp.label(c);   // "Eco" / "Noche" while dimmed
         if (!it.key.equals(TIMER)) return it.label;
         long at = android.provider.Settings.Global.getLong(c.getContentResolver(), "fmp_apagado", 0);
         long left = at - System.currentTimeMillis();

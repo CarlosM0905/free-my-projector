@@ -26,6 +26,7 @@ El README del proyecto original está en [README-original.md](README-original.md
   - **Enfoque**: una pantalla con texto fino en el centro y las esquinas. **OK = autoenfoque** (la cámara del proyector mira la imagen y ajusta la lente en unos 5 s), ← → mueven la lente a mano (mantén para seguir) y Atrás termina.
   - **Solo audio**: apaga la lámpara y la música sigue sonando (Spotify, AuraMusic, podcasts). Menos calor y ruido, y el LED dura más. Cualquier botón, el volumen incluido, trae la imagen de vuelta.
   - Interruptores que se aplican al instante y se iluminan en azul: **Hz auto** (la pantalla sigue los cuadros por segundo del video), **Diálogos** (realza las voces) y **Nivelar** (evita los saltos de volumen).
+  - **Lámpara**: Normal → **Eco** (≈75 %) → **Noche** (≈50 %). Solo baja el brillo: si el proyector está caliente y Wanbo ya lo bajó más, manda Wanbo. Normal le devuelve la lámpara. No hay "Máximo" porque forzaría el LED.
   - **Modo cine**, un solo botón para ver una película: activa Hz auto y Diálogos y apaga Nivelar (aplana la banda sonora). Al apagarlo vuelve todo como estaba.
   - Una tarjeta con el **estado del equipo**: temperatura del procesador, ventilador, lámpara con sus **horas de uso** (contadas desde que instalas la app) y frecuencia del panel (se ve cambiar a 48 o 50 Hz si tienes AFR).
   - **Aviso de calor**: si el procesador pasa de 82 °C, aparece un aviso sobre cualquier app para que revises las rejillas (como mucho uno cada media hora).

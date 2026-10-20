@@ -264,8 +264,13 @@ final class ListHome extends View implements Home, Choreographer.FrameCallback, 
             case KeyEvent.KEYCODE_DPAD_RIGHT:
                 if (down) {
                     int dir = e.getKeyCode() == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : -1;
-                    if (!rows.isEmpty() && rows.get(index).type == BACKGROUND) changeBackground(dir);
-                    else jumpSection(dir);
+                    Row here = rows.isEmpty() ? null : rows.get(index);
+                    if (here != null && here.type == BACKGROUND) changeBackground(dir);
+                    else if (here != null && isLamp(here)) {
+                        Lamp.next(getContext());   // three modes: either arrow goes round
+                        click.move();
+                        invalidate();
+                    } else jumpSection(dir);
                 }
                 return true;
             case KeyEvent.KEYCODE_DPAD_CENTER:
@@ -479,7 +484,7 @@ final class ListHome extends View implements Home, Choreographer.FrameCallback, 
                     state.setColor(Ui.alpha(lit(r) ? 0xFF0A84FF : 0xCCFFFFFF, f));
                     float sy = base + 44 * k;
                     float tx = x;
-                    if (r.type != BACKGROUND) {   // a dot before a state; a value has its ‹ › instead
+                    if (r.type != BACKGROUND && !isLamp(r)) {   // a dot before a state; a value has its ‹ › instead
                         fill.setColor(state.getColor());
                         c.drawCircle(x + 6 * k, sy - 9 * k, 5 * k, fill);
                         tx += 22 * k;
@@ -535,11 +540,19 @@ final class ListHome extends View implements Home, Choreographer.FrameCallback, 
                 HomeApps.Item it = r.item;
                 if (it.kind == HomeApps.INPUT) return it.connected ? Ui.tr("Com sinal", "Signal") : Ui.tr("Sem sinal", "No signal");
                 if (it.kind == HomeApps.PROJECTOR) {
+                    if (isLamp(r)) {
+                        String m = Lamp.mode(c);
+                        return "‹  " + (m.equals("eco") ? "Eco" : m.equals("night") ? Ui.tr("Noite", "Night") : "Normal") + "  ›";
+                    }
                     if (Projector.isToggle(it.key)) return Projector.isOn(c, it.key) ? Ui.tr("Ligado", "On") : Ui.tr("Desligado", "Off");
                     if (Projector.timerOn(c, it)) return Projector.label(c, it);
                 }
                 return "";
         }
+    }
+
+    private static boolean isLamp(Row r) {
+        return r.type == ITEM && r.item != null && "toggle:lamp".equals(r.item.key);
     }
 
     private boolean lit(Row r) {

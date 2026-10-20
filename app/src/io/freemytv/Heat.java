@@ -36,6 +36,7 @@ final class Heat {
     private static void tick(Context c) {
         PowerManager pm = (PowerManager) c.getSystemService(Context.POWER_SERVICE);
         if (pm == null || !pm.isInteractive()) return;
+        if (!Lamp.mode(c).equals("normal")) Lamp.enforce(c);   // Wanbo rewrites the lamp when the temperature changes band
         if (lampOn()) {
             SharedPreferences p = prefs(c);
             p.edit().putLong("lampMs", p.getLong("lampMs", 0) + EVERY).apply();

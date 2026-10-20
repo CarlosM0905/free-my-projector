@@ -45,6 +45,8 @@ final class Es {
         t("Sound effects", "Sonido");
         t("Sleep timer", "Apagado");
         t("Audio only", "Solo audio");
+        t("Lamp", "Lámpara");
+        t("Night", "Noche");
         t("Home design", "Diseño del inicio");
         t("Light", "Ligero");
         t("Background", "Fondo");
