@@ -71,6 +71,7 @@ final class HomeApps {
         float logoInk;      // fraction of the logo with ink (thin logos are drawn larger, with the same "weight")
         float logoScale = 1; // size tweak by eye (compact logos need more)
         boolean connected = true;
+        boolean bleed;      // the card is the app icon edge to edge: drawn center-cropped, never stretched
     }
 
     /**
@@ -83,11 +84,11 @@ final class HomeApps {
         // Projectors (Wanbo and other Android 9+ boxes without Google TV certification): the apps they actually run
         {"youtube", "YouTube", "org.smarttube.stable", "FF0033", "", "1"},
         {"disney", "Disney+", "com.disney.disneyplus", "1838C8", "", "1"},
-        {"crunchyroll", "Crunchyroll", "com.crunchyroll.crunchyroid", "F47521", "", "1"},
+        {"crunchyroll", "Crunchyroll", "com.crunchyroll.crunchyroid", "F47521", "icon", "1"},
         {"netflix", "Netflix", "com.netflix.mediaclient", "E50914", "", "1"},
-        {"prime", "Prime Video", "com.amazon.avod.thirdpartyclient", "1A98FF", "tint", "0.96"},
+        {"prime", "Prime Video", "com.amazon.avod.thirdpartyclient", "1A98FF", "icon", "1"},
         {"auramusic", "AuraMusic", "com.auramusic.app", "E0245E", "", "1"},
-        {"twitch", "Twitch", "com.fgl27.twitch", "9146FF", "", "1"},
+        {"twitch", "Twitch", "com.fgl27.twitch", "9146FF", "icon", "1"},
         {"kodi", "Kodi", "org.xbmc.kodi", "17B2E7", "", "1"},
         // Google TV (upstream)
         {"netflix", "Netflix", "com.netflix.ninja", "E50914", "", "1"},
@@ -135,7 +136,9 @@ final class HomeApps {
             it.key = d[0];
             it.label = d[1];
             it.pkg = d[2];
-            it.tile = appTile(c, d[0], d[2], 0xFF000000 | Integer.parseInt(d[3], 16));
+            it.tile = d[4].equals("icon") ? bleedTile(c, d[0], d[2], 0xFF000000 | Integer.parseInt(d[3], 16))
+                    : appTile(c, d[0], d[2], 0xFF000000 | Integer.parseInt(d[3], 16));
+            it.bleed = d[4].equals("icon");
             it.logo = shelfLogo(c, d[0], d[2], d[4], extract);
             if (it.logo != null) it.logoInk = ink(it.logo);
             it.logoDark = ownLogoCached(c, d[0] + "-dark");
@@ -376,7 +379,7 @@ final class HomeApps {
     // MARK: - Colored logos (shelf)
 
     /** Bump when the way logos are lifted changes (the ones saved on disk are redone). */
-    private static final int LOGO_VERSION = 2;
+    private static final int LOGO_VERSION = 4;
 
     private static Bitmap shelfLogo(Context c, String key, String pkg, String mode, boolean extract) {
         synchronized (LOGOS) {
@@ -391,7 +394,9 @@ final class HomeApps {
             } else if (!extract) {
                 return null;
             } else {
-                logo = bannerLogo(c, pkg, mode.equals("tint"), mode.equals("play"));
+                // "icon": the card is the app icon itself (bleedTile), no logo on glass.
+                logo = mode.equals("icon") || mode.equals("banner") ? null : iconLogo(c, pkg);
+                if (logo == null && !mode.equals("icon")) logo = bannerLogo(c, pkg, mode.equals("tint"), mode.equals("play"));
                 saveLogo(logo, file, none);
             }
         }
@@ -421,6 +426,79 @@ final class HomeApps {
         } catch (IOException e) {
             AppLog.w("logo not saved: " + e.getMessage());
         }
+    }
+
+    /**
+     * Free My Projector: the phone builds that projectors run have no TV banner, or one with a tiny wordmark. Their
+     * logo is the adaptive icon's front layer (Netflix's N, Crunchyroll's symbol), which sits on the glass like the
+     * others. Null when the icon isn't adaptive or its front layer is a whole picture rather than a symbol.
+     */
+    private static Bitmap iconLogo(Context c, String pkg) {
+        Drawable icon = null;
+        try {
+            PackageManager pm = c.getPackageManager();
+            ApplicationInfo ai = pm.getApplicationInfo(pkg, 0);
+            if (ai.icon != 0) icon = pm.getResourcesForApplication(ai).getDrawableForDensity(ai.icon, DisplayMetrics.DENSITY_XXXHIGH, null);
+        } catch (PackageManager.NameNotFoundException | RuntimeException ignored) {
+        }
+        if (!(icon instanceof AdaptiveIconDrawable)) return null;
+        Drawable front = ((AdaptiveIconDrawable) icon).getForeground();
+        if (front == null) return null;
+        int size = 432;
+        Bitmap b = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+        front.setBounds(0, 0, size, size);
+        front.draw(new Canvas(b));
+        if (ink(b) > 0.6f) return null;   // a full picture, not a symbol
+        return trim(b);
+    }
+
+    /**
+     * Free My Projector: the card is the app icon itself, edge to edge (its background fills the card, its symbol in the
+     * middle), like the banners of Disney+ or SmartTube. For apps whose symbol alone doesn't read on the glass.
+     */
+    private static synchronized Bitmap bleedTile(Context c, String key, String pkg, int brand) {
+        if (TILES.containsKey("bleed:" + key)) return TILES.get("bleed:" + key);
+        Drawable icon = null;
+        try {
+            PackageManager pm = c.getPackageManager();
+            ApplicationInfo ai = pm.getApplicationInfo(pkg, 0);
+            // The launcher activity's icon first: some apps set their wide TV banner as the app's own icon.
+            Intent launch = launchIntent(pm, pkg);
+            int res = 0;
+            if (launch != null && launch.getComponent() != null) res = pm.getActivityInfo(launch.getComponent(), 0).getIconResource();
+            if (res == 0) res = ai.icon;
+            if (res != 0) icon = pm.getResourcesForApplication(ai).getDrawableForDensity(res, DisplayMetrics.DENSITY_XXXHIGH, null);
+            if (icon == null) icon = pm.getApplicationIcon(ai);
+        } catch (PackageManager.NameNotFoundException | RuntimeException ignored) {
+        }
+        Bitmap b = Bitmap.createBitmap(TILE_W, TILE_H, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(b);
+        canvas.drawColor(brand);
+        if (icon instanceof AdaptiveIconDrawable) {
+            AdaptiveIconDrawable a = (AdaptiveIconDrawable) icon;
+            if (a.getBackground() != null) {   // stretched across the card (it's a color or a soft gradient)
+                a.getBackground().setBounds(0, (TILE_H - TILE_W) / 2, TILE_W, (TILE_H + TILE_W) / 2);
+                a.getBackground().draw(canvas);
+            }
+            if (a.getForeground() != null) {
+                int s = Math.round(TILE_H * 1.3f);   // the symbol's safe zone ends up ~80 % of the card's height
+                a.getForeground().setBounds((TILE_W - s) / 2, (TILE_H - s) / 2, (TILE_W + s) / 2, (TILE_H + s) / 2);
+                a.getForeground().draw(canvas);
+            }
+        } else if (icon != null) {
+            // A plain picture: the card takes the color of its corner, so the picture's edge doesn't show.
+            if (icon instanceof android.graphics.drawable.BitmapDrawable) {
+                Bitmap pic = ((android.graphics.drawable.BitmapDrawable) icon).getBitmap();
+                int corner = pic == null ? 0 : pic.getPixel(Math.min(2, pic.getWidth() - 1), Math.min(2, pic.getHeight() - 1));
+                if ((corner >>> 24) == 0xFF) canvas.drawColor(corner);
+            }
+            int s = Math.round(TILE_H * 0.8f);
+            icon.setBounds((TILE_W - s) / 2, (TILE_H - s) / 2, (TILE_W + s) / 2, (TILE_H + s) / 2);
+            icon.draw(canvas);
+        }
+        b.setHasMipMap(true);
+        TILES.put("bleed:" + key, b);
+        return b;
     }
 
     /** Fraction (0 to 1) of the logo's pixels that have ink, by sampling. */

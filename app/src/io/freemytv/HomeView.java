@@ -1182,7 +1182,16 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             clip.addRoundRect(cell, r, r, Path.Direction.CW);
             c.save();
             c.clipPath(clip);
-            if (it.tile != null) c.drawBitmap(it.tile, null, cell, bitmapPaint);
+            if (it.tile != null && it.bleed) {   // center-cropped to the card's shape (an icon must not stretch)
+                Bitmap t = it.tile;
+                float aspect = cell.width() / cell.height(), tw = Math.min(t.getWidth(), t.getHeight() * aspect);
+                float th = tw / aspect;
+                cropSrc.set(Math.round((t.getWidth() - tw) / 2), Math.round((t.getHeight() - th) / 2),
+                        Math.round((t.getWidth() + tw) / 2), Math.round((t.getHeight() + th) / 2));
+                c.drawBitmap(t, cropSrc, cell, bitmapPaint);
+            } else if (it.tile != null) {
+                c.drawBitmap(it.tile, null, cell, bitmapPaint);
+            }
             c.restore();
         }
     }
@@ -2293,6 +2302,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     }
 
     private final Matrix cardMatrix = new Matrix();
+    private final android.graphics.Rect cropSrc = new android.graphics.Rect();
     private final Map<String, String> ellipsized = new HashMap<>();
     private final LinearGradient unitSheen = new LinearGradient(0, 0, 1, 1, 0x38FFFFFF, 0x00FFFFFF, Shader.TileMode.CLAMP);
     private final LinearGradient unitRim = new LinearGradient(0, 0, 0, 1, 0xE6FFFFFF, 0x59FFFFFF, Shader.TileMode.CLAMP);
