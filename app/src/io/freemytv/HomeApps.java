@@ -474,7 +474,10 @@ final class HomeApps {
         Bitmap b = Bitmap.createBitmap(TILE_W, TILE_H, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(b);
         canvas.drawColor(brand);
-        if (icon instanceof AdaptiveIconDrawable) {
+        if (key.equals("twitch")) {
+            // SmartTwitchTV's own icon is a joystick: Twitch's purple with its white "glitch" reads better.
+            glitch(canvas, TILE_W / 2f, TILE_H / 2f, TILE_H * 0.5f, brand);
+        } else if (icon instanceof AdaptiveIconDrawable) {
             AdaptiveIconDrawable a = (AdaptiveIconDrawable) icon;
             if (a.getBackground() != null) {   // stretched across the card (it's a color or a soft gradient)
                 a.getBackground().setBounds(0, (TILE_H - TILE_W) / 2, TILE_W, (TILE_H + TILE_W) / 2);
@@ -499,6 +502,25 @@ final class HomeApps {
         b.setHasMipMap(true);
         TILES.put("bleed:" + key, b);
         return b;
+    }
+
+    /** Twitch's glitch (a speech bubble with two eyes), white, `size` tall, centered; the eyes in `eyes`. */
+    private static void glitch(Canvas c, float cx, float cy, float size, int eyes) {
+        float u = size / 24f, x0 = cx - 12 * u, y0 = cy - 12 * u;
+        float[][] outline = {{6, 0}, {1.714f, 4.286f}, {1.714f, 19.714f}, {6.857f, 19.714f}, {6.857f, 24},
+            {11.143f, 19.714f}, {14.571f, 19.714f}, {22.286f, 12}, {22.286f, 0}};
+        Path p = new Path();
+        for (int i = 0; i < outline.length; i++) {
+            float x = x0 + outline[i][0] * u, y = y0 + outline[i][1] * u;
+            if (i == 0) p.moveTo(x, y); else p.lineTo(x, y);
+        }
+        p.close();
+        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        paint.setColor(0xFFFFFFFF);
+        c.drawPath(p, paint);
+        paint.setColor(eyes);
+        c.drawRect(x0 + 11.571f * u, y0 + 4.714f * u, x0 + 13.286f * u, y0 + 9.857f * u, paint);
+        c.drawRect(x0 + 16.286f * u, y0 + 4.714f * u, x0 + 18f * u, y0 + 9.857f * u, paint);
     }
 
     /** Fraction (0 to 1) of the logo's pixels that have ink, by sampling. */
