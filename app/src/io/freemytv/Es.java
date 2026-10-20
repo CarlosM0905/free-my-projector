@@ -45,6 +45,8 @@ final class Es {
         t("Sound effects", "Sonido");
         t("Sleep timer", "Apagado");
         t("Audio only", "Solo audio");
+        t("Focus", "Enfoque");
+        t("← → to focus · OK when done", "← → para enfocar · OK para terminar");
         t("← → to move · ↓ to hide · OK when done", "← → para mover · ↓ para ocultar · OK para terminar");
         t("%s is in All Apps now", "%s ahora está en Todas las apps");
         t("Back on the home screen", "De vuelta en el inicio");

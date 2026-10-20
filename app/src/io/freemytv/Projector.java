@@ -18,13 +18,15 @@ final class Projector {
     private Projector() {}
 
     private static final String BRIDGE = "pe.carlos.puente";
+    private static final String TIMER = BRIDGE + "/.Temporizador";
 
     /** {label pt, label en, symbol, target}. target: "package/.Activity", or "bridge:package/.Activity". */
     private static final String[][] CONTROLS = {
         {"Keystone", "Keystone", "tv", "com.android.tv.settings/.device.keystone.KeyStoneActivity"},
+        {"Foco", "Focus", "focus", "io.freemytv/.FocusActivity"},
         {"Imagem", "Picture", "sparkles", "bridge:com.droidlogic.tv.settings/.pqsettings.PictrueModeActivity"},
         {"Efeitos de som", "Sound effects", "speaker", "bridge:com.droidlogic.tv.settings/.tvoption.TvOptionActivity"},
-        {"Timer para desligar", "Sleep timer", "bedtime", BRIDGE + "/.Temporizador"},
+        {"Timer para desligar", "Sleep timer", "bedtime", TIMER},
         {"Só áudio", "Audio only", "music", "io.freemytv/.AudioOnly"},
     };
 
@@ -51,6 +53,7 @@ final class Projector {
             if (i.resolveActivity(c.getPackageManager()) == null) continue;
             if (d[3].startsWith("bridge:") && !exists(c.getPackageManager(), component(d[3].substring(7)))) continue;
             if (d[3].endsWith(".AudioOnly") && !AudioOnly.supported()) continue;
+            if (d[3].endsWith(".FocusActivity") && !FocusActivity.supported()) continue;
             out.add(HomeApps.action(HomeApps.PROJECTOR, d[3], Ui.tr(d[0], d[1]), d[2]));
         }
         if (!hasStatus()) return out;   // the switches are the Wanbo ROM's (AFR) and its helper's (sound)
@@ -152,7 +155,7 @@ final class Projector {
 
     /** The sleep timer's tile shows how long is left ("42 min") while it runs (Puente publishes the time). */
     static String label(Context c, HomeApps.Item it) {
-        if (!it.key.equals(CONTROLS[3][3])) return it.label;
+        if (!it.key.equals(TIMER)) return it.label;
         long at = android.provider.Settings.Global.getLong(c.getContentResolver(), "fmp_apagado", 0);
         long left = at - System.currentTimeMillis();
         return left > 0 ? ((left + 59_999) / 60_000) + " min" : it.label;
@@ -160,7 +163,7 @@ final class Projector {
 
     /** The sleep timer is on (its tile lights up like a switch). */
     static boolean timerOn(Context c, HomeApps.Item it) {
-        return it.key.equals(CONTROLS[3][3])
+        return it.key.equals(TIMER)
                 && android.provider.Settings.Global.getLong(c.getContentResolver(), "fmp_apagado", 0) > System.currentTimeMillis();
     }
 

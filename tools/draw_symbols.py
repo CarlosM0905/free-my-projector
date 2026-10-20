@@ -57,12 +57,25 @@ def thermometer(out):
     save(img, out, "thermometer")
 
 
+def focus(out):
+    # Four corner brackets around a dot (Material's "center_focus_strong").
+    img, d = canvas(148, 148)
+    k = S
+    t, L = 14, 46
+    for (x, y, sx, sy) in ((4, 4, 1, 1), (144, 4, -1, 1), (4, 144, 1, -1), (144, 144, -1, -1)):
+        d.rounded_rectangle((min(x, x + sx * L) * k, min(y, y + sy * t) * k, max(x, x + sx * L) * k, max(y, y + sy * t) * k), radius=7 * k, fill=255)
+        d.rounded_rectangle((min(x, x + sx * t) * k, min(y, y + sy * L) * k, max(x, x + sx * t) * k, max(y, y + sy * L) * k), radius=7 * k, fill=255)
+    d.ellipse((50 * k, 50 * k, 98 * k, 98 * k), fill=255)
+    save(img, out, "focus")
+
+
 def main():
     out = sys.argv[1]
     os.makedirs(out, exist_ok=True)
     music(out)
     movie(out)
     thermometer(out)
+    focus(out)
     print("ok")
 
 

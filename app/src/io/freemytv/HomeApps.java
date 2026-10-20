@@ -234,7 +234,8 @@ final class HomeApps {
     /** Shortcuts in the bottom drawer. */
     static List<Item> drawerShortcuts(Context c) {
         List<Item> items = new ArrayList<>(Projector.items(c));   // Free My Projector: projector controls first
-        items.add(shortcut(ALL_APPS, "all", Ui.tr("Todos os Apps", "All Apps"), "apps"));
+        // Projectors: the Control Center is full, so the short name ("All Apps" stays the sheet's title).
+        items.add(shortcut(ALL_APPS, "all", items.size() > 1 ? "Apps" : Ui.tr("Todos os Apps", "All Apps"), "apps"));
         // Projectors: the corner gear already opens these settings, and the drawer needs the room for its switches.
         if (items.size() <= 1) items.add(shortcut(SETTINGS, "settings", Ui.tr("Ajustes do Início", "Home Settings"), "settings"));
         items.add(shortcut(ANDROID_SETTINGS, "tv-settings", Ui.tr("Ajustes da TV", "TV Settings"), "tv_settings"));
