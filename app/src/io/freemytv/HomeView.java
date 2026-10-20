@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.graphics.Matrix;
 import android.graphics.BlurMaskFilter;
 import android.graphics.Canvas;
 import android.graphics.LinearGradient;
@@ -300,7 +301,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         sheetLayer = new Layer(a, SHEET);
         toastLayer = new Layer(a, TOAST);
         // Hardware layers on the GPU: only the one that changed is redrawn; moving, fading and scaling stay cheap.
-        for (View v : new View[] {heroLayer, status, platter, tiles, drawerLayer, sheetLayer}) v.setLayerType(LAYER_TYPE_HARDWARE, null);
+        for (View v : new View[] {status, platter, tiles, drawerLayer, sheetLayer}) v.setLayerType(LAYER_TYPE_HARDWARE, null);
         for (View v : new View[] {sky, heroLayer, status, platter, tiles, drawerLayer, sheetLayer, toastLayer}) addView(v);
         drawerLayer.setVisibility(INVISIBLE);
         for (int i = 0; i < NT + 3; i++) {
@@ -324,6 +325,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     }
 
     // MARK: - Lifecycle (called by HomeActivity)
+
+    private boolean bgWasFading;
 
     void resume() {
         if (running) return;
@@ -582,12 +585,16 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         // they rise; the drawer is drawn resting in place; the glass shelf is redrawn once the drawer stops, so the
         // glass shows the background where it ended up.
         if (tilesMoving || tilesDirty) tiles.invalidate();
-        if (statusMoving || statusDirty || bgFading) status.invalidate();
+        // Light mode (weak GPUs): while the background crossfades (switching tabs), the glass of the shelf and of the top
+        // buttons stays as it was and is redrawn once at the end; redrawing it every frame took ~34 ms per frame.
+        boolean bgEnded = bgWasFading && !bgFading, glassFade = bgFading && !Ui.LITE;
+        bgWasFading = bgFading;
+        if (statusMoving || statusDirty || glassFade || bgEnded) status.invalidate();
         if (heroMoving || heroDirty || heroFading) heroLayer.invalidate();
-        if (drawerItemsMoving || drawerDirty || bgFading) drawerLayer.invalidate();
+        if (drawerItemsMoving || drawerDirty || glassFade || bgEnded) drawerLayer.invalidate();
         if (gridMoving || gridDirty) sheetLayer.invalidate();
-        if (drawerMoving || bgFading) sky.invalidate();
-        if (bgFading || (drawerWasMoving && !drawerMoving)) platter.invalidate();
+        if (drawerMoving || bgFading || bgEnded) sky.invalidate();
+        if (glassFade || bgEnded || (drawerWasMoving && !drawerMoving)) platter.invalidate();
         drawerWasMoving = drawerMoving;
         tilesDirty = statusDirty = heroDirty = drawerDirty = gridDirty = motionDirty = false;
         if (updateClock()) {
@@ -858,7 +865,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private boolean tickBackgroundFade(long up) {
         if (bgFadeAt == 0) return false;
         float e = fadeEase(bgFadeAt, up);
-        if (bgTo != null && bgFrom != null && glassOf(bgFrom) != null && glassOf(bgTo) != null) {
+        // Light mode: the glass is only redrawn when the fade ends, so the frost is mixed once, at the end.
+        if ((!Ui.LITE || e >= 1) && bgTo != null && bgFrom != null && glassOf(bgFrom) != null && glassOf(bgTo) != null) {
             int[] from = frostOf(bgFrom), to = frostOf(bgTo);
             for (int i = 0; i < frostMix.length; i++) frostMix[i] = mix(from[i], to[i], e);
             scene.setFrost(frostMix);
@@ -2068,6 +2076,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         shadowDeep.setColor(Ui.alpha(0xFF000000, tone(0.14f, 0.32f) + tone(0.2f, 0.28f) * f));
         c.drawRoundRect(tmp, r0, r0, shadowDeep);
         c.restore();
+        // The sheen and the rim are gradients made once in a unit box, stretched to the card (no new shader per frame).
         clip.reset();
         clip.addRoundRect(cell, r, r, Path.Direction.CW);
         c.save();
@@ -2082,23 +2091,44 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             c.drawRect(cell, fill);
         }
         if (f > 0.01f) {
-            sheen.setShader(new LinearGradient(cell.left, cell.top, cell.left + cell.width() * 0.5f, cell.bottom,
-                    Ui.alpha(0xFFFFFFFF, 0.22f * f), 0x00FFFFFF, Shader.TileMode.CLAMP));
+            cardMatrix.setScale(cell.width() * 0.5f, cell.height());
+            cardMatrix.postTranslate(cell.left, cell.top);
+            unitSheen.setLocalMatrix(cardMatrix);
+            sheen.setShader(unitSheen);
+            sheen.setAlpha(Math.round(255 * f));
             c.drawRect(cell, sheen);
         }
         c.restore();
         if (f > 0.01f) {
-            rim.setShader(new LinearGradient(0, cell.top, 0, cell.bottom,
-                    Ui.alpha(0xFFFFFFFF, 0.9f * f), Ui.alpha(0xFFFFFFFF, 0.35f * f), Shader.TileMode.CLAMP));
+            cardMatrix.setScale(1, cell.height());
+            cardMatrix.postTranslate(0, cell.top);
+            unitRim.setLocalMatrix(cardMatrix);
+            rim.setShader(unitRim);
+            rim.setAlpha(Math.round(255 * f));
             c.drawRoundRect(cell, r, r, rim);
         }
         if (p == null) return;
-        TextPaint tp = new TextPaint(lCardTitle);
-        c.drawText(TextUtils.ellipsize(p.title, tp, bw, TextUtils.TruncateAt.END).toString(), base.left, base.bottom + 46 * k, lCardTitle);
+        c.drawText(ellipsized(p.title, lCardTitle, bw), base.left, base.bottom + 46 * k, lCardTitle);
         if (i == 0 && p.meta != null && !p.meta.isEmpty()) {
-            TextPaint mp = new TextPaint(lCardMeta);
-            c.drawText(TextUtils.ellipsize(p.meta, mp, bw, TextUtils.TruncateAt.END).toString(), base.left, base.bottom + 80 * k, lCardMeta);
+            c.drawText(ellipsized(p.meta, lCardMeta, bw), base.left, base.bottom + 80 * k, lCardMeta);
         }
+    }
+
+    private final Matrix cardMatrix = new Matrix();
+    private final Map<String, String> ellipsized = new HashMap<>();
+    private final LinearGradient unitSheen = new LinearGradient(0, 0, 1, 1, 0x38FFFFFF, 0x00FFFFFF, Shader.TileMode.CLAMP);
+    private final LinearGradient unitRim = new LinearGradient(0, 0, 0, 1, 0xE6FFFFFF, 0x59FFFFFF, Shader.TileMode.CLAMP);
+
+    /** The text cut with "…" to the width, remembered (it was measured again on every frame). */
+    private String ellipsized(String text, Paint paint, float width) {
+        String key = text + '\u0001' + Math.round(width) + '\u0001' + paint.getTextSize();
+        String out = ellipsized.get(key);
+        if (out == null) {
+            if (ellipsized.size() > 200) ellipsized.clear();
+            out = TextUtils.ellipsize(text, new TextPaint(paint), width, TextUtils.TruncateAt.END).toString();
+            ellipsized.put(key, out);
+        }
+        return out;
     }
 
     /**
