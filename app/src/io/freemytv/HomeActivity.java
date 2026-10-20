@@ -15,7 +15,8 @@ import android.widget.TextView;
  * back to the TV's original one.
  */
 public class HomeActivity extends Activity {
-    private HomeView home;
+    private Home home;
+    private boolean list;
 
     @Override protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -35,13 +36,19 @@ public class HomeActivity extends Activity {
         }
         Ui.init(this);
         Heat.start(this);
-        home = new HomeView(this);
-        setContentView(home);
+        // Free My Projector: the light design (a list of names, no glass) or the classic one, from Home Settings.
+        list = ListHome.chosen(this);
+        home = list ? new ListHome(this) : new HomeView(this);
+        setContentView((android.view.View) home);
         getWindow().setBackgroundDrawable(null);
     }
 
     @Override protected void onResume() {
         super.onResume();
+        if (home != null && list != ListHome.chosen(this)) {   // the design was changed in the settings
+            recreate();
+            return;
+        }
         if (home != null) home.resume();
     }
 

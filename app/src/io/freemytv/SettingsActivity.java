@@ -106,7 +106,7 @@ public class SettingsActivity extends Activity {
         private final SettingsActivity activity;
         private final Scene scene = new Scene();
         private final Handler handler = new Handler(Looper.getMainLooper());
-        private final Spring[] pop = new Spring[5];
+        private final Spring[] pop = new Spring[6];
         private final RectF tmp = new RectF(), rowRect = new RectF();
         private JSONObject state = new JSONObject(), recs = new JSONObject();
         private boolean hasKey;
@@ -205,7 +205,7 @@ public class SettingsActivity extends Activity {
         }
 
         private int rowCount() {
-            return screen == MAIN ? 5 : 2;
+            return screen == MAIN ? 6 : 2;
         }
 
         @Override protected void onDraw(Canvas c) {
@@ -240,13 +240,14 @@ public class SettingsActivity extends Activity {
             String busyText = state.optString("busy");
             String mode = freeActive() ? "Free My Projector" : Ui.tr("Original", "Original");
             String[] labels = {Ui.tr("Início", "Home Screen"), Ui.tr("Tela de Descanso", "Screensaver"),
-                    Ui.tr("Estilo da tela de descanso", "Screensaver style"), Ui.tr("Movimento", "Motion"), Ui.tr("Ajustes da TV", "TV Settings")};
+                    Ui.tr("Estilo da tela de descanso", "Screensaver style"), Ui.tr("Movimento", "Motion"), Ui.tr("Design do Início", "Home design"), Ui.tr("Ajustes da TV", "TV Settings")};
             String st = Screensaver.style(getContext());
             String style = st.equals("frame") ? Ui.tr("Moldura", "Frame") : st.equals("recs") ? Ui.tr("Recomendações", "Recommendations")
                     : Ui.tr("Paisagens", "Landscapes");
             String motion = HomeView.reducedMotion(getContext()) ? Ui.tr("Reduzido", "Reduced") : Ui.tr("Completo", "Full");
-            String[] values = {working ? "" : mode, Ui.tr("Ver agora", "Preview"), style, motion, ""};
-            for (int i = 0; i < 5; i++) {
+            String design = ListHome.chosen(getContext()) ? Ui.tr("Leve", "Light") : Ui.tr("Clássico", "Classic");
+            String[] values = {working ? "" : mode, Ui.tr("Ver agora", "Preview"), style, motion, design, ""};
+            for (int i = 0; i < 6; i++) {
                 float y = (LIST_TOP + i * (ROW_H + ROW_GAP)) * k;
                 rowRect.set(LIST_X * k, y, LIST_R * k, y + ROW_H * k);
                 float f = drawRowBackground(c, i);
@@ -255,7 +256,7 @@ public class SettingsActivity extends Activity {
                 float base = rowRect.centerY() + Ui.halfCap(rowLabel);
                 c.drawText(labels[i], rowRect.left + 30 * k, base, rowLabel);
                 float right = rowRect.right - 30 * k;
-                if (i >= 4) {
+                if (i >= 5) {
                     float cw = Symbols.width(getContext(), "chevron_right", 22 * k);
                     Symbols.draw(getContext(), c, "chevron_right", right - cw / 2, rowRect.centerY(), 22 * k, blend(0x66FFFFFF, 0x991C1C1E, f));
                 } else if (i == 0 && working) {
@@ -273,7 +274,7 @@ public class SettingsActivity extends Activity {
                 }
             }
 
-            float y = (LIST_TOP + 5 * (ROW_H + ROW_GAP) + 46) * k;
+            float y = (LIST_TOP + 6 * (ROW_H + ROW_GAP) + 46) * k;
             String error = state.optString("error");
             if (working && (busyText.contains("Permitir") || busyText.contains("Allow"))) {
                 c.drawText(Ui.tr("Na TV: marque “Sempre permitir” e aperte OK.", "On the TV: tick “Always allow” and press OK."),
@@ -490,6 +491,10 @@ public class SettingsActivity extends Activity {
                 // Reduce Motion, like tvOS: focus, drawer and backgrounds jump instead of animating (weak GPUs).
                 android.content.SharedPreferences ui = c.getSharedPreferences("home-ui", Context.MODE_PRIVATE);
                 ui.edit().putBoolean("reducedMotion", !ui.getBoolean("reducedMotion", false)).apply();
+            } else if (focus == 4) {
+                // Home design: classic (tvOS glass) or light (a list of names, smooth on any projector).
+                android.content.SharedPreferences ui = c.getSharedPreferences("home-ui", Context.MODE_PRIVATE);
+                ui.edit().putString("design", ListHome.chosen(c) ? "classic" : "list").apply();
             } else {
                 activity.startActivity(new Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             }

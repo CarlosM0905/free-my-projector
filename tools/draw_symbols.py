@@ -69,6 +69,17 @@ def focus(out):
     save(img, out, "focus")
 
 
+def wallpaper(out):
+    # A picture: a rounded frame with a mountain and a sun (Material's "wallpaper"/"image").
+    img, d = canvas(160, 136)
+    k = S
+    d.rounded_rectangle((4 * k, 4 * k, 156 * k, 132 * k), radius=20 * k, fill=255)
+    d.rounded_rectangle((18 * k, 18 * k, 142 * k, 118 * k), radius=10 * k, fill=0)
+    d.polygon([(26 * k, 110 * k), (66 * k, 58 * k), (92 * k, 90 * k), (106 * k, 74 * k), (134 * k, 110 * k)], fill=255)
+    d.ellipse((98 * k, 30 * k, 122 * k, 54 * k), fill=255)
+    save(img, out, "wallpaper")
+
+
 def main():
     out = sys.argv[1]
     os.makedirs(out, exist_ok=True)
@@ -76,6 +87,7 @@ def main():
     movie(out)
     thermometer(out)
     focus(out)
+    wallpaper(out)
     print("ok")
 
 

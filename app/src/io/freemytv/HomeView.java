@@ -52,7 +52,7 @@ import java.util.concurrent.Executors;
  * Measurements are in a 1920×1080 space (k = width / 1920). The screen is split into layers so the TV's weak GPU only
  * redraws what changed.
  */
-final class HomeView extends ViewGroup implements Choreographer.FrameCallback, HomeData.Listener, Recs.Listener {
+final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallback, HomeData.Listener, Recs.Listener {
     // tvOS grid (Human Interface Guidelines): content inside the safe area, 80 px from the sides and 60 from top and
     // bottom; 40 px between items; 7 columns of 217 px (the apps). The shelf glass extends 36 px past the tiles (the
     // same padding on all four sides) and the tile corners are concentric with it (glass radius = radius + padding).
@@ -344,7 +344,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
 
     private boolean bgWasFading;
 
-    void resume() {
+    @Override public void resume() {
         Spring.instant = reducedMotion(getContext());
         Network.refresh(getContext(), () -> post(() -> {
             for (HomeApps.Item b : lightButtons) if (b.kind == HomeApps.NETWORK) b.label = Network.label();
@@ -379,7 +379,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         Choreographer.getInstance().postFrameCallback(this);
     }
 
-    void pause() {
+    @Override public void pause() {
         if (!running) return;
         running = false;
         Choreographer.getInstance().removeFrameCallback(this);
@@ -391,13 +391,13 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         if (tvInputs != null) tvInputs.unregisterCallback(inputCallback);
     }
 
-    void destroy() {
+    @Override public void destroy() {
         pause();
         click.release();
     }
 
     /** Starting state (Home pressed while the home screen is showing): first app focused, drawer and sheet closed. */
-    void reset(boolean animated) {
+    @Override public void reset(boolean animated) {
         zone = Z_SHELF;
         shelfIndex = 0;
         sheetOpen = false;
@@ -1756,7 +1756,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
 
     // MARK: - Keys: only the arrows, OK and Back (system keys pass through to the system)
 
-    boolean onKey(KeyEvent e) {
+    @Override public boolean onKey(KeyEvent e) {
         boolean down = e.getAction() == KeyEvent.ACTION_DOWN;
         switch (e.getKeyCode()) {
             case KeyEvent.KEYCODE_DPAD_LEFT:
@@ -1832,7 +1832,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             zone = Z_SHELF;
             retarget(false);
         } else {
-            startScreensaver();
+            startScreensaver(getContext());
             return;
         }
         click.back();
@@ -1842,9 +1842,9 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
      * Like the Apple TV: Back on the home screen (with nothing left to close) starts the screensaver right away, through
      * the system's own launcher for it (it runs whichever screensaver is chosen, ours by default).
      */
-    private void startScreensaver() {
+    static void startScreensaver(Context c) {
         try {
-            getContext().startActivity(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_DESK_DOCK)
+            c.startActivity(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_DESK_DOCK)
                     .setClassName("com.android.systemui", "com.android.systemui.Somnambulator")
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         } catch (RuntimeException e) {
@@ -2157,7 +2157,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     }   // checked when the cards update, not on every frame (it asks the package manager)
 
     /** Hidden behind another app: only the photos of the cards on screen stay in memory. */
-    void trimMemory() {
+    @Override public void trimMemory() {
         recs.keepOnly(cards);
         Runtime.getRuntime().gc();   // GPU bitmaps are only given back once collected
     }
