@@ -1762,13 +1762,17 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             moveGrid(dx, dy);
             return;
         }
-        if (moveLight(dx, dy)) return;
+        if (moveLight(dx, dy)) {
+            checkTopShelf();
+            return;
+        }
         switch (zone) {
             case Z_SHELF:
                 if (dx != 0) {
                     int next = Math.max(0, Math.min(shelf.size() - 1, shelfIndex + dx));
                     if (next == shelfIndex) return;
                     shelfIndex = next;
+                    checkTopShelf();
                 } else if (dy < 0) {
                     if (hero != null && hero.button) {
                         zone = Z_HERO;
@@ -1951,7 +1955,9 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         List<Recs.Pick> upNext = recs.upNext();
         upNextShown = !upNext.isEmpty();
         if (tab == UP_NEXT && !upNextShown) tab = 0;
-        List<Recs.Pick> list = tab == UP_NEXT ? upNext : recs.now(TAB_KIND[tab]);
+        List<Recs.Pick> shelfPicks = recs.forService(topShelf);
+        boolean shelfMode = !shelfPicks.isEmpty();
+        List<Recs.Pick> list = shelfMode ? shelfPicks : tab == UP_NEXT ? upNext : recs.now(TAB_KIND[tab]);
         if (!samePicks(list, cards)) {
             cards = list;
             cardIndex = Math.min(cardIndex, Math.max(0, list.size() - 1));
@@ -1963,11 +1969,32 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         for (Recs.Pick p : recs.wanted()) recs.backdrop(p);   // all the tabs preloaded: switching tabs is instant
         for (Recs.Pick p : upNext) recs.backdrop(p);
         Backdrop b = cards.isEmpty() ? null : recs.backdrop(cards.get(0));
-        if (cards.isEmpty() || b != null) showBackdrop(b);
+        // Top Shelf: only the cards change; the background stays the tab's (a fade per focused app is too heavy here).
+        if (!shelfMode && (cards.isEmpty() || b != null)) showBackdrop(b);
         heroDirty = true;
     }
 
-    private boolean upNextShown;   // checked when the cards update, not on every frame (it asks the package manager)
+    private boolean upNextShown;
+    /** Top Shelf: the streaming app focused on the shelf (HomeApps key) whose picks fill the cards; null = the tab's. */
+    private String topShelf;
+
+    /**
+     * As on Apple TV, focusing a streaming app on the shelf shows its titles in the cards above; going up into them
+     * keeps them, and the tabs bring back the tab's cards.
+     */
+    private void checkTopShelf() {
+        String key = topShelf;
+        if (zone == Z_SHELF) {
+            HomeApps.Item it = shelfIndex < shelf.size() ? shelf.get(shelfIndex) : null;
+            key = it == null || it.kind != HomeApps.APP ? null : it.key;
+        } else if (zone == Z_TOP) {
+            key = null;
+        }
+        if (java.util.Objects.equals(key, topShelf)) return;
+        topShelf = key;
+        cardIndex = 0;
+        updateCards();
+    }   // checked when the cards update, not on every frame (it asks the package manager)
 
     private boolean hasUpNext() {
         return upNextShown;

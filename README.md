@@ -15,6 +15,7 @@ El README del proyecto original está en [README-original.md](README-original.md
 
 - **Tus apps en un estante.** SmartTube, Disney+, Crunchyroll, Netflix, Prime Video, AuraMusic, Twitch, Kodi, Spotify… las que tengas instaladas.
 - **Recomendaciones de tus apps.** Lo que está en tendencia esta semana y los estrenos, solo de los servicios que tienes, en tu país y en español (TMDB). Al elegir una, se abre **directo en la película o serie** dentro de su app (Disney+, Netflix, Prime Video, Crunchyroll), con los IDs que guarda Wikidata; si no lo tiene, se abre la app.
+- **Top Shelf**, como en tvOS: al pasar por Disney+, Netflix, Prime Video o Crunchyroll en el estante, las tarjetas de arriba muestran lo recomendado de esa app; sube y ábrelo directo.
 - **A continuación**, como en tvOS: una pestaña con lo último que abriste desde el inicio, para retomarlo. Aparece cuando abres el primer título.
 - **Centro de control** como el de tvOS: se abre con el botón ≡ del control (o bajando al cajón).
   - Atajos a **Keystone**, **Imagen** (modo, color, nitidez, reducción de ruido), **Sonido** (ecualizador, DTS, VirtualX) y **Temporizador** (muestra los minutos que quedan).

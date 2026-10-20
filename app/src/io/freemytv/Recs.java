@@ -146,6 +146,22 @@ final class Recs {
         return out;
     }
 
+    /**
+     * Top Shelf (like tvOS): up to 3 titles of one service (HomeApps key: "disney", "netflix"…) with their image on
+     * disk, this hour's first (already in memory). Sized so the tabs' 9, Up Next's 3 and these 3 fit the image cache.
+     */
+    List<Pick> forService(String app) {
+        List<Pick> out = new ArrayList<>();
+        if (app == null || !hasKey(context)) return out;
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        List<Pick> all = new ArrayList<>(wanted());
+        all.addAll(picks);
+        for (Pick p : all) {
+            if (out.size() < 3 && app.equals(p.app) && p.pkg != null && hasImage(p) && seen.add(key(p))) out.add(p);
+        }
+        return out;
+    }
+
     /** A title was opened: it goes first in Up Next. */
     void remember(Pick p) {
         if (p == null || p.pkg == null) return;
@@ -694,7 +710,7 @@ final class Recs {
             if (forLight != light) return;   // the design changed midway: this one is stale
             synchronized (images) {
                 images.put(p.backdrop, backdrop);
-                while (images.size() > (forLight ? 13 : 4)) images.remove(images.keySet().iterator().next());
+                while (images.size() > (forLight ? 16 : 4)) images.remove(images.keySet().iterator().next());
             }
             notifyListeners();
         } catch (IOException | RuntimeException | OutOfMemoryError e) {
