@@ -1813,7 +1813,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         } else {
             return;
         }
-        click.move();
+        click.back();
     }
 
     private void move(int dx, int dy) {

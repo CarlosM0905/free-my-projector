@@ -30,7 +30,7 @@ import org.json.JSONObject;
  */
 public class SettingsActivity extends Activity {
     private SettingsView view;
-    private DreamView preview;   // "Screensaver": the screensaver right here, without changing the system setting
+    private Screensaver.Dream preview;   // "Screensaver": the screensaver right here, without changing the system setting
 
     @Override protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -84,8 +84,9 @@ public class SettingsActivity extends Activity {
     }
 
     void showPreview() {
-        preview = new DreamView(this);
-        setContentView(preview);
+        android.view.View v = Screensaver.make(this);
+        preview = (Screensaver.Dream) v;
+        setContentView(v);
         preview.start();
     }
 
@@ -204,7 +205,7 @@ public class SettingsActivity extends Activity {
         }
 
         private int rowCount() {
-            return screen == MAIN ? 4 : 2;
+            return screen == MAIN ? 5 : 2;
         }
 
         @Override protected void onDraw(Canvas c) {
@@ -239,10 +240,13 @@ public class SettingsActivity extends Activity {
             String busyText = state.optString("busy");
             String mode = freeActive() ? "Free My Projector" : Ui.tr("Original", "Original");
             String[] labels = {Ui.tr("Início", "Home Screen"), Ui.tr("Tela de Descanso", "Screensaver"),
-                    Ui.tr("Movimento", "Motion"), Ui.tr("Ajustes da TV", "TV Settings")};
+                    Ui.tr("Estilo da tela de descanso", "Screensaver style"), Ui.tr("Movimento", "Motion"), Ui.tr("Ajustes da TV", "TV Settings")};
+            String st = Screensaver.style(getContext());
+            String style = st.equals("frame") ? Ui.tr("Moldura", "Frame") : st.equals("recs") ? Ui.tr("Recomendações", "Recommendations")
+                    : Ui.tr("Paisagens", "Landscapes");
             String motion = HomeView.reducedMotion(getContext()) ? Ui.tr("Reduzido", "Reduced") : Ui.tr("Completo", "Full");
-            String[] values = {working ? "" : mode, Ui.tr("Ver agora", "Preview"), motion, ""};
-            for (int i = 0; i < 4; i++) {
+            String[] values = {working ? "" : mode, Ui.tr("Ver agora", "Preview"), style, motion, ""};
+            for (int i = 0; i < 5; i++) {
                 float y = (LIST_TOP + i * (ROW_H + ROW_GAP)) * k;
                 rowRect.set(LIST_X * k, y, LIST_R * k, y + ROW_H * k);
                 float f = drawRowBackground(c, i);
@@ -251,7 +255,7 @@ public class SettingsActivity extends Activity {
                 float base = rowRect.centerY() + Ui.halfCap(rowLabel);
                 c.drawText(labels[i], rowRect.left + 30 * k, base, rowLabel);
                 float right = rowRect.right - 30 * k;
-                if (i >= 3) {
+                if (i >= 4) {
                     float cw = Symbols.width(getContext(), "chevron_right", 22 * k);
                     Symbols.draw(getContext(), c, "chevron_right", right - cw / 2, rowRect.centerY(), 22 * k, blend(0x66FFFFFF, 0x991C1C1E, f));
                 } else if (i == 0 && working) {
@@ -269,7 +273,7 @@ public class SettingsActivity extends Activity {
                 }
             }
 
-            float y = (LIST_TOP + 4 * (ROW_H + ROW_GAP) + 46) * k;
+            float y = (LIST_TOP + 5 * (ROW_H + ROW_GAP) + 46) * k;
             String error = state.optString("error");
             if (working && (busyText.contains("Permitir") || busyText.contains("Allow"))) {
                 c.drawText(Ui.tr("Na TV: marque “Sempre permitir” e aperte OK.", "On the TV: tick “Always allow” and press OK."),
@@ -478,6 +482,11 @@ public class SettingsActivity extends Activity {
                 pause();
                 activity.showPreview();
             } else if (focus == 2) {
+                // Screensaver style: framed landscapes with the time and weather, or the recommendations' photos.
+                android.content.SharedPreferences ui = c.getSharedPreferences("home-ui", Context.MODE_PRIVATE);
+                int at = java.util.Arrays.asList(Screensaver.STYLES).indexOf(Screensaver.style(c));
+                ui.edit().putString("dreamStyle", Screensaver.STYLES[(at + 1) % Screensaver.STYLES.length]).apply();
+            } else if (focus == 3) {
                 // Reduce Motion, like tvOS: focus, drawer and backgrounds jump instead of animating (weak GPUs).
                 android.content.SharedPreferences ui = c.getSharedPreferences("home-ui", Context.MODE_PRIVATE);
                 ui.edit().putBoolean("reducedMotion", !ui.getBoolean("reducedMotion", false)).apply();

@@ -22,6 +22,8 @@ El README del proyecto original está en [README-original.md](README-original.md
   - Interruptores que se aplican al instante y se iluminan en azul: **Hz automático** (la pantalla sigue los cuadros por segundo del video), **Diálogos** (realza las voces) y **Volumen parejo** (evita los saltos de volumen).
   - Una tarjeta con el **estado del equipo**: temperatura del procesador, ventilador, lámpara y frecuencia del panel (se ve cambiar a 48 o 50 Hz si tienes AFR).
 - **Clima** por hora, amanecer y atardecer, y **precios cripto**.
+- **Protector de paisajes**, como los fondos aéreos del Apple TV y la Mac: una foto de paisaje a pantalla completa cada minuto (las fotos del día de Bing, con el nombre del lugar) y un recuadro de vidrio con la hora, la fecha, el clima y lo que suena. También en **marco**, como el modo Arte de The Frame, o con las portadas de las recomendaciones. Se elige en los ajustes del inicio.
+- **Sonidos suaves al navegar**, como en tvOS: un tic al moverte, dos notas al abrir y al volver.
 - **Modo oscuro fijo, claro fijo o automático** (claro de día, oscuro desde la puesta de sol), y un **protector de pantalla** con las portadas y un reloj grande.
 - **Botón de Keystone** arriba a la derecha en vez de *TV en vivo* (los proyectores no tienen antena).
 - **Buscar**, como en tvOS: una pestaña con teclado de una sola fila; muestra solo películas y series que están en tus apps y las abre directo.

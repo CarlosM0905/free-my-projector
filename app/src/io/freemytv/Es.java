@@ -47,6 +47,12 @@ final class Es {
         t("Test pattern", "Patrón de prueba");
         t("Match frame rate", "Hz automático");
         t("Motion", "Movimiento");
+        t("Screensaver style", "Estilo del protector");
+        t("Landscapes", "Paisajes");
+        t("Frame", "Marco");
+        t("Recommendations", "Recomendaciones");
+        t("H ", "Máx. ");
+        t("L ", "Mín. ");
         t("Network", "Red");
         t("Excellent signal", "Señal excelente");
         t("Good signal", "Señal buena");

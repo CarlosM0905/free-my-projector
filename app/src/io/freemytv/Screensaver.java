@@ -1,5 +1,7 @@
 package io.freemytv;
 
+import android.content.Context;
+
 import android.service.dreams.DreamService;
 
 /**
@@ -8,7 +10,28 @@ import android.service.dreams.DreamService;
  * doesn't change those timings. Any key exits.
  */
 public class Screensaver extends DreamService {
-    private DreamView view;
+    private Dream view;
+
+    /** The two styles: the recommendations' photos (DreamView) or framed landscapes (FrameView). */
+    interface Dream {
+        void start();
+        void stop();
+    }
+
+    /**
+     * Style (home settings): "full" = landscapes edge to edge with the information in a glass box (default), "frame" =
+     * the landscape framed with a mat like The Frame's art mode, "recs" = the recommendations' photos.
+     */
+    static final String[] STYLES = {"full", "frame", "recs"};
+
+    static String style(Context c) {
+        return c.getSharedPreferences("home-ui", Context.MODE_PRIVATE).getString("dreamStyle", "full");
+    }
+
+    static android.view.View make(Context c) {
+        String s = style(c);
+        return s.equals("recs") ? new DreamView(c) : new FrameView(c, s.equals("frame"));
+    }
 
     @Override public void onAttachedToWindow() {
         super.onAttachedToWindow();
@@ -17,8 +40,9 @@ public class Screensaver extends DreamService {
         setInteractive(false);
         setFullscreen(true);
         setScreenBright(true);
-        view = new DreamView(this);
-        setContentView(view);
+        android.view.View v = make(this);
+        view = (Dream) v;
+        setContentView(v);
     }
 
     @Override public void onDreamingStarted() {
