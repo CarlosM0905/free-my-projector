@@ -24,7 +24,7 @@ Todo lo demás (Adb, HomeMode, HomeApps, Recs, HomeData, Settings, Watchdog, Dre
 | Entradas | Antena/HDMI de TV | HDMI del proyector (droidlogic tvinput), si aplica |
 | Botón Home | `set-home-activity` | Ya funciona: parche v3 de `services.jar` abre el launcher predeterminado |
 | Idioma | en / pt | Agregar **es** |
-| Clima/región | Nueva York, US | Lima, PE (`tmdb_region=PE`) |
+| Clima/región | Nueva York, US | la ciudad y región del usuario (`tmdb_region`) |
 | Rendimiento | Chip de TV moderno | T972 (Mali-G31 MP2, 2 GB RAM): medir FPS y memoria; sin shaders; reducir redibujos; respetar térmica |
 
 ## Lo propio de proyector (el valor del fork)
@@ -37,15 +37,15 @@ Panel "Proyector" en el cajón lateral, reutilizando lo que ya construimos:
 
 ## Fases
 1. **Fork y compilar en Android 9** — fork en GitHub, `build.ps1`/WSL, `--min-api 28`, respaldo sin `RuntimeShader`/`RenderNode`, instalar junto a Projectivy (sin ser Home todavía). Medir FPS/memoria/temperatura.
-2. **Adaptación Wanbo** — ADB :3333, listas PROTECTED/DEBLOAT/SHELF/HIDDEN, idioma español, config Lima/PE, clave TMDB de Carlos.
+2. **Adaptación Wanbo** — ADB :3333, listas PROTECTED/DEBLOAT/SHELF/HIDDEN, idioma español, config de ciudad/región, clave TMDB propia.
 3. **Panel Proyector** — imagen, sonido, estado térmico/AFR, temporizador.
-4. **Prueba como Home** — `HomeMode` cambia a Free My Projector; watchdog vuelve a Projectivy si falla; Carlos lo usa unos días. Projectivy queda instalado como respaldo.
+4. **Prueba como Home** — `HomeMode` cambia a Free My Projector; watchdog vuelve a Projectivy si falla; se usa unos días. Projectivy queda instalado como respaldo.
 5. **ROM v5** — integrarlo en `/system/app` si convence; README del fork y crédito al original (MIT).
 
 ## Riesgos
 - Rendimiento del Canvas a 1080p en el Mali-G31 (Spotify ya mostró el límite térmico del GPU).
 - Perder la configuración de Projectivy: no se toca; el fork se prueba aparte y el cambio de Home es reversible con un botón.
-- TMDB necesita una clave gratuita de Carlos (themoviedb.org).
+- TMDB necesita una clave gratuita propia (themoviedb.org).
 
 ---
 
@@ -73,7 +73,7 @@ Panel "Proyector" en el cajón lateral, reutilizando lo que ya construimos:
 4. **Actualizaciones automáticas:** GitHub Releases (SmartTube, AuraMusic, TV Bro, Twitch) y APKPure (Spotify); firma fijada; instalación por el ADB interno; aviso.
 5. **Ahora suena:** `MediaSessionManager` (requiere habilitar el listener de notificaciones por ADB).
 6. **Búsqueda:** pestaña con lupa y teclado lineal dibujado en el Canvas.
-7. **ROM v5:** integrar como app de sistema cuando Carlos decida quedarse con él.
+7. **ROM v5:** integrar como app de sistema cuando se decida quedarse con él.
 
 ## Verificación de cada paso
 Probar en el Wanbo con el control: rendimiento (`dumpsys gfxinfo` del proceso `io.freemytv:home`, < 10 % de cuadros tardíos), sin cierres (`logcat -b crash`), ida y vuelta a Original, y capturas en modo oscuro.

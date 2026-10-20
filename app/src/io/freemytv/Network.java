@@ -43,7 +43,7 @@ final class Network {
         }, "network").start();
     }
 
-    /** "MOVISTAR-WIFI6 · Excellent signal", or the plain label when it's not known. */
+    /** "HomeWiFi · Excellent signal", or the plain label when it's not known. */
     static String label() {
         String s = ssid;
         if (s == null || s.isEmpty()) return Ui.tr("Rede", "Network");
