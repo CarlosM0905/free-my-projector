@@ -343,6 +343,11 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         handler.postDelayed(tick, 15_000);
         checkNotices();
         Updates.check(getContext(), text -> post(() -> showToast(text)));
+        track = NowPlaying.current(getContext());
+        stopWatching = NowPlaying.watch(getContext(), handler, () -> {
+            track = NowPlaying.current(getContext());
+            heroDirty = true;
+        });
         reload();
         updatePalette();
         updatePicks();
@@ -360,6 +365,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         handler.removeCallbacks(tick);
         data.removeListener(this);
         recs.removeListener(this);
+        if (stopWatching != null) stopWatching.run();
+        stopWatching = null;
         if (tvInputs != null) tvInputs.unregisterCallback(inputCallback);
     }
 
@@ -1069,6 +1076,16 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         // On the tab row, at the right.
         float base = (L_TABBAR_TOP + L_TABBAR_H / 2) * k + Ui.halfCap(text);
         float cap = Ui.cap(text), gap = 6 * k, spacing = 24 * k;
+        NowPlaying.Track t = track;
+        if (t != null) {   // Now Playing takes the quotes' place: "▶ Song · Artist"
+            String line = t.artist == null || t.artist.isEmpty() ? t.title : t.title + "  ·  " + t.artist;
+            line = ellipsized(line, text, 760 * k);
+            float w = text.measureText(line), icon = cap * 1.6f;
+            Symbols.draw(getContext(), c, "play", right - w - gap - icon / 2, base - cap / 2, icon, Ui.alpha(ACCENT, fade));
+            c.drawText(line, right - w, base, text);
+            text.setColor(textColor);
+            return;
+        }
         int n = HomeData.coinCount();
         String[] values = new String[n];
         float[] glyphs = new float[n];
@@ -1976,6 +1993,9 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     }
 
     private boolean upNextShown;
+    /** Now Playing: the track playing in another app (shown instead of the quotes), and how to stop listening. */
+    private NowPlaying.Track track;
+    private Runnable stopWatching;
     /** Top Shelf: the streaming app focused on the shelf (HomeApps key) whose picks fill the cards; null = the tab's. */
     private String topShelf;
 
