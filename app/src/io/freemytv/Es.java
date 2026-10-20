@@ -46,6 +46,9 @@ final class Es {
         t("Sleep timer", "Temporizador");
         t("Test pattern", "Patrón de prueba");
         t("Match frame rate", "Hz automático");
+        t("Movie or show", "Película o serie");
+        t("Searching…", "Buscando…");
+        t("Nothing on your apps.", "Nada en tus apps.");
         t("Enhance dialogue", "Diálogos");
         t("Reduce loud sounds", "Volumen parejo");
         t("Projector", "Proyector");
@@ -115,7 +118,7 @@ final class Es {
         return s != null ? s : english;
     }
 
-    static final String[] TABS = {"Explorar", "Películas", "Series", "A continuación"};
+    static final String[] TABS = {"Explorar", "Películas", "Series", "A continuación", "Buscar"};
     static final String[] PERIOD_LABEL = {"PARA ESTA MAÑANA", "PARA ESTA TARDE", "PARA ESTA NOCHE"};
 
     /** TMDB returns these TV genres in English even when asked for Spanish. */

@@ -162,6 +162,52 @@ final class Recs {
         return out;
     }
 
+    /**
+     * Search (like tvOS): movies and shows matching the text that are on a service installed on this TV, in this
+     * country, with their deep link. Blocking: call it off the main thread.
+     */
+    List<Pick> search(String query) throws Exception {
+        List<Pick> out = new ArrayList<>();
+        if (!hasKey(context) || query.trim().isEmpty()) return out;
+        JSONArray results = get("/search/multi?language=" + lang() + "&include_adult=false&query="
+                + URLEncoder.encode(query.trim(), "UTF-8")).getJSONArray("results");
+        for (int i = 0; i < results.length() && i < 10 && out.size() < 4; i++) {
+            JSONObject o = results.getJSONObject(i);
+            String kind = o.optString("media_type");
+            if (!kind.equals("movie") && !kind.equals("tv")) continue;
+            Pick p = new Pick();
+            p.id = o.optInt("id");
+            p.kind = kind;
+            p.title = o.optString(kind.equals("movie") ? "title" : "name");
+            p.backdrop = o.optString("backdrop_path", "");
+            if (p.backdrop.isEmpty() || p.backdrop.equals("null")) p.backdrop = null;
+            JSONObject br = get("/" + kind + "/" + p.id + "/watch/providers").getJSONObject("results").optJSONObject(REGION);
+            JSONArray flat = br == null ? null : br.optJSONArray("flatrate");
+            for (int j = 0; flat != null && j < flat.length() && p.app == null; j++) {
+                String[] sv = service(flat.getJSONObject(j).optString("provider_name"));
+                if (sv != null && installed(sv[2])) {
+                    p.app = sv[1];
+                    p.pkg = sv[2];
+                }
+            }
+            if (p.app == null) continue;   // not on this TV's apps
+            String date = o.optString(kind.equals("movie") ? "release_date" : "first_air_date");
+            List<String> parts = new ArrayList<>();
+            if (kind.equals("tv")) parts.add(Ui.tr("Série", "Series"));
+            if (date.length() >= 4) parts.add(date.substring(0, 4));
+            parts.add(SERVICE_NAME.get(p.app));
+            p.meta = String.join(" · ", parts);
+            try {
+                p.link = link(p);
+            } catch (Exception e) {
+                AppLog.w("link for " + p.title + ": " + e.getMessage());
+            }
+            p.detailed = true;
+            out.add(p);
+        }
+        return out;
+    }
+
     /** A title was opened: it goes first in Up Next. */
     void remember(Pick p) {
         if (p == null || p.pkg == null) return;

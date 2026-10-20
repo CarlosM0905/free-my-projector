@@ -85,11 +85,19 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private static final float L_TALL_W = 320, L_CARD_GAP = 40, L_BUTTON = 68, L_BUTTON_GAP = 20, L_BUTTON_CY = 103;
     private static final float L_PLATTER_TOP = 814, L_TILE_H = 126;
     private static final int L_INK = 0xFF1D1D1F, L_DIM = 0xFF6E6E73, L_FAINT = 0xFF8E8E93;
-    private static final String[] TABS = {"Explorar", "Filmes", "Séries", "A seguir"};
-    private static final String[] TABS_EN = {"Explore", "Movies", "Shows", "Up Next"};
+    private static final String[] TABS = {"Explorar", "Filmes", "Séries", "A seguir", "Buscar"};
+    private static final String[] TABS_EN = {"Explore", "Movies", "Shows", "Up Next", "Search"};
     private static final String[] TAB_KIND = {null, "movie", "tv"};
     /** Tabs on top (the last one, Up Next, only once something was opened); the round buttons come after them. */
-    private static final int NT = 4, UP_NEXT = 3;
+    private static final int NT = 5, UP_NEXT = 3, SEARCH = 4;
+    /** Search: a one-row keyboard (tvOS), the typed text and up to 4 results. */
+    private static final int Z_KEYS = 6, Z_RESULTS = 7;
+    private static final String KEYS = "abcdefghijklmnñopqrstuvwxyz0123456789 \u232B";
+    private int keyIndex, resultIndex;
+    private String query = "";
+    private List<Recs.Pick> results = new ArrayList<>();
+    private boolean searching;
+    private int searchSerial;
     private static final int Z_TOP = 4, Z_CARDS = 5;
 
     private final Activity activity;
@@ -121,7 +129,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private final Spring[] cardFocus = new Spring[3];
     private final RectF[] cardRects = new RectF[3];
     private final List<HomeApps.Item> lightButtons = new ArrayList<>();
-    private Paint lTitle, lTab, lTabOn, lCardTitle, lCardMeta, lQuote, lTip;
+    private Paint lTitle, lTab, lTabOn, lCardTitle, lCardMeta, lQuote, lTip, lSearch, lKey;
     private Shader lightGradient;
 
     // Shelf
@@ -506,6 +514,9 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         lCardTitle.setLetterSpacing(0.012f);
         lCardMeta = Ui.text(Ui.medium, 25 * k, L_DIM);
         lQuote = Ui.numbers(Ui.regular, 21 * k, L_FAINT);
+        lSearch = Ui.text(Ui.medium, 48 * k, L_INK);
+        lKey = Ui.text(Ui.medium, 30 * k, L_INK);
+        lKey.setTextAlign(Paint.Align.CENTER);
         lTip = Ui.text(Ui.semibold, 25 * k, L_INK);
         lTip.setTextAlign(Paint.Align.CENTER);
         lightGradient = null;
@@ -1910,6 +1921,16 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             }
             it = lightButtons.get(topIndex - NT);
             r = topRects[topIndex];
+        } else if (zone == Z_KEYS) {
+            type(KEYS.charAt(keyIndex));
+            return;
+        } else if (zone == Z_RESULTS) {
+            Recs.Pick p = resultIndex < results.size() ? results.get(resultIndex) : null;
+            if (p == null) return;
+            it = HomeApps.app(p.pkg, Recs.serviceName(p));
+            it.uri = p.link;
+            recs.remember(p);
+            r = resultRect;
         } else if (zone == Z_CARDS) {
             Recs.Pick p = cardIndex < cards.size() ? cards.get(cardIndex) : null;
             if (p == null || p.pkg == null) return;
@@ -1974,8 +1995,9 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         upNextShown = !upNext.isEmpty();
         if (tab == UP_NEXT && !upNextShown) tab = 0;
         List<Recs.Pick> shelfPicks = recs.forService(topShelf);
-        boolean shelfMode = !shelfPicks.isEmpty();
-        List<Recs.Pick> list = shelfMode ? shelfPicks : tab == UP_NEXT ? upNext : recs.now(TAB_KIND[tab]);
+        boolean shelfMode = !shelfPicks.isEmpty() && tab != SEARCH;
+        List<Recs.Pick> list = shelfMode ? shelfPicks : tab == SEARCH ? new ArrayList<>() : tab == UP_NEXT ? upNext
+                : recs.now(TAB_KIND[tab]);
         if (!samePicks(list, cards)) {
             cards = list;
             cardIndex = Math.min(cardIndex, Math.max(0, list.size() - 1));
@@ -2019,6 +2041,113 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
 
     private boolean hasUpNext() {
         return upNextShown;
+    }
+
+    // MARK: - Search (tvOS): one-row keyboard, the text and the results as rows
+
+    private final RectF resultRect = new RectF();
+
+    private void type(char ch) {
+        if (ch == '\u232B') {
+            if (query.isEmpty()) return;
+            query = query.substring(0, query.length() - 1);
+        } else {
+            if (query.length() >= 40 || (ch == ' ' && (query.isEmpty() || query.endsWith(" ")))) return;
+            query += ch;
+        }
+        click.move();
+        heroDirty = true;
+        final int serial = ++searchSerial;
+        final String q = query;
+        searching = !q.trim().isEmpty();
+        if (!searching) {
+            results = new ArrayList<>();
+            return;
+        }
+        // Waits until typing pauses, then asks TMDB (the newest text wins).
+        handler.postDelayed(() -> {
+            if (serial != searchSerial) return;
+            new Thread(() -> {
+                List<Recs.Pick> found;
+                try {
+                    found = recs.search(q);
+                } catch (Exception e) {
+                    AppLog.w("search: " + e.getMessage());
+                    found = new ArrayList<>();
+                }
+                final List<Recs.Pick> f = found;
+                post(() -> {
+                    if (serial != searchSerial) return;
+                    results = f;
+                    searching = false;
+                    resultIndex = Math.min(resultIndex, Math.max(0, f.size() - 1));
+                    if (zone == Z_RESULTS && f.isEmpty()) zone = Z_KEYS;
+                    heroDirty = true;
+                });
+            }, "search").start();
+        }, 600);
+    }
+
+    private void drawSearch(Canvas c) {
+        float left = MARGIN * k, right = CONTENT_R * k, top = L_CARDS_TOP * k;
+        boolean keys = zone == Z_KEYS, rows = zone == Z_RESULTS;
+        // The text (or what to type), big, with a cursor while the keyboard has focus.
+        Paint big = lSearch;
+        big.setColor(query.isEmpty() ? tone(0xFF8E8E93, 0x80FFFFFF) : tone(L_INK, 0xF2FFFFFF));
+        String shown = query.isEmpty() ? Ui.tr("Filme ou série", "Movie or show") : query;
+        c.drawText(shown, left, top + 50 * k, big);
+        if (keys && !query.isEmpty()) {
+            float x = left + big.measureText(query) + 6 * k;
+            fill.setShader(null);
+            fill.setColor(ACCENT);
+            c.drawRect(x, top + 10 * k, x + 3 * k, top + 58 * k, fill);
+        }
+        // The keyboard: one row of letters, numbers, space and delete; the focused key gets the white pill.
+        float step = (right - left) / KEYS.length(), ky = top + 120 * k, half = 30 * k;
+        for (int i = 0; i < KEYS.length(); i++) {
+            float cx = left + step * (i + 0.5f);
+            boolean f = keys && i == keyIndex;
+            if (f) {
+                cell.set(cx - half, ky - half, cx + half, ky + half);
+                fill.setShader(null);
+                fill.setColor(WHITE);
+                c.drawRoundRect(cell, 14 * k, 14 * k, fill);
+            }
+            char ch = KEYS.charAt(i);
+            String label = ch == ' ' ? "\u2423" : String.valueOf(ch);
+            lKey.setColor(f ? L_INK : tone(L_INK, 0xD9FFFFFF));
+            c.drawText(label, cx, ky + Ui.halfCap(lKey), lKey);
+        }
+        // Results: title on the left, year and app on the right; the focused row gets the white pill.
+        float ry = top + 196 * k, rh = 62 * k;
+        if (results.isEmpty()) {
+            String note = searching ? Ui.tr("Buscando…", "Searching…")
+                    : query.trim().isEmpty() ? "" : Ui.tr("Nada nos seus apps.", "Nothing on your apps.");
+            lCardMeta.setTextAlign(Paint.Align.LEFT);
+            c.drawText(note, left, ry + rh / 2 + Ui.halfCap(lCardMeta), lCardMeta);
+            return;
+        }
+        for (int i = 0; i < results.size(); i++) {
+            Recs.Pick p = results.get(i);
+            boolean f = rows && i == resultIndex;
+            cell.set(left - 24 * k, ry + i * rh, right + 24 * k, ry + i * rh + rh - 8 * k);
+            if (f) {
+                resultRect.set(cell);
+                fill.setShader(null);
+                fill.setColor(WHITE);
+                c.drawRoundRect(cell, cell.height() / 2, cell.height() / 2, fill);
+            }
+            float base = cell.centerY() + Ui.halfCap(lCardTitle);
+            lCardTitle.setColor(f ? L_INK : tone(L_INK, 0xF2FFFFFF));
+            String meta = p.meta == null ? "" : p.meta;
+            float mw = lCardMeta.measureText(meta);
+            c.drawText(ellipsized(p.title, lCardTitle, right - left - mw - 40 * k), left, base, lCardTitle);
+            int metaColor = lCardMeta.getColor();
+            if (f) lCardMeta.setColor(0xFF6E6E73);
+            c.drawText(meta, right - mw, base, lCardMeta);
+            lCardMeta.setColor(metaColor);
+        }
+        lCardTitle.setColor(L_INK);
     }
 
     private void selectTab(int index) {
@@ -2097,6 +2226,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         }
         int top = -1;
         for (int i = 0; i < 3; i++) if (cardFocus[i].value > 0.02f && (top < 0 || cardFocus[i].value > cardFocus[top].value)) top = i;
+        if (tab == SEARCH) drawSearch(c);
         for (int i = 0; i < 3; i++) if (i != top) drawLightCard(c, i);
         if (top >= 0) drawLightCard(c, top);
         drawQuotes(c);
@@ -2110,7 +2240,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private void drawLightCard(Canvas c, int i) {
         RectF base = cardRects[i];
         Recs.Pick p = i < cards.size() ? cards.get(i) : null;
-        if (p == null && tab == UP_NEXT) return;   // fewer than three opened yet: no empty placeholders
+        if (p == null && tab >= UP_NEXT) return;   // Up Next with fewer than three, or Search: no empty placeholders
         float v = cardFocus[i].value, f = Ui.clamp(v), s = 1 + 0.05f * v;
         float bw = base.width(), bh = base.height(), r0 = 18 * k;
         float cx = base.centerX(), cy = base.centerY() - 6 * k * v;
@@ -2213,10 +2343,38 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     }
 
     private boolean moveLight(int dx, int dy) {
+        heroDirty |= zone == Z_KEYS || zone == Z_RESULTS;
         switch (zone) {
+            case Z_KEYS:
+                if (dx != 0) {
+                    int next = Math.max(0, Math.min(KEYS.length() - 1, keyIndex + dx));
+                    if (next == keyIndex) return true;
+                    keyIndex = next;
+                } else if (dy < 0) {
+                    zone = Z_TOP;
+                    topIndex = tab;
+                } else {
+                    zone = results.isEmpty() ? Z_SHELF : Z_RESULTS;
+                    resultIndex = 0;
+                }
+                break;
+            case Z_RESULTS:
+                if (dx != 0) return true;
+                if (dy < 0 && resultIndex == 0) {
+                    zone = Z_KEYS;
+                } else if (dy > 0 && resultIndex >= results.size() - 1) {
+                    zone = Z_SHELF;
+                } else {
+                    resultIndex += dy;
+                }
+                break;
             case Z_SHELF:
                 if (dy >= 0 || shelf.isEmpty()) return false;
-                if (cards.isEmpty()) {
+                if (tab == SEARCH) {
+                    zone = results.isEmpty() ? Z_KEYS : Z_RESULTS;
+                    resultIndex = results.size() - 1;
+                    heroDirty = true;
+                } else if (cards.isEmpty()) {
                     zone = Z_TOP;
                     topIndex = tab;
                 } else {
@@ -2245,7 +2403,10 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
                     topIndex = next;
                     if (topIndex < NT) selectTab(topIndex);   // like Apple TV tabs: focusing a tab selects it
                 } else if (dy > 0) {
-                    if (cards.isEmpty()) {
+                    if (tab == SEARCH && topIndex == SEARCH) {
+                        zone = Z_KEYS;
+                        heroDirty = true;
+                    } else if (cards.isEmpty()) {
                         zone = Z_SHELF;
                     } else {
                         zone = Z_CARDS;
