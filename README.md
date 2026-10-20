@@ -26,6 +26,9 @@ El README del proyecto original está en [README-original.md](README-original.md
 - **Botón de Keystone** arriba a la derecha en vez de *TV en vivo* (los proyectores no tienen antena).
 - **Buscar**, como en tvOS: una pestaña con teclado de una sola fila; muestra solo películas y series que están en tus apps y las abre directo.
 - **Ahora suena**, como en tvOS: mientras Spotify, AuraMusic u otra app reproduce algo, la canción y el artista aparecen arriba a la derecha en lugar de las cotizaciones.
+- **Resplandor de color y botón de red** (ideas de [Clean Your TV](https://github.com/Gathin23/cleanyourtv)): al pasar por una app del estante sube un brillo suave de su color, y un botón arriba muestra el WiFi y la señal.
+- **Movimiento reducido** en los ajustes del inicio, para proyectores con GPU justa: el foco y el fondo cambian sin animación.
+- **Poca memoria:** mientras usas otra app, el inicio suelta las fotos que no se ven.
 - **Actualizaciones solas** de SmartTube, SmartTwitchTV y AuraMusic: una vez al día, mientras estás en el inicio, baja la última versión estable de su GitHub oficial y la instala solo si es más nueva y viene firmada por el mismo autor que la que tienes. Te avisa con un mensaje corto.
 - **Un botón para volver.** *Original* devuelve tu inicio anterior (por ejemplo Projectivy), tu protector de pantalla y las apps tal como estaban.
 

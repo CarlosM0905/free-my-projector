@@ -2073,6 +2073,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     /** Hidden behind another app: only the photos of the cards on screen stay in memory. */
     void trimMemory() {
         recs.keepOnly(cards);
+        Runtime.getRuntime().gc();   // GPU bitmaps are only given back once collected
     }
 
     private boolean hasUpNext() {
