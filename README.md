@@ -13,6 +13,8 @@ The original project's README is in [README-original.md](README-original.md).
 
 </div>
 
+<p align="center"><img src="docs/screenshots/home.jpg" alt="The home screen, classic design"></p>
+
 ## What it does
 
 - **Two designs** (Home Settings → Home design):
@@ -45,6 +47,23 @@ The original project's README is in [README-original.md](README-original.md).
 - **Low memory use:** while you're in another app, the home screen lets go of the photos you can't see.
 - **Automatic updates** for SmartTube, SmartTwitchTV and AuraMusic: once a day, while you're on the home screen, it downloads the latest stable release from their official GitHub and installs it only if it's newer and signed by the same author as the one you have. A short message lets you know.
 - **One button to go back.** *Original* restores your previous home screen (Projectivy, for example), your screensaver and your apps as they were.
+
+## Screenshots
+
+<table>
+<tr>
+<td width="50%"><img src="docs/screenshots/top-shelf.jpg" alt="Top Shelf: focusing Disney+ shows its picks"><br><sub>Top Shelf: focusing Disney+ shows its picks</sub></td>
+<td width="50%"><img src="docs/screenshots/up-next.jpg" alt="Up Next: pick up where you left off"><br><sub>Up Next: pick up where you left off</sub></td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/screenshots/control-center.jpg" alt="Control Center: projector controls and device status"><br><sub>Control Center: projector controls and device status</sub></td>
+<td width="50%"><img src="docs/screenshots/screensaver.jpg" alt="Landscape screensaver with time, weather and the place"><br><sub>Landscape screensaver with time, weather and the place</sub></td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/screenshots/light.jpg" alt="Light design: a list with the recommended photo"><br><sub>Light design: a list with the recommended photo</sub></td>
+<td width="50%"><img src="docs/screenshots/light-projector.jpg" alt="Light design: projector controls with values (‹ Normal ›)"><br><sub>Light design: projector controls with values (‹ Normal ›)</sub></td>
+</tr>
+</table>
 
 ## What's different from the original
 

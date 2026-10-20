@@ -13,6 +13,8 @@ El README del proyecto original está en [README-original.md](README-original.md
 
 </div>
 
+<p align="center"><img src="docs/screenshots/home.jpg" alt="El inicio, diseño clásico"></p>
+
 ## Qué tiene
 
 - **Dos diseños** (Ajustes del inicio → Diseño del inicio):
@@ -45,6 +47,23 @@ El README del proyecto original está en [README-original.md](README-original.md
 - **Poca memoria:** mientras usas otra app, el inicio suelta las fotos que no se ven.
 - **Actualizaciones solas** de SmartTube, SmartTwitchTV y AuraMusic: una vez al día, mientras estás en el inicio, baja la última versión estable de su GitHub oficial y la instala solo si es más nueva y viene firmada por el mismo autor que la que tienes. Te avisa con un mensaje corto.
 - **Un botón para volver.** *Original* devuelve tu inicio anterior (por ejemplo Projectivy), tu protector de pantalla y las apps tal como estaban.
+
+## Capturas
+
+<table>
+<tr>
+<td width="50%"><img src="docs/screenshots/top-shelf.jpg" alt="Top Shelf: al pasar por Disney+ salen sus recomendaciones"><br><sub>Top Shelf: al pasar por Disney+ salen sus recomendaciones</sub></td>
+<td width="50%"><img src="docs/screenshots/up-next.jpg" alt="A continuación: retoma lo que estabas viendo"><br><sub>A continuación: retoma lo que estabas viendo</sub></td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/screenshots/control-center.jpg" alt="Centro de control: controles del proyector y estado del equipo"><br><sub>Centro de control: controles del proyector y estado del equipo</sub></td>
+<td width="50%"><img src="docs/screenshots/screensaver.jpg" alt="Protector de paisajes con hora, clima y el lugar"><br><sub>Protector de paisajes con hora, clima y el lugar</sub></td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/screenshots/light.jpg" alt="Diseño Ligero: una lista con la foto recomendada"><br><sub>Diseño Ligero: una lista con la foto recomendada</sub></td>
+<td width="50%"><img src="docs/screenshots/light-projector.jpg" alt="Diseño Ligero: controles del proyector con valores (‹ Normal ›)"><br><sub>Diseño Ligero: controles del proyector con valores (‹ Normal ›)</sub></td>
+</tr>
+</table>
 
 ## Qué cambia respecto al original
 
