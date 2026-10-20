@@ -204,7 +204,7 @@ public class SettingsActivity extends Activity {
         }
 
         private int rowCount() {
-            return screen == MAIN ? 3 : 2;
+            return screen == MAIN ? 4 : 2;
         }
 
         @Override protected void onDraw(Canvas c) {
@@ -238,9 +238,11 @@ public class SettingsActivity extends Activity {
             boolean working = busy();
             String busyText = state.optString("busy");
             String mode = freeActive() ? "Free My Projector" : Ui.tr("Original", "Original");
-            String[] labels = {Ui.tr("Início", "Home Screen"), Ui.tr("Tela de Descanso", "Screensaver"), Ui.tr("Ajustes da TV", "TV Settings")};
-            String[] values = {working ? "" : mode, Ui.tr("Ver agora", "Preview"), ""};
-            for (int i = 0; i < 3; i++) {
+            String[] labels = {Ui.tr("Início", "Home Screen"), Ui.tr("Tela de Descanso", "Screensaver"),
+                    Ui.tr("Movimento", "Motion"), Ui.tr("Ajustes da TV", "TV Settings")};
+            String motion = HomeView.reducedMotion(getContext()) ? Ui.tr("Reduzido", "Reduced") : Ui.tr("Completo", "Full");
+            String[] values = {working ? "" : mode, Ui.tr("Ver agora", "Preview"), motion, ""};
+            for (int i = 0; i < 4; i++) {
                 float y = (LIST_TOP + i * (ROW_H + ROW_GAP)) * k;
                 rowRect.set(LIST_X * k, y, LIST_R * k, y + ROW_H * k);
                 float f = drawRowBackground(c, i);
@@ -249,7 +251,7 @@ public class SettingsActivity extends Activity {
                 float base = rowRect.centerY() + Ui.halfCap(rowLabel);
                 c.drawText(labels[i], rowRect.left + 30 * k, base, rowLabel);
                 float right = rowRect.right - 30 * k;
-                if (i >= 2) {
+                if (i >= 3) {
                     float cw = Symbols.width(getContext(), "chevron_right", 22 * k);
                     Symbols.draw(getContext(), c, "chevron_right", right - cw / 2, rowRect.centerY(), 22 * k, blend(0x66FFFFFF, 0x991C1C1E, f));
                 } else if (i == 0 && working) {
@@ -267,7 +269,7 @@ public class SettingsActivity extends Activity {
                 }
             }
 
-            float y = (LIST_TOP + 3 * (ROW_H + ROW_GAP) + 46) * k;
+            float y = (LIST_TOP + 4 * (ROW_H + ROW_GAP) + 46) * k;
             String error = state.optString("error");
             if (working && (busyText.contains("Permitir") || busyText.contains("Allow"))) {
                 c.drawText(Ui.tr("Na TV: marque “Sempre permitir” e aperte OK.", "On the TV: tick “Always allow” and press OK."),
@@ -291,6 +293,7 @@ public class SettingsActivity extends Activity {
             int count = recs.optInt("count");
             if (!hasKey) line = Ui.tr("Sem chave do TMDB: veja o README (config.properties).", "No TMDB key: see the README (config.properties).");
             else if (!error.isEmpty()) line = Ui.tr("Erro: ", "Error: ") + error + ".";
+            else if (count > 0 && Ui.es) line = "Activas · " + count + " títulos de las apps del proyector, 3 nuevos cada hora.";
             else if (count > 0) line = Ui.tr("Ligadas · " + count + " títulos nos apps da TV, 3 novos a cada hora.",
                     "On · " + count + " titles from the TV's apps, 3 new ones every hour.");
             else line = Ui.tr("Buscando os títulos…", "Fetching titles…");
@@ -322,7 +325,7 @@ public class SettingsActivity extends Activity {
         }
 
         private float drawComparison(Canvas c, float y) {
-            float x = LIST_X * k + 30 * k, colA = LIST_R * k - 220 * k, colB = LIST_R * k - 30 * k;
+            float x = LIST_X * k + 30 * k, colA = LIST_R * k - 300 * k, colB = LIST_R * k - 30 * k;
             c.drawText(Ui.tr("COMPARAÇÃO", "COMPARISON"), x, y, header);
             cellValue.setColor(0x73FFFFFF);
             c.drawText("Original", colA, y, cellValue);
@@ -400,6 +403,7 @@ public class SettingsActivity extends Activity {
 
         private static String ago(long at) {
             long minutes = Math.max(0, (System.currentTimeMillis() - at) / 60_000);
+            if (Ui.es) return minutes < 1 ? "ahora" : minutes < 48 * 60 ? Es.ago(minutes) : "hace " + (minutes / 1440) + " días";
             if (minutes < 1) return Ui.tr("agora", "now");
             if (minutes < 60) return Ui.tr("há " + minutes + " min", minutes + " min ago");
             if (minutes < 48 * 60) return Ui.tr("há " + (minutes / 60) + " h", (minutes / 60) + " h ago");
@@ -473,6 +477,10 @@ public class SettingsActivity extends Activity {
             } else if (focus == 1) {
                 pause();
                 activity.showPreview();
+            } else if (focus == 2) {
+                // Reduce Motion, like tvOS: focus, drawer and backgrounds jump instead of animating (weak GPUs).
+                android.content.SharedPreferences ui = c.getSharedPreferences("home-ui", Context.MODE_PRIVATE);
+                ui.edit().putBoolean("reducedMotion", !ui.getBoolean("reducedMotion", false)).apply();
             } else {
                 activity.startActivity(new Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             }

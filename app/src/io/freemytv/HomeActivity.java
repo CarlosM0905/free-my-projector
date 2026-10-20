@@ -49,6 +49,15 @@ public class HomeActivity extends Activity {
         super.onPause();
     }
 
+    /**
+     * Free My Projector: once another app is in front, the home screen lets go of the photos it isn't showing (tens of
+     * MB of GPU memory on a 2 GB projector); they are decoded again in the background when Home comes back.
+     */
+    @Override public void onTrimMemory(int level) {
+        super.onTrimMemory(level);
+        if (home != null && level >= TRIM_MEMORY_UI_HIDDEN) home.trimMemory();
+    }
+
     /** Home button pressed on the home screen: back to the entry state (focus on the first app, sheet closed). */
     @Override protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);

@@ -46,6 +46,14 @@ final class Es {
         t("Sleep timer", "Temporizador");
         t("Test pattern", "Patrón de prueba");
         t("Match frame rate", "Hz automático");
+        t("Motion", "Movimiento");
+        t("Network", "Red");
+        t("Excellent signal", "Señal excelente");
+        t("Good signal", "Señal buena");
+        t("Fair signal", "Señal regular");
+        t("Weak signal", "Señal débil");
+        t("Reduced", "Reducido");
+        t("Full", "Completo");
         t("Movie or show", "Película o serie");
         t("Searching…", "Buscando…");
         t("Nothing on your apps.", "Nada en tus apps.");

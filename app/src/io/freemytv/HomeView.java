@@ -90,6 +90,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private static final String[] TAB_KIND = {null, "movie", "tv"};
     /** Tabs on top (the last one, Up Next, only once something was opened); the round buttons come after them. */
     private static final int NT = 5, UP_NEXT = 3, SEARCH = 4;
+    /** Round buttons at the top right: keystone (or live TV), network, HDMI inputs, settings. */
+    private static final int NB = 4;
     /** Search: a one-row keyboard (tvOS), the typed text and up to 4 results. */
     private static final int Z_KEYS = 6, Z_RESULTS = 7;
     private static final String KEYS = "abcdefghijklmnñopqrstuvwxyz0123456789 \u232B";
@@ -124,8 +126,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     // At the top: tabs (0 to 2) and icon-only buttons (3 to 5); the three cards
     private int tab, topIndex, cardIndex;
     private List<Recs.Pick> cards = new ArrayList<>();
-    private final Spring[] topFocus = new Spring[NT + 3];
-    private final RectF[] topRects = new RectF[NT + 3];
+    private final Spring[] topFocus = new Spring[NT + NB];
+    private final RectF[] topRects = new RectF[NT + NB];
     private final Spring[] cardFocus = new Spring[3];
     private final RectF[] cardRects = new RectF[3];
     private final List<HomeApps.Item> lightButtons = new ArrayList<>();
@@ -310,9 +312,11 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         toastLayer = new Layer(a, TOAST);
         // Hardware layers on the GPU: only the one that changed is redrawn; moving, fading and scaling stay cheap.
         for (View v : new View[] {status, platter, tiles, drawerLayer, sheetLayer}) v.setLayerType(LAYER_TYPE_HARDWARE, null);
-        for (View v : new View[] {sky, heroLayer, status, platter, tiles, drawerLayer, sheetLayer, toastLayer}) addView(v);
+        glowView = new View(a);
+        glowView.setVisibility(INVISIBLE);
+        for (View v : new View[] {sky, glowView, heroLayer, status, platter, tiles, drawerLayer, sheetLayer, toastLayer}) addView(v);
         drawerLayer.setVisibility(INVISIBLE);
-        for (int i = 0; i < NT + 3; i++) {
+        for (int i = 0; i < NT + NB; i++) {
             topFocus[i] = new Spring(0.26f, 0.85f, 0);
             topRects[i] = new RectF();
         }
@@ -337,6 +341,11 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private boolean bgWasFading;
 
     void resume() {
+        Spring.instant = reducedMotion(getContext());
+        Network.refresh(getContext(), () -> post(() -> {
+            for (HomeApps.Item b : lightButtons) if (b.kind == HomeApps.NETWORK) b.label = Network.label();
+            statusDirty = true;
+        }));
         if (running) return;
         running = true;
         checkNight(false);
@@ -411,6 +420,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         // Projectors have no antenna: there, the first corner button is the keystone instead of live TV.
         HomeApps.Item keystone = HomeApps.liveTv(getContext()) == null ? Projector.keystone(getContext()) : null;
         lightButtons.add(keystone != null ? keystone : HomeApps.action(HomeApps.LIVE_TV, "live", Ui.tr("TV aberta", "Live TV"), "live_tv"));
+        // The Wi-Fi it's on, like Clean Your TV's network pill: the name and signal appear when focused.
+        lightButtons.add(HomeApps.action(HomeApps.NETWORK, "network", Network.label(), "wifi"));
         lightButtons.add(HomeApps.action(HomeApps.INPUTS, "inputs", Ui.tr("Entradas HDMI", "HDMI Inputs"), "hdmi"));
         lightButtons.add(HomeApps.action(HomeApps.SETTINGS, "settings", Ui.tr("Configurações", "Settings"), "settings"));
     }
@@ -592,6 +603,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         boolean heroFading = tickHeroFade(up);
         boolean bgFading = tickBackgroundFade(up);
         boolean nightMoving = tickNight(up);
+        boolean glowMoving = glow.step(dt) || glowX.step(dt);
 
         if (drawerMoving || sheetMoving || motionDirty) updateMotion();
         // Control Center: switches, the timer and the projector's status are redrawn once a second while it's open.
@@ -613,6 +625,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         if (drawerItemsMoving || drawerDirty || glassFade || bgEnded) drawerLayer.invalidate();
         if (gridMoving || gridDirty) sheetLayer.invalidate();
         if (drawerMoving || bgFading || bgEnded) sky.invalidate();
+        if (glowMoving || glowDirty) placeGlow();
+        glowDirty = false;
         if (glassFade || bgEnded || (drawerWasMoving && !drawerMoving)) platter.invalidate();
         drawerWasMoving = drawerMoving;
         tilesDirty = statusDirty = heroDirty = drawerDirty = gridDirty = motionDirty = false;
@@ -913,7 +927,13 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         return true;
     }
 
+    /** Reduce Motion (home settings): saved by SettingsActivity, read when the home screen shows. */
+    static boolean reducedMotion(Context c) {
+        return c.getSharedPreferences("home-ui", Context.MODE_PRIVATE).getBoolean("reducedMotion", false);
+    }
+
     private float fadeEase(long start, long up) {
+        if (Spring.instant) return 1;   // Reduce Motion: backgrounds switch without a crossfade
         return fadeEase(start, up, FADE_MS);
     }
 
@@ -1080,7 +1100,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         Paint text = lQuote;
         // The corner buttons' names appear in this row: the quotes fade out while one of them has focus.
         float fade = 1;
-        for (int i = NT; i < NT + 3; i++) fade = Math.min(fade, 1 - Ui.clamp(topFocus[i].value));
+        for (int i = NT; i < NT + NB; i++) fade = Math.min(fade, 1 - Ui.clamp(topFocus[i].value));
         if (fade <= 0.01f) return;
         int textColor = text.getColor();
         text.setColor(Ui.alpha(textColor, fade));
@@ -1492,6 +1512,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
 
     /** Sets the springs' targets from the current focus (snap: no animation). */
     private void retarget(boolean snap) {
+        aimGlow();
         // Only the group whose focus changed is redrawn (moving along the shelf doesn't redraw the hero or capsule).
         boolean tilesChanged = aim(tileFocus, !sheetOpen && zone == Z_SHELF ? shelfIndex : -1, snap);
         boolean statusChanged = aim(statusFocus, !sheetOpen && zone == Z_STATUS ? statusIndex : -1, snap);
@@ -1986,7 +2007,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             x = topRects[i].right + 4 * k;
         }
         float b = L_BUTTON * k, right = CONTENT_R * k, cy = L_BUTTON_CY * k;
-        for (int i = 2; i >= 0; i--) {
+        for (int i = NB - 1; i >= 0; i--) {
             topRects[NT + i].set(right - b, cy - b / 2, right, cy + b / 2);
             right -= b + L_BUTTON_GAP * k;
         }
@@ -2035,6 +2056,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
      * keeps them, and the tabs bring back the tab's cards.
      */
     private void checkTopShelf() {
+        aimGlow();
         String key = topShelf;
         if (zone == Z_SHELF) {
             HomeApps.Item it = shelfIndex < shelf.size() ? shelf.get(shelfIndex) : null;
@@ -2047,6 +2069,11 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         cardIndex = 0;
         updateCards();
     }   // checked when the cards update, not on every frame (it asks the package manager)
+
+    /** Hidden behind another app: only the photos of the cards on screen stay in memory. */
+    void trimMemory() {
+        recs.keepOnly(cards);
+    }
 
     private boolean hasUpNext() {
         return upNextShown;
@@ -2199,6 +2226,89 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         imagePaint.setColorFilter(null);
     }
 
+    // MARK: - Ambient glow (Clean Your TV): the focused app's colour rising softly behind the shelf
+
+    private final Spring glow = new Spring(0.4f, 1f, 0), glowX = new Spring(0.35f, 1f, 0);
+    private int glowColor;
+    private boolean glowDirty;
+    private Bitmap glowMask;
+    private View glowView;
+
+    /** Aims the glow at the focused shelf app (its most vivid colour), or fades it out off the shelf. */
+    private void aimGlow() {
+        HomeApps.Item it = zone == Z_SHELF && !sheetOpen && shelfIndex < shelf.size() ? shelf.get(shelfIndex) : null;
+        if (it == null || it.kind != HomeApps.APP) {
+            glow.target = 0;
+            return;
+        }
+        if (it.glow == 0) it.glow = vivid(it.logo != null ? it.logo : it.tile);
+        if (glowColor != it.glow) {
+            glowColor = it.glow;
+            glowDirty = true;
+        }
+        glow.target = 1;
+        float x = tileRects[shelfIndex].centerX() / Math.max(1, w);
+        if (glow.value < 0.02f) glowX.snap(x); else glowX.target = x;
+    }
+
+    /**
+     * The glow is its own view over the background: moving and fading it only recomposes one small texture, while
+     * redrawing the background for it took ~40 ms per frame on the projector.
+     */
+    private void placeGlow() {
+        if (glowView == null || w == 0) return;
+        float a = Ui.clamp(glow.value);
+        glowView.setVisibility(a < 0.01f || glowColor == 0 ? INVISIBLE : VISIBLE);
+        if (a < 0.01f) return;
+        if (glowMask == null) {
+            // Painted once in white and tinted: changing apps is a colour filter, not a repaint (Clean Your TV's trick).
+            glowMask = Bitmap.createBitmap(240, 135, Bitmap.Config.ARGB_8888);
+            Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+            p.setShader(new android.graphics.RadialGradient(120, 135, 130, new int[] {0x99FFFFFF, 0x33FFFFFF, 0x00FFFFFF},
+                    new float[] {0, 0.5f, 1}, Shader.TileMode.CLAMP));
+            new Canvas(glowMask).drawRect(0, 0, 240, 135, p);
+        }
+        if (glowView.getBackground() == null) {
+            android.graphics.drawable.BitmapDrawable d = new android.graphics.drawable.BitmapDrawable(getResources(), glowMask);
+            d.setFilterBitmap(true);
+            glowView.setBackground(d);
+        }
+        if (glowView.getTag() == null || (int) glowView.getTag() != glowColor) {
+            glowView.getBackground().setTint(glowColor);   // SRC_IN: the mask's shape in the app's colour
+            glowView.setTag(glowColor);
+        }
+        int gw = Math.round(w * 0.9f), gh = Math.round(h * 0.62f);
+        if (glowView.getWidth() != gw) glowView.layout(0, h - gh, gw, h);
+        glowView.setTranslationX(glowX.value * w - gw / 2f);
+        glowView.setAlpha(a * tone(0.45f, 0.6f));
+    }
+
+    /** The most saturated, not-too-dark colour of an image (Clean Your TV's vividColor), lifted so it glows. */
+    private static int vivid(Bitmap b) {
+        if (b == null) return 0xFF666666;
+        Bitmap s = Bitmap.createScaledBitmap(b, 12, 12, true);
+        float[] hsv = new float[3];
+        int best = 0xFF666666;
+        float bestScore = -1;
+        for (int y = 0; y < 12; y++) {
+            for (int x = 0; x < 12; x++) {
+                int p = s.getPixel(x, y);
+                if ((p >>> 24) < 160) continue;
+                android.graphics.Color.colorToHSV(p, hsv);
+                float score = hsv[1] * Math.min(1f, hsv[2] * 1.4f);
+                if (score > bestScore) {
+                    bestScore = score;
+                    best = p;
+                }
+            }
+        }
+        if (s != b) s.recycle();
+        android.graphics.Color.colorToHSV(best, hsv);
+        if (bestScore < 0.25f) hsv[1] = 0;   // a black-and-white logo: a neutral glow
+        hsv[2] = Math.max(0.6f, hsv[2]);
+        return android.graphics.Color.HSVToColor(hsv);
+    }
+
     private void drawLightImage(Canvas c, Backdrop b, float alpha) {
         if (night < 0.999f || b.nightImage == null) drawImage(c, b.lightImage, alpha);
         if (night > 0.001f) drawImage(c, b.nightImage, alpha * night);
@@ -2325,7 +2435,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
      */
     private void drawLightButtons(Canvas c) {
         applyTone();
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < NB; i++) {
             RectF r = topRects[NT + i];
             float f = Ui.clamp(topFocus[NT + i].value), s = 1 + 0.1f * f, rad = r.width() / 2 * s;
             cell.set(r.centerX() - rad, r.centerY() - rad, r.centerX() + rad, r.centerY() + rad);
@@ -2407,7 +2517,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
                 break;
             case Z_TOP:
                 if (dx != 0) {
-                    int next = Math.max(0, Math.min(NT + 2, topIndex + dx));
+                    int next = Math.max(0, Math.min(NT + NB - 1, topIndex + dx));
                     if (next == UP_NEXT && !hasUpNext()) next += dx;   // hidden until something was opened
                     if (next == topIndex) return true;
                     topIndex = next;

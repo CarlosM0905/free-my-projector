@@ -54,7 +54,7 @@ import java.util.regex.Pattern;
 final class HomeApps {
     private HomeApps() {}
 
-    static final int APP = 0, LIVE_TV = 1, INPUT = 2, ALL_APPS = 3, SETTINGS = 4, ANDROID_SETTINGS = 5, PROJECTOR = 6;
+    static final int APP = 0, LIVE_TV = 1, INPUT = 2, ALL_APPS = 3, SETTINGS = 4, ANDROID_SETTINGS = 5, PROJECTOR = 6, NETWORK = 8;
     /** The "HDMI Inputs" button: opens the bottom drawer on the inputs (the home screen handles it). */
     static final int INPUTS = 7;
     /** Image size of each card (16:9; on screen it shows up to ~330 px wide). */
@@ -71,7 +71,8 @@ final class HomeApps {
         float logoInk;      // fraction of the logo with ink (thin logos are drawn larger, with the same "weight")
         float logoScale = 1; // size tweak by eye (compact logos need more)
         boolean connected = true;
-        boolean bleed;      // the card is the app icon edge to edge: drawn center-cropped, never stretched
+        boolean bleed;
+        int glow;           // the ambient glow's colour when focused on the shelf (0 = not worked out yet)      // the card is the app icon edge to edge: drawn center-cropped, never stretched
     }
 
     /**
@@ -312,6 +313,9 @@ final class HomeApps {
                 break;
             case ANDROID_SETTINGS:
                 intent = new Intent(Settings.ACTION_SETTINGS);
+                break;
+            case NETWORK:
+                intent = new Intent(Settings.ACTION_WIFI_SETTINGS);
                 break;
             case PROJECTOR:
                 if (Projector.isToggle(it.key)) {   // a Control Center switch: nothing to open

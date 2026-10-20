@@ -4,6 +4,8 @@ package io.freemytv;
 final class Spring {
     float value, velocity, target;
     private final float response, damping;
+    /** Free My Projector: Reduce Motion (home settings): every spring jumps to its target in one frame. */
+    static volatile boolean instant;
 
     Spring(float response, float damping, float initial) {
         this.response = response;
@@ -22,6 +24,11 @@ final class Spring {
             value = target;
             velocity = 0;
             return false;
+        }
+        if (instant) {   // one frame at the end position (still "moving" so the caller draws it)
+            value = target;
+            velocity = 0;
+            return true;
         }
         float omega = (float) (2 * Math.PI / response);
         float stiffness = omega * omega, friction = 2 * damping * omega;

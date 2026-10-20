@@ -208,6 +208,15 @@ final class Recs {
         return out;
     }
 
+    /** Frees the ready images except these (the home screen is hidden; the rest are rebuilt when it comes back). */
+    void keepOnly(List<Pick> keep) {
+        java.util.Set<String> wanted = new java.util.HashSet<>();
+        for (Pick p : keep) if (p.backdrop != null) wanted.add(p.backdrop);
+        synchronized (images) {
+            images.keySet().retainAll(wanted);
+        }
+    }
+
     /** A title was opened: it goes first in Up Next. */
     void remember(Pick p) {
         if (p == null || p.pkg == null) return;
