@@ -29,7 +29,7 @@ import java.util.List;
  * to draw on a projector's GPU, so it's always smooth.
  */
 final class ListHome extends View implements Home, Choreographer.FrameCallback, Recs.Listener {
-    private static final int APP = 0, PICK = 1, ITEM = 2, DREAM = 3, NEXT_BG = 4, BACKGROUND = 5;
+    private static final int APP = 0, PICK = 1, ITEM = 2, DREAM = 3, NEXT_BG = 4, BACKGROUND = 5, SHUFFLE = 6;
     /** Background styles ("Fondo"): the landscape sharp, blurred, or plain black. */
     private static final String[] BG_STYLES = {"sharp", "soft", "black"};
 
@@ -91,6 +91,7 @@ final class ListHome extends View implements Home, Choreographer.FrameCallback, 
         Runnable build = () -> {
             final List<Row> list = new ArrayList<>();
             String apps = Ui.tr("Apps", "Apps");
+            if (!recs.pool().isEmpty()) list.add(action(apps, SHUFFLE, Ui.tr("O que assisto hoje?", "What should I watch?"), "dice"));
             for (HomeApps.Item it : HomeApps.shelf(app, extract)) list.add(item(apps, it, APP));
             for (Recs.Pick p : recs.upNext()) {
                 Row r = new Row();
@@ -349,6 +350,9 @@ final class ListHome extends View implements Home, Choreographer.FrameCallback, 
             case NEXT_BG:
                 loadBackground(true);
                 return;
+            case SHUFFLE:
+                TitleActivity.shuffle(getContext());
+                return;
             case BACKGROUND:
                 changeBackground(1);
                 return;
@@ -527,6 +531,8 @@ final class ListHome extends View implements Home, Choreographer.FrameCallback, 
             }
             case NEXT_BG:
                 return backgroundPlace == null ? "" : backgroundPlace;
+            case SHUFFLE:
+                return Ui.tr("Um filme ou série ao acaso dos seus apps", "A movie or show picked at random from your apps");
             case BACKGROUND: {
                 String st = bgStyle(c);
                 return "‹  " + (st.equals("soft") ? Ui.tr("Desfocado", "Blurred") : st.equals("black") ? Ui.tr("Preto", "Black")

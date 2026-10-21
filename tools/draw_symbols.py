@@ -80,6 +80,16 @@ def wallpaper(out):
     save(img, out, "wallpaper")
 
 
+def dice(out):
+    # A die showing five (Material's "casino").
+    img, d = canvas(148, 148)
+    k = S
+    d.rounded_rectangle((4 * k, 4 * k, 144 * k, 144 * k), radius=30 * k, fill=255)
+    for (x, y) in ((40, 40), (108, 40), (74, 74), (40, 108), (108, 108)):
+        d.ellipse(((x - 12) * k, (y - 12) * k, (x + 12) * k, (y + 12) * k), fill=0)
+    save(img, out, "dice")
+
+
 def main():
     out = sys.argv[1]
     os.makedirs(out, exist_ok=True)
@@ -88,6 +98,7 @@ def main():
     thermometer(out)
     focus(out)
     wallpaper(out)
+    dice(out)
     print("ok")
 
 

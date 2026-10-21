@@ -45,6 +45,10 @@ final class Es {
         t("Sound effects", "Sonido");
         t("Sleep timer", "Apagado");
         t("Audio only", "Solo audio");
+        t("What should I watch?", "¿Qué veo hoy?");
+        t("FOR TONIGHT", "PARA HOY");
+        t("Another", "Otra");
+        t("A movie or show picked at random from your apps", "Una película o serie al azar de tus apps");
         t("Cast: ", "Reparto: ");
         t("Watch on %s", "Ver en %s");
         t("Not available", "No disponible");

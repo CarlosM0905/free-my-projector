@@ -385,6 +385,16 @@ final class Recs {
         return p.backdrop != null && imageFile(p).exists();
     }
 
+    /** "What to watch tonight": every pick on an installed app whose photo is already on disk. */
+    List<Pick> pool() {
+        List<Pick> out = new ArrayList<>();
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        List<Pick> all = new ArrayList<>(wanted());
+        all.addAll(picks);
+        for (Pick p : all) if (p.pkg != null && installed(p.pkg) && hasImage(p) && seen.add(key(p))) out.add(p);
+        return out;
+    }
+
     /** The title's photo on disk (1920 wide), for the details page. */
     File photo(Pick p) {
         return p.backdrop == null ? null : imageFile(p);

@@ -28,15 +28,23 @@ import android.widget.FrameLayout;
  * title itself in its app) and its trailer (SmartTube). Opened from the cards, Up Next, Search and the light design.
  */
 public final class TitleActivity extends Activity {
-    static final String EXTRA = "pick";
+    static final String EXTRA = "pick", SHUFFLE = "shuffle";
 
     private Recs recs;
     private Recs.Pick pick;
     private Recs.Details details;
     private Photo photo;
     private Page page;
-    private int focus;   // 0 = watch, 1 = trailer
+    private int focus;   // index in buttons()
+    private boolean shuffle;
+    private String keepFocus;   // after "Another", the focus stays on it once the new title's buttons are known
+    private final java.util.Random random = new java.util.Random();
     private Click click;
+
+    /** "What should I watch?": the page of a title picked at random from your apps, with an "Another" button. */
+    static void shuffle(Context c) {
+        c.startActivity(new Intent(c, TitleActivity.class).putExtra(SHUFFLE, true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+    }
 
     /** Opens the page for a pick (from the home screen's process). */
     static void open(Context c, Recs.Pick p) {
@@ -48,12 +56,13 @@ public final class TitleActivity extends Activity {
         super.onCreate(state);
         Ui.init(this);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        pick = Recs.fromJson(getIntent().getStringExtra(EXTRA));
+        recs = Recs.get(this);
+        shuffle = getIntent().getBooleanExtra(SHUFFLE, false);
+        pick = shuffle ? another() : Recs.fromJson(getIntent().getStringExtra(EXTRA));
         if (pick == null) {
             finish();
             return;
         }
-        recs = Recs.get(this);
         click = new Click(this);
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(0xFF0B0B0D);
@@ -83,6 +92,8 @@ public final class TitleActivity extends Activity {
                 Recs.Details d = recs.details(pick);
                 runOnUiThread(() -> {
                     details = d;
+                    if (keepFocus != null && buttons().contains(keepFocus)) focus = buttons().indexOf(keepFocus);
+                    keepFocus = null;
                     page.invalidate();
                 });
             } catch (Exception e) {
@@ -98,8 +109,7 @@ public final class TitleActivity extends Activity {
             case KeyEvent.KEYCODE_DPAD_LEFT:
             case KeyEvent.KEYCODE_DPAD_RIGHT:
                 if (down) {
-                    int to = e.getKeyCode() == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : 0;
-                    if (to == 1 && !hasTrailer()) return true;
+                    int to = Math.max(0, Math.min(buttons().size() - 1, focus + (e.getKeyCode() == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : -1)));
                     if (to != focus) {
                         focus = to;
                         click.move();
@@ -125,13 +135,46 @@ public final class TitleActivity extends Activity {
         }
     }
 
+    /** A random title from the pool, never the one showing. */
+    private Recs.Pick another() {
+        java.util.List<Recs.Pick> pool = recs.pool();
+        if (pool.isEmpty()) return null;
+        if (pick != null && pool.size() > 1) {
+            for (int i = pool.size() - 1; i >= 0; i--) if (pool.get(i).id == pick.id) pool.remove(i);
+        }
+        return pool.get(random.nextInt(pool.size()));
+    }
+
+    /** The buttons, left to right: watch, trailer (when there is one), another (in shuffle mode). */
+    private java.util.List<String> buttons() {
+        java.util.List<String> b = new java.util.ArrayList<>();
+        b.add("watch");
+        if (hasTrailer()) b.add("trailer");
+        if (shuffle) b.add("another");
+        return b;
+    }
+
     private boolean hasTrailer() {
         return details != null && details.trailer != null;
     }
 
     private void activate() {
         click.open();
-        if (focus == 1 && hasTrailer()) {
+        String what = buttons().get(Math.min(focus, buttons().size() - 1));
+        if (what.equals("another")) {
+            Recs.Pick next = another();
+            if (next == null) return;
+            pick = next;
+            details = null;
+            keepFocus = "another";
+            photo.animate().cancel();
+            photo.setAlpha(0);
+            focus = buttons().indexOf("another");
+            page.invalidate();
+            load();
+            return;
+        }
+        if (what.equals("trailer")) {
             Uri u = Uri.parse("https://www.youtube.com/watch?v=" + details.trailer);
             Intent i = new Intent(Intent.ACTION_VIEW, u).setPackage("org.smarttube.stable");
             if (i.resolveActivity(getPackageManager()) == null) i.setPackage(null);
@@ -218,6 +261,14 @@ public final class TitleActivity extends Activity {
             fill.setShader(null);
 
             float x = 120 * k, width = 880 * k, y = 250 * k;
+            if (shuffle) {   // a small label over the title, in the accent color
+                small.setTextSize(24 * k);
+                small.setColor(0xFF0A84FF);
+                small.setLetterSpacing(0.08f);
+                c.drawText(Ui.tr("PARA HOJE", "FOR TONIGHT"), x, y - 30 * k, small);
+                small.setLetterSpacing(0);
+                small.setColor(0x8CFFFFFF);
+            }
             title.setTextSize(84 * k);
             StaticLayout t = layout(pick.title == null ? "" : pick.title, title, width, 2, 0.95f);
             c.save();
@@ -247,8 +298,13 @@ public final class TitleActivity extends Activity {
             float by = h - 200 * k, bh = 84 * k;
             String watch = "▶  " + (pick.pkg == null ? Ui.tr("Indisponível", "Not available")
                     : String.format(Ui.tr("Assistir no %s", "Watch on %s"), Recs.serviceName(pick)));
-            float bx = drawButton(c, watch, x, by, bh, focus == 0, k);
-            if (hasTrailer()) drawButton(c, Ui.tr("Trailer", "Trailer"), bx + 24 * k, by, bh, focus == 1, k);
+            java.util.List<String> b = buttons();
+            float bx = x - 24 * k;
+            for (int i = 0; i < b.size(); i++) {
+                String label = b.get(i).equals("watch") ? watch : b.get(i).equals("trailer") ? Ui.tr("Trailer", "Trailer")
+                        : "↻  " + Ui.tr("Outra", "Another");
+                bx = drawButton(c, label, bx + 24 * k, by, bh, focus == i, k);
+            }
         }
 
         /** A pill: white with dark text when focused, frosted otherwise (like tvOS). Returns its right edge. */

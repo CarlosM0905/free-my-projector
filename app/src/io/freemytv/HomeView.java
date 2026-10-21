@@ -91,8 +91,8 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
     private static final String[] TAB_KIND = {null, "movie", "tv"};
     /** Tabs on top (the last one, Up Next, only once something was opened); the round buttons come after them. */
     private static final int NT = 5, UP_NEXT = 3, SEARCH = 4;
-    /** Round buttons at the top right: keystone (or live TV), network, HDMI inputs, settings. */
-    private static final int NB = 4;
+    /** Round buttons at the top right: what to watch tonight, keystone (or live TV), network, HDMI inputs, settings. */
+    private static final int NB = 5;
     /** Search: a one-row keyboard (tvOS), the typed text and up to 4 results. */
     private static final int Z_KEYS = 6, Z_RESULTS = 7;
     private static final String KEYS = "abcdefghijklmnñopqrstuvwxyz0123456789 \u232B";
@@ -421,6 +421,8 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
     /** The three corner buttons, with their names in the current language. */
     private void makeLightButtons() {
         lightButtons.clear();
+        // Free My Projector: a title picked at random from your apps (its page, with "Another").
+        lightButtons.add(HomeApps.action(HomeApps.SHUFFLE, "shuffle", Ui.tr("O que assisto hoje?", "What should I watch?"), "dice"));
         // Projectors have no antenna: there, the first corner button is the keystone instead of live TV.
         HomeApps.Item keystone = HomeApps.liveTv(getContext()) == null ? Projector.keystone(getContext()) : null;
         lightButtons.add(keystone != null ? keystone : HomeApps.action(HomeApps.LIVE_TV, "live", Ui.tr("TV aberta", "Live TV"), "live_tv"));
@@ -2102,6 +2104,10 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
             r = tileRects[shelfIndex];
         }
         click.open();
+        if (it.kind == HomeApps.SHUFFLE) {
+            TitleActivity.shuffle(getContext());
+            return;
+        }
         if (it.kind == HomeApps.ALL_APPS) {
             openSheet();
             return;
