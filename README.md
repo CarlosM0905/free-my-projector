@@ -43,6 +43,8 @@ The original project's README is in [README-original.md](README-original.md).
 - **Landscape screensaver**, like the Apple TV and Mac aerials: a full-screen landscape photo every minute (Bing's photos of the day, with the place's name) and a glass box with the time, date, weather and what's playing. Also as a **frame**, like The Frame's Art Mode, or with the recommendations' artwork. Choose it in Home Settings; it starts right away with **Back** on the home screen, like the Apple TV.
 - **Soft navigation sounds**, like tvOS: a tick when you move, two notes when opening and going back.
 - **Dark, light or automatic mode** (light by day, dark from sunset), and a **screensaver** with the artwork and a large clock.
+- **Without a TMDB key**, the classic design shows the date, a large clock and the weather where the cards would be (from upstream).
+- **HDMI inputs named and drawn after the device** (from upstream): the name it reports over HDMI-CEC ("PlayStation 5") and an icon for a console, a streaming box, a sound system or a TV box.
 - **Keystone button** at the top right instead of *Live TV* (projectors have no antenna).
 - **Search**, like tvOS: a tab with a one-row keyboard; it shows only movies and shows that are in your apps and opens them directly. The screensaver's landscape of the day sits behind it.
 - **Now Playing**, like tvOS: while Spotify, AuraMusic or another app is playing, the song and artist show at the top right instead of the prices.

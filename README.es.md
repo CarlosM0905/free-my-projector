@@ -43,6 +43,8 @@ El README del proyecto original está en [README-original.md](README-original.md
 - **Protector de paisajes**, como los fondos aéreos del Apple TV y la Mac: una foto de paisaje a pantalla completa cada minuto (las fotos del día de Bing, con el nombre del lugar) y un recuadro de vidrio con la hora, la fecha, el clima y lo que suena. También en **marco**, como el modo Arte de The Frame, o con las portadas de las recomendaciones. Se elige en los ajustes del inicio, y se activa al instante con **Atrás** en el inicio, como en el Apple TV.
 - **Sonidos suaves al navegar**, como en tvOS: un tic al moverte, dos notas al abrir y al volver.
 - **Modo oscuro fijo, claro fijo o automático** (claro de día, oscuro desde la puesta de sol), y un **protector de pantalla** con las portadas y un reloj grande.
+- **Sin clave de TMDB**, el diseño Clásico muestra la fecha, una hora grande y el clima donde irían las tarjetas (del repo original).
+- **Entradas HDMI con el nombre e icono del aparato** (del repo original): el nombre que informa por HDMI-CEC ("PlayStation 5") y un icono de consola, TV box, equipo de sonido o decodificador.
 - **Botón de Keystone** arriba a la derecha en vez de *TV en vivo* (los proyectores no tienen antena).
 - **Buscar**, como en tvOS: una pestaña con teclado de una sola fila; muestra solo películas y series que están en tus apps y las abre directo. De fondo, el paisaje del día del protector.
 - **Ahora suena**, como en tvOS: mientras Spotify, AuraMusic u otra app reproduce algo, la canción y el artista aparecen arriba a la derecha en lugar de las cotizaciones.

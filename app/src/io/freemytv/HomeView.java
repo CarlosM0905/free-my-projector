@@ -2503,9 +2503,43 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         int top = -1;
         for (int i = 0; i < 3; i++) if (cardFocus[i].value > 0.02f && (top < 0 || cardFocus[i].value > cardFocus[top].value)) top = i;
         if (tab == SEARCH) drawSearch(c);
+        else if (!Recs.hasKey(getContext())) drawClock(c);   // (upstream) no TMDB key: the time and the weather, not empty cards
         for (int i = 0; i < 3; i++) if (i != top) drawLightCard(c, i);
         if (top >= 0) drawLightCard(c, top);
         drawQuotes(c);
+    }
+
+    private Paint lDate, lClock, lWeatherLine;
+
+    /** Without a TMDB key: the date, a large clock and today's weather where the cards would be (from upstream). */
+    private void drawClock(Canvas c) {
+        if (lClock == null) {
+            lDate = Ui.text(Ui.semibold, 34 * k, L_DIM);
+            lClock = Ui.numbers(Ui.light, 200 * k, L_INK);
+            lClock.setLetterSpacing(-0.01f);
+            lWeatherLine = Ui.text(Ui.medium, 34 * k, L_DIM);
+        }
+        lDate.setColor(tone(L_DIM, 0xFF98989D));
+        lClock.setColor(tone(L_INK, WHITE));
+        lWeatherLine.setColor(tone(L_DIM, 0xFF98989D));
+        float x = MARGIN * k;
+        long now = System.currentTimeMillis();
+        String date = Ui.date(now);
+        if (!date.isEmpty()) date = Character.toUpperCase(date.charAt(0)) + date.substring(1);
+        String time = new java.text.SimpleDateFormat(android.text.format.DateFormat.is24HourFormat(getContext()) ? "H:mm" : "h:mm",
+                java.util.Locale.ROOT).format(new java.util.Date(now));
+        c.drawText(date, x - Ui.leftBearing(lDate, date), 330 * k, lDate);
+        c.drawText(time, x - Ui.leftBearing(lClock, time), 540 * k, lClock);
+        HomeData.Weather wx = data.weather;
+        if (Double.isNaN(wx.temp)) return;
+        String line = HomeData.degrees(wx.temp) + "  " + (Ui.es ? Es.condition(wx.code, wx.isDay) : HomeData.condition(wx.code, wx.isDay))
+                + "   " + (Ui.en ? "H:" + HomeData.degrees(wx.max) + "  L:" + HomeData.degrees(wx.min)
+                : "Máx. " + HomeData.degrees(wx.max) + "  Mín. " + HomeData.degrees(wx.min));
+        float size = 40 * k, base = 626 * k;
+        String symbol = Symbols.weather(wx.code, wx.isDay);
+        float sw = Symbols.width(getContext(), symbol, size);
+        Symbols.draw(getContext(), c, symbol, x + sw / 2, base - Ui.halfCap(lWeatherLine), size, lWeatherLine.getColor());
+        c.drawText(line, x + sw + 16 * k, base, lWeatherLine);
     }
 
     /**
@@ -2516,7 +2550,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
     private void drawLightCard(Canvas c, int i) {
         RectF base = cardRects[i];
         Recs.Pick p = i < cards.size() ? cards.get(i) : null;
-        if (p == null && tab >= UP_NEXT) return;   // Up Next with fewer than three, or Search: no empty placeholders
+        if (p == null && (tab >= UP_NEXT || !Recs.hasKey(getContext()))) return;   // no empty placeholders (no key: the clock shows)
         float v = cardFocus[i].value, f = Ui.clamp(v), s = 1 + 0.05f * v;
         float bw = base.width(), bh = base.height(), r0 = 18 * k;
         float cx = base.centerX(), cy = base.centerY() - 6 * k * v;
