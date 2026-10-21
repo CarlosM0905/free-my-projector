@@ -59,6 +59,7 @@ The original project's README is in [README-original.md](README-original.md).
 - **Reduce motion** in Home Settings, for projectors with a weak GPU: focus and backgrounds change without animating.
 - **Low memory use:** while you're in another app, the home screen lets go of the photos you can't see.
 - **Automatic updates** for SmartTube, SmartTwitchTV and AuraMusic: once a day, while you're on the home screen, it downloads the latest stable release from their official GitHub and installs it only if it's newer and signed by the same author as the one you have. A short message lets you know.
+- **What's New**, like tvOS apps after an update: the first time the home screen opens on a new release, a sheet lists its notes (new features, improvements, fixes), taken from the release on GitHub. OK closes it.
 - **One button to go back.** *Original* restores your previous home screen (Projectivy, for example), your screensaver and your apps as they were.
 
 ## Screenshots

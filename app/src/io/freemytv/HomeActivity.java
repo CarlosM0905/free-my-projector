@@ -58,6 +58,7 @@ public class HomeActivity extends Activity {
             return;
         }
         if (home != null) home.resume();
+        WhatsNew.maybeShow(this);
     }
 
     @Override protected void onPause() {

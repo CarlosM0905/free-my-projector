@@ -134,7 +134,7 @@ final class Updates {
         return "armeabi-v7a";
     }
 
-    private static String get(String url) throws IOException {
+    static String get(String url) throws IOException {
         HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
         c.setConnectTimeout(8000);
         c.setReadTimeout(10000);

@@ -59,6 +59,7 @@ El README del proyecto original está en [README-original.md](README-original.md
 - **Movimiento reducido** en los ajustes del inicio, para proyectores con GPU justa: el foco y el fondo cambian sin animación.
 - **Poca memoria:** mientras usas otra app, el inicio suelta las fotos que no se ven.
 - **Actualizaciones solas** de SmartTube, SmartTwitchTV y AuraMusic: una vez al día, mientras estás en el inicio, baja la última versión estable de su GitHub oficial y la instala solo si es más nueva y viene firmada por el mismo autor que la que tienes. Te avisa con un mensaje corto.
+- **Novedades**, como las apps de tvOS tras actualizarse: la primera vez que se abre el inicio con una versión nueva, una hoja muestra sus notas (novedades, mejoras, arreglos), tomadas de la release en GitHub. OK la cierra.
 - **Un botón para volver.** *Original* devuelve tu inicio anterior (por ejemplo Projectivy), tu protector de pantalla y las apps tal como estaban.
 
 ## Capturas

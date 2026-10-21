@@ -78,6 +78,9 @@ final class Es {
         t("What should I watch?", "¿Qué veo hoy?");
         t("FOR TONIGHT", "PARA HOY");
         t("Another", "Otra");
+        t("What's New", "Novedades");
+        t("Version ", "Versión ");
+        t("Continue", "Continuar");
         t("Backgrounds", "Fondos");
         t("The ones you keep replace the landscapes of the day in the background and the screensaver.", "Los que guardes reemplazan a los paisajes del día en el fondo y el protector.");
         t("Nothing found", "No se encontró nada");

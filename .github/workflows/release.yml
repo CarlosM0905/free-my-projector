@@ -38,12 +38,23 @@ jobs:
       - name: Build
         run: bash build.sh
 
+      # The notes come from the commits since the previous tag ("feat:" → New, "fix:" → Fixes); the projector shows
+      # them in its "What's New" sheet after updating itself.
+      - name: Notes
+        if: github.ref_type == 'tag'
+        run: |
+          prev=$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || true)
+          range=${prev:+$prev..}$GITHUB_REF_NAME
+          section() { lines=$(git log --no-merges --pretty='- %s' "$range" | grep -E "^- ($2)(\(|:)" | sed -E 's/^- [a-z]+(\([^)]*\))?: */- /'); [ -n "$lines" ] && printf '## %s\n%s\n\n' "$1" "$lines"; true; }
+          { section "Novedades" "feat"; section "Mejoras" "style|perf"; section "Arreglos" "fix"; } > notes.md
+          cat notes.md
+
       - name: Release
         if: github.ref_type == 'tag'
         uses: softprops/action-gh-release@v2
         with:
           files: FreeMyTV.apk
-          generate_release_notes: true
+          body_path: notes.md
 
       - name: Artifact (manual runs)
         if: github.ref_type != 'tag'
