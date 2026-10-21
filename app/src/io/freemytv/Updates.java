@@ -33,6 +33,8 @@ final class Updates {
         {"org.smarttube.stable", "yuliskov/SmartTube", "SmartTube_stable_.*_" + abi() + "\\.apk"},
         {"com.fgl27.twitch", "fgl27/SmartTwitchTV", "SmartTV_twitch_.*\\.apk"},
         {"com.auramusic.app", "TeamAuraMusic/AuraMusic", "AuraMusic-Tv\\.apk"},
+        // Free My Projector itself: this repository's releases (built and signed by .github/workflows/release.yml).
+        {"io.freemytv", "CarlosM0905/free-my-projector", "FreeMyTV\\.apk"},
     };
     private static final long EVERY = 24 * 3600_000L, RETRY = 3600_000L;
     private static volatile boolean running;

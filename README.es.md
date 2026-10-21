@@ -89,6 +89,9 @@ El README del proyecto original está en [README-original.md](README-original.md
 
 ## Instalar
 
+**La forma fácil:** baja `FreeMyTV.apk` de la [última release](../../releases/latest) e instálalo con `adb install -r FreeMyTV.apk`. Una vez instalado, se actualiza solo con cada release nueva (la misma revisión que para las otras apps: más nueva y firmada con la misma llave). Después pon tu clave de TMDB y tu ciudad en Ajustes del inicio → Preferencias.
+
+
 Necesitas una PC en la misma red WiFi que el proyector y la **depuración por red** activa en el proyector (los Wanbo la traen abierta en el puerto 3333).
 
 ### Con Claude Code

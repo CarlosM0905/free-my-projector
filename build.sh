@@ -74,8 +74,13 @@ EOF
 # On Windows, aapt2 writes asset paths with backslashes (assets/symbols\home.png) and Android can't find them, so
 # there the assets go in afterwards with jar (forward slashes; -0 keeps them uncompressed, fonts included).
 ASSETS="-A app/assets"; [ -n "$EXE" ] && ASSETS=""
+# Version: the number of commits (it only grows, here and in GitHub's release builds, so an update is always newer)
+# and the latest tag ("1.2.0"), or 1.0 before the first one.
+VERSION_CODE="$(git rev-list --count HEAD 2>/dev/null || echo 1)"
+VERSION_NAME="$( (git describe --tags --abbrev=0 2>/dev/null || true) | sed 's/^v//')"; VERSION_NAME="${VERSION_NAME:-1.0}"
 "$BT/aapt2$EXE" link -o out/base.apk -I "$AJ" --manifest app/AndroidManifest.xml --java out/gen out/res.zip \
-  --min-sdk-version "$MIN_API" --target-sdk-version 33 $ASSETS -0 ttf
+  --min-sdk-version "$MIN_API" --target-sdk-version 33 $ASSETS -0 ttf \
+  --version-code "$VERSION_CODE" --version-name "$VERSION_NAME" --replace-version
 [ -n "$EXE" ] && "${JAVA_HOME:+$JAVA_HOME/bin/}jar" -u -0 -f out/base.apk -C app assets
 "$JAVAC" -nowarn -Xlint:-options -source 8 -target 8 -bootclasspath "$AJ$SEP$BT/core-lambda-stubs.jar" -classpath "$AJ" \
   -encoding UTF-8 -d out/classes $(find app/src out/gen -name '*.java')

@@ -1,0 +1,53 @@
+# Builds FreeMyTV.apk and publishes it as a GitHub release when a version tag is pushed (git tag v1.2.0 && git push --tags).
+# Installed copies update themselves from the latest release (Updates.java), so the APK must be signed with the same
+# key as the first install: put that key in the FREEMYTV_KEYSTORE secret (base64 of freemytv.keystore). Without the
+# secret a new key is made, which is fine for a first install but can't update an existing one.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # build.sh numbers the version by the commits and names it by the latest tag
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: "build-tools;34.0.0 platforms;android-34"
+
+      - name: Signing key
+        env:
+          KEYSTORE: ${{ secrets.FREEMYTV_KEYSTORE }}
+        run: |
+          if [ -n "$KEYSTORE" ]; then echo "$KEYSTORE" | base64 -d > freemytv.keystore; fi
+
+      - name: Build
+        run: bash build.sh
+
+      - name: Release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: FreeMyTV.apk
+          generate_release_notes: true
+
+      - name: Artifact (manual runs)
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@v4
+        with:
+          name: FreeMyTV
+          path: FreeMyTV.apk

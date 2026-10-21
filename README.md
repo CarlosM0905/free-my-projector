@@ -89,6 +89,9 @@ The original project's README is in [README-original.md](README-original.md).
 
 ## Install
 
+**The easy way:** download `FreeMyTV.apk` from the [latest release](../../releases/latest) and install it with `adb install -r FreeMyTV.apk`. Once installed, it updates itself from new releases (same check as for the other apps: newer, and signed by the same key). Then set your TMDB key and city in Home Settings → Preferences.
+
+
 You need a computer on the same Wi-Fi as the projector, and **network debugging** turned on in the projector (Wanbo projectors ship with it open on port 3333).
 
 ### With Claude Code
