@@ -102,6 +102,8 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
     private boolean searching;
     private int searchSerial;
     private static final int Z_TOP = 4, Z_CARDS = 5;
+    /** Free My Projector: the Control Center's widget row (↓ from its shortcuts). */
+    private static final int Z_WIDGETS = 8;
 
     private final Activity activity;
     private final Scene scene = new Scene();
@@ -190,6 +192,17 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
     private Spring[] drawerFocus = new Spring[0];
     private RectF[] drawerRects = new RectF[0];
     private final RectF weatherCard = new RectF(), quotesCard = new RectF(), projectorCard = new RectF();
+    // Free My Projector: the Control Center's widgets, a row that scrolls with ← → like tvOS's (the first three fill
+    // the width, as the cards did); a focused widget grows a little and gets a rim.
+    private static final int W_WEATHER = 0, W_WIFI = 1, W_PROJECTOR = 2, W_AIR = 3, W_SKY = 4, W_CALENDAR = 5, W_TIMER = 6;
+    private int[] widgets = {};
+    private final RectF[] widgetRects = new RectF[7];
+    private final Spring[] widgetFocus = new Spring[7];
+    private final Spring widgetScroll = new Spring(0.32f, 0.9f, 0);
+    private int widgetIndex;
+    private float widgetsLeft, widgetsRight;
+    private final Path moonLit = new Path(), moonCut = new Path();
+    private final Paint widgetRim = new Paint(Paint.ANTI_ALIAS_FLAG);
     /** Free My Projector: a third drawer card with the projector's status, only where it can be read. */
     private final boolean projectorStatus = Projector.hasStatus();
     private long drawerRefreshAt;
@@ -342,6 +355,11 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
             cardFocus[i] = new Spring(0.32f, 0.78f, 0);
             cardRects[i] = new RectF();
         }
+        for (int i = 0; i < widgetRects.length; i++) {
+            widgetRects[i] = new RectF();
+            widgetFocus[i] = new Spring(0.28f, 0.85f, 0);
+        }
+        widgetRim.setStyle(Paint.Style.STROKE);
         makeLightButtons();
         recs.setLight(true);
         checkNight(false);
@@ -627,6 +645,11 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
             placeCards();
             cardsMoving = true;
         }
+        boolean widgetsMoving = step(widgetFocus, dt);
+        if (widgetScroll.step(dt)) {
+            placeWidgets();
+            widgetsMoving = true;
+        }
         if (topMoving) status.invalidate();
         heroMoving |= topMoving | cardsMoving;
         boolean drawerItemsMoving = step(drawerFocus, dt);
@@ -658,7 +681,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         if (statusMoving || statusDirty || glassFade || bgEnded) status.invalidate();
         if (heroMoving || heroDirty || heroFading) heroLayer.invalidate();
         if (drawerItemsMoving || drawerDirty || glassFade || bgEnded) drawerLayer.invalidate();
-        if (drawerDirty || glassFade || bgEnded) drawerCards.invalidate();   // not on every frame of a focus move
+        if (drawerDirty || widgetsMoving || glassFade || bgEnded) drawerCards.invalidate();   // not for the shortcuts' focus
         if (gridMoving || gridDirty) sheetLayer.invalidate();
         if (drawerMoving || bgFading || bgEnded) sky.invalidate();
         if (glowMoving || glowDirty) placeGlow();
@@ -1382,16 +1405,45 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
             x += tw + gap;
         }
         drawerClipR = right;
-        float cardsTop = CARDS_TOP * k, split = left + (right - left) * 0.585f;
-        weatherCard.set(left, cardsTop, split - 16 * k, cardsTop + CARDS_H * k);
-        quotesCard.set(split + 16 * k, cardsTop, right, cardsTop + CARDS_H * k);
-        if (projectorStatus) {   // weather · crypto · projector
-            float a = left + (right - left) * 0.43f, b = left + (right - left) * 0.705f;
-            weatherCard.set(left, cardsTop, a - 16 * k, cardsTop + CARDS_H * k);
-            quotesCard.set(a + 16 * k, cardsTop, b - 16 * k, cardsTop + CARDS_H * k);
-            projectorCard.set(b + 16 * k, cardsTop, right, cardsTop + CARDS_H * k);
-        }
+        widgets = projectorStatus ? new int[] {W_WEATHER, W_WIFI, W_PROJECTOR, W_AIR, W_SKY, W_CALENDAR, W_TIMER}
+                : new int[] {W_WEATHER, W_WIFI, W_AIR, W_SKY, W_CALENDAR, W_TIMER};
+        widgetIndex = Math.min(widgetIndex, widgets.length - 1);
+        widgetsLeft = left;
+        widgetsRight = right;
+        placeWidgets();
         drawerDirty = true;
+    }
+
+    /** The widgets side by side, moved by the row's scroll. */
+    private void placeWidgets() {
+        float width = widgetsRight - widgetsLeft, top = CARDS_TOP * k, gap = 32 * k;
+        float wide = width * 0.43f - gap / 2, narrow = (width - wide - 2 * gap) / 2;
+        float x = widgetsLeft - widgetScroll.value;
+        for (int i = 0; i < widgets.length; i++) {
+            float ww = widgets[i] == W_WEATHER ? wide : narrow;
+            widgetRects[i].set(x, top, x + ww, top + CARDS_H * k);
+            x += ww + gap;
+        }
+    }
+
+    /** Scrolls the widgets so the focused one is in view; back to the start when the focus leaves the row. */
+    private void followWidgets(boolean snap) {
+        if (widgets.length == 0) return;
+        float scroll = widgetScroll.value, target = 0;
+        if (zone == Z_WIDGETS) {
+            target = widgetScroll.target;
+            RectF r = widgetRects[widgetIndex];
+            float l = r.left + scroll, rr = r.right + scroll;
+            if (l - target < widgetsLeft) target = l - widgetsLeft;
+            if (rr - target > widgetsRight) target = rr - widgetsRight;
+            float end = widgetRects[widgets.length - 1].right + scroll;
+            target = Math.max(0, Math.min(Math.max(0, end - widgetsRight), target));
+        }
+        widgetScroll.target = target;
+        if (snap) {
+            widgetScroll.snap(target);
+            placeWidgets();
+        }
     }
 
     /** Scrolls the shortcuts so the focused one is fully in view (a tile's width of room before the edge). */
@@ -1451,6 +1503,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
     private void openDrawer() {
         Network.refresh(getContext(), () -> post(() -> drawerDirty = true));
         NetStats.testIfOld(getContext(), () -> post(() -> drawerDirty = true));
+        Widgets.refresh(getContext(), () -> post(() -> drawerDirty = true));
         if (drawerItems.isEmpty()) return;
         drawerOpen = true;
         drawer.target = 1;
@@ -1520,9 +1573,184 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         hourPaint.setColor(tone(L_DIM, 0xADFFFFFF));
         hourTemp.setColor(drawerInk(0.95f));
         pricePaint.setColor(drawerInk(0.95f));
-        drawWeatherCard(c, weatherCard);
-        drawWifiCard(c, quotesCard);   // the prices stay on the tab row; this card shows the Wi-Fi
-        if (projectorStatus) drawProjectorCard(c, projectorCard);
+        widgetRim.setStrokeWidth(3 * k);
+        for (int i = 0; i < widgets.length; i++) {
+            RectF r = widgetRects[i];
+            if (r.right < -40 * k || r.left > w + 40 * k) continue;   // scrolled away
+            float f = Ui.clamp(widgetFocus[i].value);
+            c.save();
+            if (f > 0.01f) c.scale(1 + 0.035f * f, 1 + 0.035f * f, r.centerX(), r.centerY());
+            drawWidget(c, widgets[i], r);
+            if (f > 0.01f) {
+                widgetRim.setColor(Ui.alpha(drawerInk(1), 0.8f * f));
+                c.drawRoundRect(r, 30 * k, 30 * k, widgetRim);
+            }
+            c.restore();
+        }
+    }
+
+    private void drawWidget(Canvas c, int kind, RectF r) {
+        switch (kind) {
+            case W_WEATHER: drawWeatherCard(c, r); break;
+            case W_WIFI: drawWifiCard(c, r); break;   // the prices stay on the tab row; this card shows the Wi-Fi
+            case W_PROJECTOR: drawProjectorCard(c, r); break;
+            case W_AIR: drawAirCard(c, r); break;
+            case W_SKY: drawSkyCard(c, r); break;
+            case W_CALENDAR: drawCalendarCard(c, r); break;
+            default: drawTimerCard(c, r); break;
+        }
+    }
+
+    /** Air quality (US AQI, with its color on a scale like Apple Weather's) and the UV index. */
+    private void drawAirCard(Canvas c, RectF r) {
+        drawerCard(c, r);
+        float x = r.left + 34 * k, right = r.right - 34 * k;
+        c.drawText(Ui.tr("Ar", "Air"), x, r.top + 54 * k, cardTitle);
+        double aqi = Widgets.aqi;
+        if (Double.isNaN(aqi)) {
+            c.drawText(Ui.tr("Sem dados agora.", "No data right now."), x, r.top + 120 * k, cardDim);
+            return;
+        }
+        String n = String.valueOf(Math.round(aqi));
+        bigTemp.setTextSize(72 * k);
+        c.drawText(n, x - Ui.leftBearing(bigTemp, n), r.top + 136 * k, bigTemp);
+        float nx = x + bigTemp.measureText(n) + 18 * k;
+        bigTemp.setTextSize(100 * k);
+        c.drawText(Widgets.aqiLabel(aqi), nx, r.top + 104 * k, cardText);
+        c.drawText("PM2.5 " + Math.round(Widgets.pm25) + " µg/m³", nx, r.top + 136 * k, cardDim);
+        // The scale: green to purple, with a dot where the air is now (0–300).
+        float by = r.top + 168 * k, bh = 8 * k;
+        fill.setShader(new LinearGradient(x, 0, right, 0, new int[] {0xFF30D158, 0xFFFFD60A, 0xFFFF9F0A, 0xFFFF453A, 0xFFBF5AF2},
+                null, Shader.TileMode.CLAMP));
+        c.drawRoundRect(x, by, right, by + bh, bh / 2, bh / 2, fill);
+        fill.setShader(null);
+        float dx = x + (right - x) * (float) Math.min(1, aqi / 300);
+        fill.setColor(0xFFFFFFFF);
+        c.drawCircle(dx, by + bh / 2, 9 * k, fill);
+        fill.setColor(Widgets.aqiColor(aqi));
+        c.drawCircle(dx, by + bh / 2, 5.5f * k, fill);
+        // UV now and today's highest
+        double uv = Widgets.uv;
+        if (!Double.isNaN(uv)) {
+            c.drawText("UV " + Math.round(uv) + "  ·  " + Widgets.uvLabel(uv), x, r.top + 226 * k, cardText);
+            if (!Double.isNaN(Widgets.uvMax)) c.drawText(Ui.tr("Máx. hoje ", "Today's high ") + Math.round(Widgets.uvMax)
+                    + "  ·  " + Widgets.uvLabel(Widgets.uvMax), x, r.top + 262 * k, cardDim);
+        }
+    }
+
+    /** The sun's path today (where it is now on its arc) and the moon's phase, drawn as it looks. */
+    private void drawSkyCard(Canvas c, RectF r) {
+        drawerCard(c, r);
+        float x = r.left + 34 * k, right = r.right - 34 * k;
+        c.drawText(Ui.tr("Sol e lua", "Sun & Moon"), x, r.top + 54 * k, cardTitle);
+        long now = System.currentTimeMillis();
+        HomeData.Weather wx = data.weather;
+        int ink = drawerInk(0.9f), faint = drawerInk(0.25f);
+        // The sun: a half-ellipse from sunrise (left) to sunset (right), the dot where it is now.
+        float ax = x, aw = (right - x) * 0.48f, base = r.top + 176 * k, ah = 82 * k;
+        Paint line = widgetRim;
+        float stroke = line.getStrokeWidth();
+        line.setStrokeWidth(2.5f * k);
+        line.setColor(faint);
+        tmp.set(ax, base - ah, ax + aw, base + ah);
+        c.drawArc(tmp, 180, 180, false, line);
+        c.drawLine(ax - 8 * k, base, ax + aw + 8 * k, base, line);
+        line.setStrokeWidth(stroke);
+        if (wx.sunrise != 0 && wx.sunset > wx.sunrise) {
+            float t = (now - wx.sunrise) / (float) (wx.sunset - wx.sunrise);
+            boolean up = t >= 0 && t <= 1;
+            float a = (float) Math.PI * (1 - Ui.clamp(t));
+            float sx = ax + aw / 2 + (float) Math.cos(a) * aw / 2, sy = base - (up ? (float) Math.sin(a) * ah : 0);
+            fill.setShader(null);
+            fill.setColor(up ? 0xFFFFD60A : faint);
+            c.drawCircle(sx, sy, 11 * k, fill);
+            c.drawText(Ui.tr("Nascer ", "Sunrise ") + Ui.time(wx.sunrise), x, r.top + 226 * k, cardDim);
+            c.drawText(Ui.tr("Pôr ", "Sunset ") + Ui.time(wx.sunset), x, r.top + 262 * k, cardDim);
+        }
+        // The moon: a dim disc with its lit part (right side while it grows, left while it wanes).
+        double phase = Widgets.moonPhase(now), lit = Widgets.moonLit(phase);
+        float mr = 50 * k, mx = right - mr - 10 * k, my = r.top + 128 * k;
+        fill.setShader(null);
+        fill.setColor(drawerInk(0.14f));
+        c.drawCircle(mx, my, mr, fill);
+        boolean waxing = phase < 0.5;
+        moonLit.reset();
+        tmp.set(mx - mr, my - mr, mx + mr, my + mr);
+        moonLit.addArc(tmp, waxing ? -90 : 90, 180);
+        moonLit.close();
+        float ex = mr * (float) Math.abs(1 - 2 * lit);
+        moonCut.reset();
+        moonCut.addOval(mx - ex, my - mr, mx + ex, my + mr, Path.Direction.CW);
+        moonLit.op(moonCut, lit > 0.5 ? Path.Op.UNION : Path.Op.DIFFERENCE);
+        fill.setColor(0xFFF2F2F7);
+        c.drawPath(moonLit, fill);
+        c.drawText(Widgets.moonName(phase), right, r.top + 226 * k, cardDimRight);
+        int days = Widgets.daysToFull(phase);
+        c.drawText(days == 0 ? Ui.tr("Cheia hoje", "Full tonight") : String.format(Ui.tr("Cheia em %d dias", "Full in %d days"), days),
+                right, r.top + 262 * k, cardDimRight);
+    }
+
+    /** Like the Calendar widget: the weekday in red, the day large, and the next public holiday. */
+    private void drawCalendarCard(Canvas c, RectF r) {
+        drawerCard(c, r);
+        float x = r.left + 34 * k, right = r.right - 34 * k;
+        long now = System.currentTimeMillis();
+        java.util.Locale l = Ui.en ? java.util.Locale.US : Ui.PT;
+        int red = 0xFFFF453A;
+        cardTitle.setColor(red);
+        c.drawText(new java.text.SimpleDateFormat("EEEE", l).format(new java.util.Date(now)).toUpperCase(l), x, r.top + 54 * k, cardTitle);
+        cardTitle.setColor(tone(L_DIM, 0xB3FFFFFF));
+        String day = new java.text.SimpleDateFormat("d", l).format(new java.util.Date(now));
+        bigTemp.setTextSize(88 * k);
+        c.drawText(day, x - Ui.leftBearing(bigTemp, day), r.top + 146 * k, bigTemp);
+        float mx = x + bigTemp.measureText(day) + 18 * k;
+        bigTemp.setTextSize(100 * k);
+        c.drawText(new java.text.SimpleDateFormat("MMMM", l).format(new java.util.Date(now)), mx, r.top + 140 * k, cardText);
+        if (Widgets.holidayAt == 0) return;
+        java.util.Calendar today = java.util.Calendar.getInstance();
+        today.set(java.util.Calendar.HOUR_OF_DAY, 0);
+        today.set(java.util.Calendar.MINUTE, 0);
+        today.set(java.util.Calendar.SECOND, 0);
+        today.set(java.util.Calendar.MILLISECOND, 0);
+        int days = (int) Math.round((Widgets.holidayAt - today.getTimeInMillis()) / 86_400_000.0);
+        String when = days <= 0 ? Ui.tr("Hoje", "Today") : days == 1 ? Ui.tr("Amanhã", "Tomorrow")
+                : new java.text.SimpleDateFormat(Ui.en ? "EEE, MMM d" : "EEE d MMM", l).format(new java.util.Date(Widgets.holidayAt))
+                + "  ·  " + String.format(Ui.tr("em %d dias", "in %d days"), days);
+        c.drawText(Ui.tr("Próximo feriado", "Next holiday"), x, r.top + 196 * k, cardDim);
+        c.drawText(TextUtils.ellipsize(Widgets.holiday, new TextPaint(cardText), right - x, TextUtils.TruncateAt.END).toString(), x, r.top + 234 * k, cardText);
+        c.drawText(when, x, r.top + 268 * k, cardDim);
+    }
+
+    /** A quick countdown: OK adds time (5, 10, 15, 30, 60 min) and then turns it off; a notice shows when it ends. */
+    private void drawTimerCard(Canvas c, RectF r) {
+        drawerCard(c, r);
+        float x = r.left + 34 * k, right = r.right - 34 * k;
+        c.drawText(Ui.tr("Temporizador", "Timer"), x, r.top + 54 * k, cardTitle);
+        long end = Widgets.timerEnd(getContext()), now = System.currentTimeMillis();
+        if (end == 0) {
+            bigTemp.setTextSize(88 * k);
+            bigTemp.setColor(drawerInk(0.35f));
+            c.drawText("0:00", x - Ui.leftBearing(bigTemp, "0:00"), r.top + 160 * k, bigTemp);
+            bigTemp.setColor(drawerInk(1));
+            bigTemp.setTextSize(100 * k);
+            c.drawText(Ui.tr("OK: 5 minutos", "OK: 5 minutes"), x, r.top + 226 * k, cardText);
+            c.drawText(Ui.tr("Mais OK, mais tempo", "More OK, more time"), x, r.top + 262 * k, cardDim);
+            return;
+        }
+        String left = Widgets.left(end - now);
+        bigTemp.setTextSize(88 * k);
+        c.drawText(left, x - Ui.leftBearing(bigTemp, left), r.top + 160 * k, bigTemp);
+        bigTemp.setTextSize(100 * k);
+        // How much is left, as a bar
+        float total = Widgets.timerMinutes(getContext()) * 60_000f, done = 1 - (end - now) / Math.max(1, total);
+        float by = r.top + 192 * k, bh = 8 * k;
+        fill.setShader(null);
+        fill.setColor(drawerInk(0.14f));
+        c.drawRoundRect(x, by, right, by + bh, bh / 2, bh / 2, fill);
+        fill.setColor(0xFFFF9F0A);
+        c.drawRoundRect(x, by, x + (right - x) * Ui.clamp(1 - done), by + bh, bh / 2, bh / 2, fill);
+        c.drawText(Ui.tr("Termina às ", "Ends at ") + Ui.time(end), x, r.top + 240 * k, cardText);
+        c.drawText(Ui.tr("OK: mais tempo ou parar", "OK: more time or stop"), x, r.top + 272 * k, cardDim);
     }
 
     /** Free My Projector: processor temperature, fan, lamp and the panel's refresh rate (it follows AFR). */
@@ -1682,7 +1910,9 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         tilesDirty |= snap || tilesChanged;
         statusDirty |= snap || statusChanged;
         heroDirty |= snap || heroChanged;
-        drawerDirty |= snap || drawerChanged;
+        boolean widgetsChanged = aim(widgetFocus, !sheetOpen && zone == Z_WIDGETS ? widgetIndex : -1, snap);
+        followWidgets(snap);
+        drawerDirty |= snap || drawerChanged || widgetsChanged;
     }
 
     /** Aims a group's springs (only `focused` at 1); returns true if any target changed. */
@@ -1970,7 +2200,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
     private void back() {
         if (sheetOpen) {
             closeSheet();
-        } else if (zone == Z_DRAWER) {
+        } else if (zone == Z_DRAWER || zone == Z_WIDGETS) {
             closeDrawer();
             retarget(false);
         } else if (zone != Z_SHELF) {
@@ -2094,6 +2324,17 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
                     zone = Z_SHELF;
                 }
                 break;
+            case Z_WIDGETS:
+                if (dx != 0) {
+                    int next = Math.max(0, Math.min(widgets.length - 1, widgetIndex + dx));
+                    if (next == widgetIndex) return;
+                    widgetIndex = next;
+                } else if (dy < 0) {
+                    zone = Z_DRAWER;
+                } else {
+                    return;
+                }
+                break;
             case Z_STATUS:
                 if (dx != 0) {
                     int next = Math.max(0, Math.min(statusItems.size() - 1, statusIndex + dx));
@@ -2118,7 +2359,11 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
                 } else if (dy < 0) {
                     closeDrawer();
                 } else {
-                    return;
+                    if (widgets.length == 0) return;
+                    zone = Z_WIDGETS;
+                    float at = drawerRects[drawerIndex].centerX();
+                    widgetIndex = 0;
+                    for (int i = 0; i < widgets.length; i++) if (widgetRects[i].left <= at) widgetIndex = i;
                 }
                 break;
         }
@@ -2160,6 +2405,14 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
     }
 
     private void activate() {
+        if (!sheetOpen && zone == Z_WIDGETS) {
+            if (widgetIndex < widgets.length && widgets[widgetIndex] == W_TIMER) {
+                Widgets.cycleTimer(getContext());
+                drawerDirty = true;
+                click.open();
+            }
+            return;
+        }
         HomeApps.Item it;
         RectF r;
         if (sheetOpen) {
