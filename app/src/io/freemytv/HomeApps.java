@@ -159,6 +159,16 @@ final class HomeApps {
             if (launchIntent(pm, d[2]) == null || !keys.add(d[0]) || hidden.contains(d[0])) continue;
             defs.add(d);
         }
+        // Any other app you added (hold OK on it in All Apps, like upstream's shelf editor): its icon edge to edge.
+        for (String pkg : split(ui.getString("shelfExtra", ""))) {
+            if (launchIntent(pm, pkg) == null || !keys.add(pkg)) continue;
+            String label = pkg;
+            try {
+                label = String.valueOf(pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)));
+            } catch (PackageManager.NameNotFoundException ignored) {
+            }
+            defs.add(new String[] {pkg, label, pkg, "1C1C1E", "icon", "1"});
+        }
         // Stable: apps you never moved keep SHELF's order, after the ones you did.
         Collections.sort(defs, (a, b) -> Integer.compare(rank(order, a[0]), rank(order, b[0])));
         return defs.size() > MAX_SHELF ? new ArrayList<>(defs.subList(0, MAX_SHELF)) : defs;
@@ -186,6 +196,14 @@ final class HomeApps {
     /** Takes an app off the shelf (it moves to All Apps) or puts it back (at the end). */
     static void setHidden(Context c, String key, boolean hide) {
         android.content.SharedPreferences ui = c.getSharedPreferences("home-ui", Context.MODE_PRIVATE);
+        List<String> extra = split(ui.getString("shelfExtra", ""));
+        if (hide && extra.remove(key)) {   // an app you added: it simply goes back to All Apps
+            List<String> order = split(ui.getString("shelfOrder", ""));
+            order.remove(key);
+            ui.edit().putString("shelfExtra", android.text.TextUtils.join(",", extra))
+                    .putString("shelfOrder", android.text.TextUtils.join(",", order)).apply();
+            return;
+        }
         List<String> hidden = split(ui.getString("shelfHidden", ""));
         hidden.remove(key);
         if (hide) hidden.add(key);
@@ -193,6 +211,22 @@ final class HomeApps {
         if (!hide && order.remove(key)) order.add(key);
         ui.edit().putString("shelfHidden", android.text.TextUtils.join(",", hidden))
                 .putString("shelfOrder", android.text.TextUtils.join(",", order)).apply();
+    }
+
+    /** Adds any installed app at the end of the shelf; false when the shelf is full (hide one first). */
+    static boolean addToShelf(Context c, String pkg) {
+        if (shelfDefs(c).size() >= MAX_SHELF) return false;
+        android.content.SharedPreferences ui = c.getSharedPreferences("home-ui", Context.MODE_PRIVATE);
+        List<String> extra = split(ui.getString("shelfExtra", ""));
+        // The shelf's current order first (it may never have been saved), then the new app at the end.
+        List<String> order = new ArrayList<>();
+        for (String[] d : shelfDefs(c)) order.add(d[0]);
+        if (!extra.contains(pkg)) extra.add(pkg);
+        order.remove(pkg);
+        order.add(pkg);
+        ui.edit().putString("shelfExtra", android.text.TextUtils.join(",", extra))
+                .putString("shelfOrder", android.text.TextUtils.join(",", order)).apply();
+        return true;
     }
 
     /** The service key of a shelf app (hidden or not), or null for any other app. */

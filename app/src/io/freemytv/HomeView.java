@@ -1917,10 +1917,17 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
     private boolean hold() {
         if (sheetOpen) {
             if (others.isEmpty()) return false;
-            String key = HomeApps.shelfKey(others.get(gridIndex).pkg);
-            if (key == null) return false;
-            HomeApps.setHidden(getContext(), key, false);
-            showToast(Ui.tr("De volta no Início", "Back on the home screen"));
+            HomeApps.Item app = others.get(gridIndex);
+            if (app.pkg == null) return false;
+            String key = HomeApps.shelfKey(app.pkg);
+            if (key != null) {
+                HomeApps.setHidden(getContext(), key, false);
+            } else if (!HomeApps.addToShelf(getContext(), app.pkg)) {   // any other app joins the shelf
+                showToast(Ui.tr("O Início está cheio: oculte um app primeiro (segure OK nele)",
+                        "The shelf is full: hide an app first (hold OK on it)"));
+                return true;
+            }
+            showToast(String.format(Ui.tr("%s está no Início", "%s is on the home screen"), app.label));
             reload();
             return true;
         }

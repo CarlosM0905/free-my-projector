@@ -125,6 +125,8 @@ final class Es {
         t("← → to move · ↓ to hide · OK when done", "← → para mover · ↓ para ocultar · OK para terminar");
         t("%s is in All Apps now", "%s ahora está en Todas las apps");
         t("Back on the home screen", "De vuelta en el inicio");
+        t("%s is on the home screen", "%s está en el inicio");
+        t("The shelf is full: hide an app first (hold OK on it)", "El estante está lleno: oculta una app primero (mantén OK sobre ella)");
         t("New episode", "Episodio nuevo");
         t("New today", "Nuevo hoy");
         t("New on %s", "Nuevo el %s");
