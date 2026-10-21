@@ -68,7 +68,7 @@ final class Ui {
 
     /** "en"/"pt" in config.properties, or "auto": Portuguese when the TV is set to Portuguese, English otherwise. */
     static boolean english() {
-        String lang = Config.LANGUAGE.trim().toLowerCase(Locale.ROOT);
+        String lang = Prefs.language();   // picked on the projector, or config.properties
         if (spanish()) return false;
         if (lang.startsWith("pt")) return false;
         if (lang.startsWith("en")) return true;
@@ -85,7 +85,7 @@ final class Ui {
 
     /** "es" in config.properties, or "auto" with the TV in Spanish. */
     static boolean spanish() {
-        String lang = Config.LANGUAGE.trim().toLowerCase(Locale.ROOT);
+        String lang = Prefs.language();   // picked on the projector, or config.properties
         if (lang.startsWith("es")) return true;
         if (!lang.startsWith("auto") && !lang.isEmpty()) return false;
         return "es".equals(Locale.getDefault().getLanguage());

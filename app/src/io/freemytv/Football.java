@@ -31,7 +31,7 @@ final class Football {
     private static volatile boolean fetching, loaded;
 
     static boolean enabled() {
-        return !Config.FOOTBALL_TEAM.trim().isEmpty();
+        return !Prefs.footballTeam().trim().isEmpty();
     }
 
     /** In the background when stale; `done` runs (on any thread) when there's something new. */
@@ -46,22 +46,22 @@ final class Football {
         }
         long now = System.currentTimeMillis(), at = p.getLong("at", 0);
         boolean played = next != null && next.at > 0 && now > next.at + 2 * 3600_000L;   // the next one is over: ask again
-        if (fetching || (!played && now - at >= 0 && now - at < EVERY && p.getString("team", "").equals(Config.FOOTBALL_TEAM))) return;
+        if (fetching || (!played && now - at >= 0 && now - at < EVERY && p.getString("team", "").equals(Prefs.footballTeam()))) return;
         fetching = true;
         new Thread(() -> {
             try {
                 String id = p.getString("id", "");
-                if (id.isEmpty() || !p.getString("team", "").equals(Config.FOOTBALL_TEAM)) {
-                    JSONArray teams = new JSONObject(get("searchteams.php?t=" + URLEncoder.encode(Config.FOOTBALL_TEAM.trim(), "UTF-8")))
+                if (id.isEmpty() || !p.getString("team", "").equals(Prefs.footballTeam())) {
+                    JSONArray teams = new JSONObject(get("searchteams.php?t=" + URLEncoder.encode(Prefs.footballTeam().trim(), "UTF-8")))
                             .optJSONArray("teams");
-                    if (teams == null || teams.length() == 0) throw new Exception("team not found: " + Config.FOOTBALL_TEAM);
+                    if (teams == null || teams.length() == 0) throw new Exception("team not found: " + Prefs.footballTeam());
                     id = teams.getJSONObject(0).optString("idTeam");
                 }
                 JSONArray n = new JSONObject(get("eventsnext.php?id=" + id)).optJSONArray("events");
                 JSONArray l = new JSONObject(get("eventslast.php?id=" + id)).optJSONArray("results");
                 JSONObject ne = n == null || n.length() == 0 ? null : n.getJSONObject(0);
                 JSONObject le = l == null || l.length() == 0 ? null : l.getJSONObject(0);
-                p.edit().putString("id", id).putString("team", Config.FOOTBALL_TEAM).putLong("at", System.currentTimeMillis())
+                p.edit().putString("id", id).putString("team", Prefs.footballTeam()).putLong("at", System.currentTimeMillis())
                         .putString("next", ne == null ? null : ne.toString()).putString("last", le == null ? null : le.toString()).apply();
                 next = parse(ne == null ? null : ne.toString());
                 last = parse(le == null ? null : le.toString());
@@ -97,7 +97,7 @@ final class Football {
 
     /** "vs Cajamarca" at home, "at Cajamarca" away. */
     static String rival(Match m) {
-        boolean home = m.home != null && m.home.toLowerCase(java.util.Locale.ROOT).contains(Config.FOOTBALL_TEAM.trim().toLowerCase(java.util.Locale.ROOT));
+        boolean home = m.home != null && m.home.toLowerCase(java.util.Locale.ROOT).contains(Prefs.footballTeam().trim().toLowerCase(java.util.Locale.ROOT));
         return home ? Ui.tr("vs ", "vs ") + m.away : Ui.tr("em ", "at ") + m.home;
     }
 
@@ -112,7 +112,7 @@ final class Football {
 
     /** "1–3 vs Alianza Atlético". */
     static String result(Match m) {
-        boolean home = m.home != null && m.home.toLowerCase(java.util.Locale.ROOT).contains(Config.FOOTBALL_TEAM.trim().toLowerCase(java.util.Locale.ROOT));
+        boolean home = m.home != null && m.home.toLowerCase(java.util.Locale.ROOT).contains(Prefs.footballTeam().trim().toLowerCase(java.util.Locale.ROOT));
         String us = home ? m.homeScore : m.awayScore, them = home ? m.awayScore : m.homeScore;
         if (us.isEmpty() || them.isEmpty()) return "";
         return us + "–" + them + "  " + (home ? Ui.tr("vs ", "vs ") + m.away : Ui.tr("em ", "at ") + m.home);

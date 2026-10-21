@@ -679,7 +679,7 @@ final class ListHome extends View implements Home, Choreographer.FrameCallback, 
         List<String[]> cards = new ArrayList<>();   // {label, main, sub, extra}
         Football.Match next = Football.next, last = Football.last;
         if (Football.enabled() && (next != null || last != null)) {
-            String team = Config.FOOTBALL_TEAM.trim().toUpperCase(java.util.Locale.ROOT);
+            String team = Prefs.footballTeam().trim().toUpperCase(java.util.Locale.ROOT);
             if (next != null) {
                 cards.add(new String[] {team, Football.rival(next), Football.when(next),
                         last == null || Football.result(last).isEmpty() ? "" : Ui.tr("Último: ", "Last: ") + Football.result(last)});

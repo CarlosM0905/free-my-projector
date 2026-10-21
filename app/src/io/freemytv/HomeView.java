@@ -1133,6 +1133,10 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
             text.setColor(textColor);
             return;
         }
+        if (!Prefs.quotes()) {   // turned off in Preferences
+            text.setColor(textColor);
+            return;
+        }
         int n = HomeData.coinCount();
         String[] values = new String[n];
         float[] glyphs = new float[n];
@@ -1506,7 +1510,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
     private void drawWeatherCard(Canvas c, RectF r) {
         drawerCard(c, r);
         float x = r.left + 34 * k;
-        c.drawText(Config.CITY.trim().isEmpty() ? Ui.tr("Clima", "Weather") : Config.CITY.trim(), x, r.top + 54 * k, cardTitle);
+        c.drawText(Prefs.city().isEmpty() ? Ui.tr("Clima", "Weather") : Prefs.city(), x, r.top + 54 * k, cardTitle);
         HomeData.Weather wx = data.weather;
         if (Double.isNaN(wx.temp)) {
             c.drawText(Ui.tr("Sem dados do clima agora.", "No weather data right now."), x, r.top + 120 * k, cardDim);

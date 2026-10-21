@@ -99,14 +99,14 @@ public class SettingsActivity extends Activity {
     }
 
     static final class SettingsView extends View implements Choreographer.FrameCallback {
-        private static final int MAIN = 0, HOME_CHOICE = 1;
+        private static final int MAIN = 0, HOME_CHOICE = 1, PREFS = 2, TYPE = 3;
         private static final float LIST_X = 1000, LIST_R = 1824, LIST_TOP = 186, ROW_H = 74, ROW_GAP = 8, CHOICE_H = 104;
         private static final int AMBER = 0xFFFFC266, INK = 0xFF1C1C1E;
 
         private final SettingsActivity activity;
         private final Scene scene = new Scene();
         private final Handler handler = new Handler(Looper.getMainLooper());
-        private final Spring[] pop = new Spring[6];
+        private final Spring[] pop = new Spring[7];
         private final RectF tmp = new RectF(), rowRect = new RectF();
         private JSONObject state = new JSONObject(), recs = new JSONObject();
         private boolean hasKey;
@@ -205,7 +205,7 @@ public class SettingsActivity extends Activity {
         }
 
         private int rowCount() {
-            return screen == MAIN ? 6 : 2;
+            return screen == MAIN ? 6 : screen == PREFS ? 7 : 2;
         }
 
         @Override protected void onDraw(Canvas c) {
@@ -232,7 +232,7 @@ public class SettingsActivity extends Activity {
             c.drawText(Ui.tr("Início e tela de descanso da TV", "Your TV's home screen and screensaver"), cx, 660 * k, subtitle);
             c.drawText(versionName(getContext()), cx, 704 * k, version);
 
-            if (screen == MAIN) drawMain(c, seconds); else drawChoice(c);
+            if (screen == MAIN) drawMain(c, seconds); else if (screen == PREFS) drawPrefs(c); else if (screen == TYPE) drawTyping(c); else drawChoice(c);
         }
 
         private void drawMain(Canvas c, float seconds) {
@@ -240,13 +240,13 @@ public class SettingsActivity extends Activity {
             String busyText = state.optString("busy");
             String mode = freeActive() ? "Free My Projector" : Ui.tr("Original", "Original");
             String[] labels = {Ui.tr("Início", "Home Screen"), Ui.tr("Tela de Descanso", "Screensaver"),
-                    Ui.tr("Estilo da tela de descanso", "Screensaver style"), Ui.tr("Movimento", "Motion"), Ui.tr("Design do Início", "Home design"), Ui.tr("Ajustes da TV", "TV Settings")};
+                    Ui.tr("Estilo da tela de descanso", "Screensaver style"), Ui.tr("Preferências", "Preferences"), Ui.tr("Design do Início", "Home design"), Ui.tr("Ajustes da TV", "TV Settings")};
             String st = Screensaver.style(getContext());
             String style = st.equals("frame") ? Ui.tr("Moldura", "Frame") : st.equals("recs") ? Ui.tr("Recomendações", "Recommendations")
                     : Ui.tr("Paisagens", "Landscapes");
             String motion = HomeView.reducedMotion(getContext()) ? Ui.tr("Reduzido", "Reduced") : Ui.tr("Completo", "Full");
             String design = ListHome.chosen(getContext()) ? Ui.tr("Leve", "Light") : Ui.tr("Clássico", "Classic");
-            String[] values = {working ? "" : mode, Ui.tr("Ver agora", "Preview"), style, motion, design, ""};
+            String[] values = {working ? "" : mode, Ui.tr("Ver agora", "Preview"), style, "", design, ""};
             for (int i = 0; i < 6; i++) {
                 float y = (LIST_TOP + i * (ROW_H + ROW_GAP)) * k;
                 rowRect.set(LIST_X * k, y, LIST_R * k, y + ROW_H * k);
@@ -256,7 +256,7 @@ public class SettingsActivity extends Activity {
                 float base = rowRect.centerY() + Ui.halfCap(rowLabel);
                 c.drawText(labels[i], rowRect.left + 30 * k, base, rowLabel);
                 float right = rowRect.right - 30 * k;
-                if (i >= 5) {
+                if (i >= 5 || i == 3) {   // opens another screen
                     float cw = Symbols.width(getContext(), "chevron_right", 22 * k);
                     Symbols.draw(getContext(), c, "chevron_right", right - cw / 2, rowRect.centerY(), 22 * k, blend(0x66FFFFFF, 0x991C1C1E, f));
                 } else if (i == 0 && working) {
@@ -365,6 +365,260 @@ public class SettingsActivity extends Activity {
             if (shown == 0) c.drawText(Ui.tr("Nenhum ainda.", "None yet."), x, y + 42 * k, notice);
         }
 
+        // MARK: - Preferences (upstream's "Settings on the TV"): what config.properties sets, changed on the projector
+
+        private String cityStatus = "";
+
+        private void drawPrefs(Canvas c) {
+            Paint heading = Ui.text(Ui.displaySemibold, 34 * k, 0xFFFFFFFF);
+            c.drawText(Ui.tr("Preferências", "Preferences"), LIST_X * k + 30 * k, (LIST_TOP - 24) * k, heading);
+            Context ctx = getContext();
+            String lang = Prefs.language(), temp = Prefs.temperature(), theme = Prefs.theme(), team = Prefs.footballTeam();
+            String[] labels = {Ui.tr("Idioma", "Language"), Ui.tr("Cidade", "City"), Ui.tr("Temperatura", "Temperature"),
+                    Ui.tr("Tema", "Theme"), Ui.tr("Movimento", "Motion"), Ui.tr("Criptomoedas", "Crypto prices"), Ui.tr("Time de futebol", "Football team")};
+            String[] values = {
+                    "‹  " + (lang.equals("es") ? "Español" : lang.equals("en") ? "English" : lang.equals("pt") ? "Português" : Ui.tr("Automático", "Automatic")) + "  ›",
+                    !cityStatus.isEmpty() ? cityStatus : Prefs.city().isEmpty() ? "—" : Prefs.city(),
+                    "‹  " + (temp.equals("C") ? "°C" : temp.equals("F") ? "°F" : Ui.tr("Automática", "Automatic")) + "  ›",
+                    "‹  " + (theme.equals("dark") ? Ui.tr("Escuro", "Dark") : theme.equals("light") ? Ui.tr("Claro", "Light theme")
+                            : Ui.tr("Automático", "Automatic")) + "  ›",
+                    "‹  " + (HomeView.reducedMotion(ctx) ? Ui.tr("Reduzido", "Reduced") : Ui.tr("Completo", "Full")) + "  ›",
+                    "‹  " + (Prefs.quotes() ? Ui.tr("Sim", "On") : Ui.tr("Não", "Off")) + "  ›",
+                    team.isEmpty() ? Ui.tr("Nenhum", "None") : team};
+            for (int i = 0; i < labels.length; i++) {
+                float y = (LIST_TOP + i * (ROW_H + ROW_GAP)) * k;
+                rowRect.set(LIST_X * k, y, LIST_R * k, y + ROW_H * k);
+                float f = drawRowBackground(c, i);
+                rowLabel.setColor(blend(0xF2FFFFFF, INK, f));
+                float base = rowRect.centerY() + Ui.halfCap(rowLabel);
+                c.drawText(labels[i], rowRect.left + 30 * k, base, rowLabel);
+                rowValue.setColor(blend(0x8CFFFFFF, 0x8C1C1C1E, f));
+                String v = TextUtils.ellipsize(values[i], new TextPaint(rowValue), 470 * k, TextUtils.TruncateAt.END).toString();
+                c.drawText(v, rowRect.right - 30 * k, base, rowValue);
+            }
+            Paint hint = Ui.text(Ui.regular, 23 * k, 0x8CFFFFFF);
+            c.drawText(Ui.tr("← → muda o valor  ·  OK em Cidade e Time abre a busca",
+                    "← → changes the value  ·  OK on City and Team opens a search"), LIST_X * k + 30 * k,
+                    (LIST_TOP + 7 * (ROW_H + ROW_GAP) + 40) * k, hint);
+        }
+
+        private static String next(String[] values, String now, int dir) {
+            int at = Math.max(0, java.util.Arrays.asList(values).indexOf(now));
+            return values[((at + dir) % values.length + values.length) % values.length];
+        }
+
+        /** ←/→ (or OK) on a Preferences row. */
+        private void change(int row, int dir) {
+            Context c = getContext();
+            switch (row) {
+                case 0: {   // the whole app reads the language once: start the screen again in the new one
+                    Prefs.setLanguage(next(Prefs.LANGUAGES, Prefs.language(), dir));
+                    postDelayed(() -> {
+                        activity.startActivity(new Intent(activity, SettingsActivity.class)
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
+                        android.os.Process.killProcess(android.os.Process.myPid());
+                    }, 600);
+                    break;
+                }
+                case 2:
+                    Prefs.setTemperature(next(Prefs.TEMPERATURES, Prefs.temperature(), dir));
+                    break;
+                case 3:
+                    Prefs.setTheme(next(Prefs.THEMES, Prefs.theme(), dir));
+                    break;
+                case 4: {
+                    android.content.SharedPreferences ui = c.getSharedPreferences("home-ui", Context.MODE_PRIVATE);
+                    ui.edit().putBoolean("reducedMotion", !ui.getBoolean("reducedMotion", false)).apply();
+                    break;
+                }
+                case 5:
+                    Prefs.setQuotes(!Prefs.quotes());
+                    break;
+                default:
+                    return;
+            }
+            invalidate();
+        }
+
+        // MARK: - Typing (City and Football team): our own keyboard, like the Search tab's. The system keyboard keeps every
+        // key of the remote while it's open, so on a projector you couldn't even reach its Search button.
+
+        private static final String[] KEY_ROWS = {"abcdefghijklmnñopqrst", "uvwxyz0123456789 \u232B\u2713"};
+        private int typeFor, keyRow, keyCol, resultIndex = -1;
+        private String typed = "";
+        private final java.util.List<String[]> places = new java.util.ArrayList<>();
+
+        private void startTyping(int row) {
+            screen = TYPE;
+            typeFor = row;
+            typed = row == 6 ? Prefs.footballTeam() : "";
+            keyRow = 0;
+            keyCol = 0;
+            resultIndex = -1;
+            places.clear();
+            cityStatus = "";
+            invalidate();
+        }
+
+        private boolean onTypingKey(KeyEvent e) {
+            boolean down = e.getAction() == KeyEvent.ACTION_DOWN;
+            int code = e.getKeyCode();
+            if (code == KeyEvent.KEYCODE_BACK) {
+                if (!down) {
+                    screen = PREFS;
+                    focus = typeFor;
+                    invalidate();
+                }
+                return true;
+            }
+            if (!down) return code == KeyEvent.KEYCODE_DPAD_CENTER || code == KeyEvent.KEYCODE_ENTER;
+            switch (code) {
+                case KeyEvent.KEYCODE_DPAD_LEFT:
+                case KeyEvent.KEYCODE_DPAD_RIGHT:
+                    if (resultIndex < 0) {
+                        int n = KEY_ROWS[keyRow].length();
+                        keyCol = Math.max(0, Math.min(n - 1, keyCol + (code == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : -1)));
+                    }
+                    break;
+                case KeyEvent.KEYCODE_DPAD_UP:
+                    if (resultIndex > 0) resultIndex--;
+                    else if (resultIndex == 0) resultIndex = -1;
+                    else if (keyRow == 1) keyRow = 0;
+                    break;
+                case KeyEvent.KEYCODE_DPAD_DOWN:
+                    if (resultIndex >= 0) resultIndex = Math.min(places.size() - 1, resultIndex + 1);
+                    else if (keyRow == 0) keyRow = 1;
+                    else if (!places.isEmpty()) resultIndex = 0;
+                    break;
+                case KeyEvent.KEYCODE_DPAD_CENTER:
+                case KeyEvent.KEYCODE_ENTER:
+                    if (e.getRepeatCount() > 0) break;
+                    if (resultIndex >= 0) {   // a place picked
+                        String[] place = places.get(resultIndex);
+                        Prefs.setCity(place[1], place[2], place[3]);
+                        HomeData.get(getContext()).refreshWeather();
+                        screen = PREFS;
+                        focus = typeFor;
+                        break;
+                    }
+                    keyCol = Math.min(keyCol, KEY_ROWS[keyRow].length() - 1);
+                    char k = KEY_ROWS[keyRow].charAt(keyCol);
+                    if (k == '\u232B') {
+                        if (!typed.isEmpty()) typed = typed.substring(0, typed.length() - 1);
+                    } else if (k == '\u2713') {
+                        confirmTyping();
+                    } else if (typed.length() < 40) {
+                        typed += typed.isEmpty() || typed.endsWith(" ") ? Character.toUpperCase(k) : k;
+                    }
+                    break;
+                default:
+                    // A real keyboard (a USB or Bluetooth one) types straight in.
+                    int ch = e.getUnicodeChar();
+                    if (code == KeyEvent.KEYCODE_DEL) {
+                        if (!typed.isEmpty()) typed = typed.substring(0, typed.length() - 1);
+                    } else if (ch > 31 && typed.length() < 40) {
+                        typed += (char) ch;
+                    } else {
+                        return false;
+                    }
+            }
+            invalidate();
+            return true;
+        }
+
+        /** ✓: the team is saved; the city is searched and its places listed below the keyboard. */
+        private void confirmTyping() {
+            if (typeFor == 6) {
+                Prefs.setFootballTeam(typed);
+                Football.next = null;
+                Football.last = null;
+                Football.refresh(getContext(), null);
+                screen = PREFS;
+                focus = typeFor;
+                return;
+            }
+            if (typed.trim().isEmpty()) return;
+            cityStatus = Ui.tr("Procurando…", "Searching…");
+            places.clear();
+            resultIndex = -1;
+            final String name = typed;
+            new Thread(() -> {
+                java.util.List<String[]> found;
+                String error = "";
+                try {
+                    found = HomeData.findCity(name);
+                    if (found.isEmpty()) error = Ui.tr("Nenhuma cidade com esse nome", "No city with that name");
+                } catch (Exception ex) {
+                    found = new java.util.ArrayList<>();
+                    error = Ui.tr("Não deu para buscar agora", "Couldn't search now");
+                }
+                final java.util.List<String[]> list = found;
+                final String message = error;
+                post(() -> {
+                    places.clear();
+                    for (int i = 0; i < list.size() && i < 6; i++) places.add(list.get(i));
+                    cityStatus = message.isEmpty() ? Ui.tr("↓ para escolher", "↓ to choose") : message;
+                    invalidate();
+                });
+            }, "city-search").start();
+        }
+
+        private void drawTyping(Canvas c) {
+            float x = LIST_X * k, right = LIST_R * k;
+            Paint heading = Ui.text(Ui.displaySemibold, 34 * k, 0xFFFFFFFF);
+            c.drawText(typeFor == 6 ? Ui.tr("Time de futebol", "Football team") : Ui.tr("Cidade", "City"), x + 30 * k, (LIST_TOP - 24) * k, heading);
+            // What's typed, with a caret
+            Paint big = Ui.text(Ui.medium, 44 * k, typed.isEmpty() ? 0x66FFFFFF : 0xFFFFFFFF);
+            String shown = typed.isEmpty() ? (typeFor == 6 ? Ui.tr("Nome do time", "Team name") : Ui.tr("Nome da cidade", "City name")) : typed;
+            float ty = (LIST_TOP + 56) * k;
+            c.drawText(shown, x + 30 * k, ty, big);
+            if (!typed.isEmpty()) {
+                float cx = x + 30 * k + big.measureText(typed) + 6 * k;
+                white.setAlpha(230);
+                c.drawRect(cx, ty - 38 * k, cx + 3 * k, ty + 8 * k, white);
+                white.setAlpha(255);
+            }
+            if (!cityStatus.isEmpty()) {
+                Paint status = Ui.text(Ui.regular, 24 * k, 0x99FFFFFF);
+                c.drawText(cityStatus, x + 30 * k, ty + 46 * k, status);
+            }
+            // Two rows of keys
+            Paint key = Ui.text(Ui.medium, 28 * k, 0xE6FFFFFF);
+            key.setTextAlign(Paint.Align.CENTER);
+            float rowTop = (LIST_TOP + 130) * k, kh = 58 * k, kw = (right - x) / KEY_ROWS[0].length();
+            for (int r = 0; r < 2; r++) {
+                String row = KEY_ROWS[r];
+                for (int i = 0; i < row.length(); i++) {
+                    float kx = x + i * kw, ky = rowTop + r * (kh + 10 * k);
+                    boolean on = resultIndex < 0 && r == keyRow && i == Math.min(keyCol, row.length() - 1);
+                    if (on) {
+                        tmp.set(kx + 2 * k, ky, kx + kw - 2 * k, ky + kh);
+                        c.drawRoundRect(tmp, 12 * k, 12 * k, white);
+                    }
+                    char ch = row.charAt(i);
+                    key.setColor(on ? INK : ch == '\u2713' ? 0xFF0A84FF : 0xE6FFFFFF);
+                    String label = ch == ' ' ? "\u2423" : String.valueOf(ch);
+                    c.drawText(label, kx + kw / 2, ky + kh / 2 + Ui.halfCap(key), key);
+                }
+            }
+            // The places found
+            float y = rowTop + 2 * (kh + 10 * k) + 24 * k;
+            for (int i = 0; i < places.size(); i++) {
+                rowRect.set(x, y, right, y + 62 * k);
+                boolean on = i == resultIndex;
+                if (on) c.drawRoundRect(rowRect, 16 * k, 16 * k, white);
+                rowValue.setTextAlign(Paint.Align.LEFT);
+                rowValue.setColor(on ? INK : 0xD9FFFFFF);
+                String label = TextUtils.ellipsize(places.get(i)[0], new TextPaint(rowValue), right - x - 60 * k, TextUtils.TruncateAt.END).toString();
+                c.drawText(label, x + 30 * k, rowRect.centerY() + Ui.halfCap(rowValue), rowValue);
+                rowValue.setTextAlign(Paint.Align.RIGHT);
+                y += 70 * k;
+            }
+            Paint hint = Ui.text(Ui.regular, 22 * k, 0x8CFFFFFF);
+            c.drawText(Ui.tr("OK escreve  ·  \u2713 confirma  ·  Voltar sai", "OK types  ·  \u2713 confirms  ·  Back leaves"), x + 30 * k,
+                    h - 70 * k, hint);
+        }
+
         /** Home screen choice: Free My TV or the original, with a check on the one in use. */
         private void drawChoice(Canvas c) {
             Paint heading = Ui.text(Ui.displaySemibold, 34 * k, 0xFFFFFFFF);
@@ -424,6 +678,7 @@ public class SettingsActivity extends Activity {
         }
 
         boolean onKey(KeyEvent e) {
+            if (screen == TYPE) return onTypingKey(e);
             boolean down = e.getAction() == KeyEvent.ACTION_DOWN;
             switch (e.getKeyCode()) {
                 case KeyEvent.KEYCODE_DPAD_UP:
@@ -436,6 +691,7 @@ public class SettingsActivity extends Activity {
                     return true;
                 case KeyEvent.KEYCODE_DPAD_LEFT:
                 case KeyEvent.KEYCODE_DPAD_RIGHT:
+                    if (down && screen == PREFS) change(focus, e.getKeyCode() == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : -1);
                     return true;
                 case KeyEvent.KEYCODE_DPAD_CENTER:
                 case KeyEvent.KEYCODE_ENTER:
@@ -453,8 +709,8 @@ public class SettingsActivity extends Activity {
                         if (e.getRepeatCount() == 0) backDown = true;
                     } else {
                         if (backDown && !e.isCanceled()) {
+                            focus = screen == PREFS ? 3 : 0;
                             screen = MAIN;
-                            focus = 0;
                         }
                         backDown = false;
                     }
@@ -467,6 +723,11 @@ public class SettingsActivity extends Activity {
 
         private void activate() {
             Context c = getContext();
+            if (screen == PREFS) {
+                if (focus == 1 || focus == 6) startTyping(focus);
+                else change(focus, 1);
+                return;
+            }
             if (screen == HOME_CHOICE) {
                 boolean wantFree = focus == 0;
                 if (wantFree != freeActive() && !busy()) {
@@ -488,9 +749,8 @@ public class SettingsActivity extends Activity {
                 int at = java.util.Arrays.asList(Screensaver.STYLES).indexOf(Screensaver.style(c));
                 ui.edit().putString("dreamStyle", Screensaver.STYLES[(at + 1) % Screensaver.STYLES.length]).apply();
             } else if (focus == 3) {
-                // Reduce Motion, like tvOS: focus, drawer and backgrounds jump instead of animating (weak GPUs).
-                android.content.SharedPreferences ui = c.getSharedPreferences("home-ui", Context.MODE_PRIVATE);
-                ui.edit().putBoolean("reducedMotion", !ui.getBoolean("reducedMotion", false)).apply();
+                screen = PREFS;
+                focus = 0;
             } else if (focus == 4) {
                 // Home design: classic (tvOS glass) or light (a list of names, smooth on any projector).
                 android.content.SharedPreferences ui = c.getSharedPreferences("home-ui", Context.MODE_PRIVATE);
