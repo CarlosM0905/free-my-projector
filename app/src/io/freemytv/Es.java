@@ -78,6 +78,17 @@ final class Es {
         t("What should I watch?", "¿Qué veo hoy?");
         t("FOR TONIGHT", "PARA HOY");
         t("Another", "Otra");
+        t("Backgrounds", "Fondos");
+        t("The ones you keep replace the landscapes of the day in the background and the screensaver.", "Los que guardes reemplazan a los paisajes del día en el fondo y el protector.");
+        t("Nothing found", "No se encontró nada");
+        t("Saving…", "Guardando…");
+        t("In your backgrounds", "En tus fondos");
+        t("Removed", "Quitado");
+        t("Couldn't save it", "No se pudo guardar");
+        t("Choose backgrounds", "Elegir fondos");
+        t("Search photos for the background and screensaver", "Busca fotos para el fondo y el protector");
+        t("%d of yours", "%d tuyos");
+        t("Landscapes of the day", "Paisajes del día");
         t("Excellent", "Excelente");
         t("Good", "Buena");
         t("Fair", "Regular");

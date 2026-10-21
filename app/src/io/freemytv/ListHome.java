@@ -29,7 +29,7 @@ import java.util.List;
  * to draw on a projector's GPU, so it's always smooth.
  */
 final class ListHome extends View implements Home, Choreographer.FrameCallback, Recs.Listener {
-    private static final int APP = 0, PICK = 1, ITEM = 2, DREAM = 3, NEXT_BG = 4, BACKGROUND = 5, SHUFFLE = 6;
+    private static final int APP = 0, PICK = 1, ITEM = 2, DREAM = 3, NEXT_BG = 4, BACKGROUND = 5, SHUFFLE = 6, PICK_BG = 7;
     /** Background styles ("Fondo"): the landscape sharp, blurred, or plain black. */
     private static final String[] BG_STYLES = {"animated", "sharp", "soft", "black"};
 
@@ -116,6 +116,7 @@ final class ListHome extends View implements Home, Choreographer.FrameCallback, 
             list.add(action(display, DREAM, Ui.tr("Tela de descanso", "Screensaver"), "sparkles"));
             list.add(action(display, BACKGROUND, Ui.tr("Fundo", "Background"), "wallpaper"));
             list.add(action(display, NEXT_BG, Ui.tr("Próxima paisagem", "Next landscape"), "wallpaper"));
+            list.add(action(display, PICK_BG, Ui.tr("Escolher fundos", "Choose backgrounds"), "wallpaper"));
             Row settings = item(display, HomeApps.settings(), ITEM);
             settings.label = Ui.tr("Ajustes do Início", "Home Settings");
             list.add(settings);
@@ -376,6 +377,9 @@ final class ListHome extends View implements Home, Choreographer.FrameCallback, 
             case SHUFFLE:
                 TitleActivity.shuffle(getContext());
                 return;
+            case PICK_BG:
+                BackgroundActivity.open(getContext());
+                return;
             case BACKGROUND:
                 changeBackground(1);
                 return;
@@ -581,6 +585,11 @@ final class ListHome extends View implements Home, Choreographer.FrameCallback, 
                 return backgroundPlace == null ? "" : backgroundPlace;
             case SHUFFLE:
                 return Ui.tr("Um filme ou série ao acaso dos seus apps", "A movie or show picked at random from your apps");
+            case PICK_BG: {
+                int n = Backgrounds.mine(c).size();
+                return n == 0 ? Ui.tr("Busque fotos para o fundo e a tela de descanso", "Search photos for the background and screensaver")
+                        : String.format(Ui.tr("%d seus", "%d of yours"), n);
+            }
             case BACKGROUND: {
                 String st = bgStyle(c);
                 return "‹  " + (st.equals("animated") ? Ui.tr("Animado", "Animated") : st.equals("soft") ? Ui.tr("Desfocado", "Blurred") : st.equals("black") ? Ui.tr("Preto", "Black")

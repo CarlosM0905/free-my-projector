@@ -111,6 +111,15 @@
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize|uiMode|density|fontScale|locale|layoutDirection"
             android:theme="@style/FreeMyTV.Home" />
 
+        <!-- Free My Projector: pick your own backgrounds from a search. -->
+        <activity
+            android:name=".BackgroundActivity"
+            android:process=":home"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:screenOrientation="landscape"
+            android:theme="@style/FreeMyTV.Home" />
+
         <!-- Free My Projector: manual focus (the lens motor). -->
         <activity
             android:name=".FocusActivity"

@@ -106,7 +106,7 @@ public class SettingsActivity extends Activity {
         private final SettingsActivity activity;
         private final Scene scene = new Scene();
         private final Handler handler = new Handler(Looper.getMainLooper());
-        private final Spring[] pop = new Spring[8];
+        private final Spring[] pop = new Spring[9];
         private final RectF tmp = new RectF(), rowRect = new RectF();
         private JSONObject state = new JSONObject(), recs = new JSONObject();
         private boolean hasKey;
@@ -205,7 +205,7 @@ public class SettingsActivity extends Activity {
         }
 
         private int rowCount() {
-            return screen == MAIN ? 6 : screen == PREFS ? 8 : 2;
+            return screen == MAIN ? 6 : screen == PREFS ? 9 : 2;
         }
 
         @Override protected void onDraw(Canvas c) {
@@ -375,7 +375,7 @@ public class SettingsActivity extends Activity {
             Context ctx = getContext();
             String lang = Prefs.language(), temp = Prefs.temperature(), theme = Prefs.theme(), team = Prefs.footballTeam();
             String[] labels = {Ui.tr("Idioma", "Language"), Ui.tr("Cidade", "City"), Ui.tr("Temperatura", "Temperature"),
-                    Ui.tr("Tema", "Theme"), Ui.tr("Movimento", "Motion"), Ui.tr("Criptomoedas", "Crypto prices"), Ui.tr("Time de futebol", "Football team"), Ui.tr("Chave do TMDB", "TMDB key")};
+                    Ui.tr("Tema", "Theme"), Ui.tr("Movimento", "Motion"), Ui.tr("Criptomoedas", "Crypto prices"), Ui.tr("Time de futebol", "Football team"), Ui.tr("Chave do TMDB", "TMDB key"), Ui.tr("Fundos", "Backgrounds")};
             String[] values = {
                     "‹  " + (lang.equals("es") ? "Español" : lang.equals("en") ? "English" : lang.equals("pt") ? "Português" : Ui.tr("Automático", "Automatic")) + "  ›",
                     !cityStatus.isEmpty() ? cityStatus : Prefs.city().isEmpty() ? "—" : Prefs.city(),
@@ -385,7 +385,9 @@ public class SettingsActivity extends Activity {
                     "‹  " + (HomeView.reducedMotion(ctx) ? Ui.tr("Reduzido", "Reduced") : Ui.tr("Completo", "Full")) + "  ›",
                     "‹  " + (Prefs.quotes() ? Ui.tr("Sim", "On") : Ui.tr("Não", "Off")) + "  ›",
                     team.isEmpty() ? Ui.tr("Nenhum", "None") : team,
-                    masked(Prefs.tmdbKey())};
+                    masked(Prefs.tmdbKey()),
+                    Backgrounds.mine(ctx).isEmpty() ? Ui.tr("Paisagens do dia", "Landscapes of the day")
+                            : String.format(Ui.tr("%d seus", "%d of yours"), Backgrounds.mine(ctx).size())};
             for (int i = 0; i < labels.length; i++) {
                 float y = (LIST_TOP + i * (ROW_H + ROW_GAP)) * k;
                 rowRect.set(LIST_X * k, y, LIST_R * k, y + ROW_H * k);
@@ -400,7 +402,7 @@ public class SettingsActivity extends Activity {
             Paint hint = Ui.text(Ui.regular, 23 * k, 0x8CFFFFFF);
             c.drawText(Ui.tr("← → muda o valor  ·  OK em Cidade, Time e Chave abre o teclado",
                     "← → changes the value  ·  OK on City, Team and Key opens the keyboard"), LIST_X * k + 30 * k,
-                    (LIST_TOP + 8 * (ROW_H + ROW_GAP) + 40) * k, hint);
+                    (LIST_TOP + 9 * (ROW_H + ROW_GAP) + 40) * k, hint);
         }
 
         /** "••••3f9a": enough to tell keys apart, never the whole secret on screen. */
@@ -740,6 +742,7 @@ public class SettingsActivity extends Activity {
             Context c = getContext();
             if (screen == PREFS) {
                 if (focus == 1 || focus == 6 || focus == 7) startTyping(focus);
+                else if (focus == 8) BackgroundActivity.open(c);
                 else change(focus, 1);
                 return;
             }

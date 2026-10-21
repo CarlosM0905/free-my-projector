@@ -33,6 +33,8 @@ final class Landscapes {
 
     /** The photos already on disk, newest first (empty the first time; `refresh` fills it). */
     static List<Photo> ready(Context c) {
+        List<Photo> mine = Backgrounds.mine(c);   // your own backgrounds, picked from a search, come first
+        if (!mine.isEmpty()) return mine;
         List<Photo> out = new ArrayList<>();
         try {
             JSONArray list = new JSONArray(prefs(c).getString("list", "[]"));
