@@ -44,6 +44,7 @@ final class Recs {
         int id;
         String kind;            // "movie" or "tv"
         String title, backdrop, meta = "", app, pkg;
+        String poster;          // the portrait artwork, for the tall cards (null: they crop the backdrop)
         String link;            // opens the title itself in its app (null: just the app)
         boolean detailed;
         long seenAt;            // Up Next: when it was opened
@@ -56,7 +57,7 @@ final class Recs {
     private static final String IMAGES = "https://image.tmdb.org/t/p/original";
     private static final long LIST_EVERY = 6 * 3600_000L;
     /** Bump when what is saved for each title changes (the saved list is discarded and fetched again). */
-    private static final int CACHE_VERSION = 4;
+    private static final int CACHE_VERSION = 5;
     private static final int MANHA = 0, TARDE = 1, NOITE = 2;
     static final String[] PERIOD_LABEL = {"PARA ESTA MANHÃ", "PARA ESTA TARDE", "PARA ESTA NOITE"};
     static final String[] PERIOD_LABEL_EN = {"THIS MORNING", "THIS AFTERNOON", "TONIGHT"};
@@ -232,6 +233,7 @@ final class Recs {
             p.title = o.optString(kind.equals("movie") ? "title" : "name");
             p.backdrop = o.optString("backdrop_path", "");
             if (p.backdrop.isEmpty() || p.backdrop.equals("null")) p.backdrop = null;
+            p.poster = path(o.optString("poster_path", ""));
             JSONObject br = get("/" + kind + "/" + p.id + "/watch/providers").getJSONObject("results").optJSONObject(REGION);
             JSONArray flat = br == null ? null : br.optJSONArray("flatrate");
             for (int j = 0; flat != null && j < flat.length() && p.app == null; j++) {
@@ -689,7 +691,12 @@ final class Recs {
         p.kind = kind;
         p.title = o.optString(kind.equals("movie") ? "title" : "name");
         p.backdrop = backdrop;
+        p.poster = path(o.optString("poster_path", ""));
         list.add(p);
+    }
+
+    private static String path(String s) {
+        return s == null || s.isEmpty() || s.equals("null") ? null : s;
     }
 
     /** Genre, runtime (or seasons) and the service it's on, among the ones the TV has. */
@@ -889,10 +896,20 @@ final class Recs {
     private void download(Pick p) throws IOException {
         File f = imageFile(p);
         if (f.exists()) return;
+        fetch(IMAGES + p.backdrop, f);
+    }
+
+    private static final String POSTERS = "https://image.tmdb.org/t/p/w500";
+
+    private File posterFile(Pick p) {
+        return new File(new File(context.getCacheDir(), "recs"), "poster" + p.poster.replace("/", ""));
+    }
+
+    private void fetch(String url, File f) throws IOException {
         //noinspection ResultOfMethodCallIgnored
         f.getParentFile().mkdirs();
         File part = new File(f.getPath() + ".part");
-        HttpURLConnection c = (HttpURLConnection) new URL(IMAGES + p.backdrop).openConnection();
+        HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
         c.setConnectTimeout(8000);
         c.setReadTimeout(20000);
         try (InputStream in = c.getInputStream(); FileOutputStream out = new FileOutputStream(part)) {
@@ -960,7 +977,17 @@ final class Recs {
             if (b == null) throw new IOException("unreadable image");
             AppLog.w("backdrop \u201c" + p.title + "\u201d: " + bounds.outWidth + "×" + bounds.outHeight);
             boolean forLight = light;
-            Backdrop backdrop = Backdrop.make(b, forLight);
+            Bitmap poster = null;
+            if (forLight && p.poster != null) {   // the tall cards use the portrait artwork, like the Apple TV app
+                try {
+                    File pf = posterFile(p);
+                    if (!pf.exists()) fetch(POSTERS + p.poster, pf);
+                    poster = BitmapFactory.decodeFile(pf.getPath());
+                } catch (IOException e) {
+                    AppLog.w("poster " + p.title + ": " + e.getMessage());
+                }
+            }
+            Backdrop backdrop = Backdrop.make(b, forLight, poster);
             if (forLight != light) return;   // the design changed midway: this one is stale
             synchronized (images) {
                 images.put(p.backdrop, backdrop);
@@ -983,9 +1010,9 @@ final class Recs {
             if (parts[i].lastModified() < stale) parts[i].delete();
         }
         File[] files = dir.listFiles();
-        if (files == null || files.length <= 24) return;
+        if (files == null || files.length <= 48) return;   // photos and posters
         Arrays.sort(files, (a, b) -> Long.compare(a.lastModified(), b.lastModified()));
-        for (int i = 0; i < files.length - 24; i++) {
+        for (int i = 0; i < files.length - 48; i++) {
             //noinspection ResultOfMethodCallIgnored
             files[i].delete();
         }
@@ -1005,7 +1032,7 @@ final class Recs {
     }
 
     private static JSONObject json(Pick p) throws org.json.JSONException {
-        return new JSONObject().put("id", p.id).put("kind", p.kind).put("title", p.title).put("backdrop", p.backdrop)
+        return new JSONObject().put("id", p.id).put("kind", p.kind).put("title", p.title).put("backdrop", p.backdrop).put("poster", p.poster == null ? "" : p.poster)
                 .put("meta", p.meta).put("app", p.app == null ? "" : p.app).put("pkg", p.pkg == null ? "" : p.pkg)
                 .put("link", p.link == null ? "" : p.link).put("detailed", p.detailed).put("seenAt", p.seenAt);
     }
@@ -1020,6 +1047,7 @@ final class Recs {
             p.kind = o.optString("kind");
             p.title = o.optString("title");
             p.backdrop = o.optString("backdrop");
+            p.poster = path(o.optString("poster"));
             p.meta = fixGenres(o.optString("meta"));
             p.app = o.optString("app").isEmpty() ? null : o.optString("app");
             p.pkg = o.optString("pkg").isEmpty() ? null : o.optString("pkg");

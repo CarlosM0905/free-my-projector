@@ -50,6 +50,11 @@ final class Backdrop {
     }
 
     static Backdrop make(Bitmap src, boolean forLight) {
+        return make(src, forLight, null);
+    }
+
+    /** `poster`: the portrait artwork for the tall cards (null: they're cropped from the photo). */
+    static Backdrop make(Bitmap src, boolean forLight, Bitmap poster) {
         Bitmap out = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(out);
         Paint photo = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.DITHER_FLAG);
@@ -59,7 +64,11 @@ final class Backdrop {
         src.recycle();
         if (forLight) {
             // Light design: everything comes from the photo without scrims.
-            Bitmap wide = card(out, WIDE_W, WIDE_H), tall = card(out, TALL_W, TALL_H);
+            // The wide card is cut a little above the middle (faces and titles are rarely at the bottom); the tall ones
+            // use the poster when there is one, instead of a narrow slice of a landscape photo.
+            Bitmap wide = card(out, WIDE_W, WIDE_H, 0.38f);
+            Bitmap tall = poster != null ? card(poster, TALL_W, TALL_H, 0.5f) : card(out, TALL_W, TALL_H, 0.5f);
+            if (poster != null) poster.recycle();
             int[] frost = reduce(out, FW, FH, 3, 3);
             int[] light = whiten(frost.clone(), 0.82f);
             int[] glass = reduce(out, GW, GH, 2, 2);
@@ -142,11 +151,12 @@ final class Backdrop {
     }
 
     /** The center of the photo at the card's aspect ratio, filtered down (halving while possible) to the exact size. */
-    private static Bitmap card(Bitmap full, int w, int h) {
+    /** The card cut from `full` without stretching it; `top` is where the cut sits vertically (0 = top, 0.5 = middle). */
+    private static Bitmap card(Bitmap full, int w, int h, float top) {
         float ratio = (float) w / h;
         int cw = Math.min(full.getWidth(), Math.round(full.getHeight() * ratio));
         int ch = Math.min(full.getHeight(), Math.round(cw / ratio));
-        Bitmap b = Bitmap.createBitmap(full, (full.getWidth() - cw) / 2, (full.getHeight() - ch) / 2, cw, ch);
+        Bitmap b = Bitmap.createBitmap(full, (full.getWidth() - cw) / 2, Math.round((full.getHeight() - ch) * top), cw, ch);
         while (b.getWidth() / 2 >= w) {
             Bitmap half = Bitmap.createScaledBitmap(b, b.getWidth() / 2, b.getHeight() / 2, true);
             if (b != full) b.recycle();

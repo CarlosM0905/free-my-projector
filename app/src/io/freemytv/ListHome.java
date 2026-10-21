@@ -615,7 +615,7 @@ final class ListHome extends View implements Home, Choreographer.FrameCallback, 
             photo = b == null ? null : b.wide;
         }
         if (photo != null) {   // the photo, rounded, fading into the dark at the bottom
-            float pw = 860 * k, ph = pw * 9 / 16;
+            float pw = 860 * k, ph = pw * Backdrop.WIDE_H / Backdrop.WIDE_W;   // the wide card's own shape: never stretched
             rect.set(cx - pw / 2, cy - ph / 2, cx + pw / 2, cy + ph / 2);
             clip.reset();
             clip.addRoundRect(rect, 22 * k, 22 * k, Path.Direction.CW);
@@ -632,7 +632,7 @@ final class ListHome extends View implements Home, Choreographer.FrameCallback, 
             Bitmap card = it.tile != null ? it.tile : it.logo;
             float tw = (photo != null ? 300 : 560) * k, th = tw * card.getHeight() / card.getWidth();
             float tx = photo != null ? cx - 860 * k / 2 + 36 * k : cx - tw / 2;
-            float ty = photo != null ? cy + 860 * k * 9 / 32 - th / 2 : cy - th / 2;
+            float ty = photo != null ? cy + 860 * k * Backdrop.WIDE_H / Backdrop.WIDE_W / 2 - th / 2 : cy - th / 2;
             float radius = (photo != null ? 18 : 30) * k;
             for (int i = 3; i >= 1; i--) {   // a soft shadow from three wider, fainter shapes (no blur: it's drawn every frame)
                 rect.set(tx - i * 6 * k, ty + (10 + i * 6) * k, tx + tw + i * 6 * k, ty + th + (10 + i * 8) * k);
