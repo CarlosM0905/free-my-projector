@@ -28,6 +28,8 @@ The original project's README is in [README-original.md](README-original.md).
 - **Title logos** (from ViralOne's fork): the official logo of each movie or show over the wide card and on its page, like the Apple TV app. New picks wait until their photos are ready, so the cards never turn gray (from johncovv's fork).
 - **Cards that fit:** the tall cards use each title's poster (like the Apple TV app) instead of a slice of a landscape photo, and the wide one is cut a little above the middle, where faces usually are.
 - **Top Shelf**, like tvOS: when you pass over Disney+, Netflix, Prime Video or Crunchyroll on the shelf, the cards above show that app's picks; go up and open one directly.
+- **Continue watching from the apps themselves** (an idea from SferaDev's Google TV style home): Up Next shows what you left halfway in Disney+, Netflix, Crunchyroll and other apps that publish Android TV's Watch Next, with a progress bar and "20 min left"; OK goes straight back into it.
+- **Rows that keep going:** each tab has up to 10 titles; the row slides along as you move right, like an Apple TV row.
 - **Up Next**, like tvOS: a tab with what you last opened from the home screen, to pick it up again. It appears once you open your first title. Shows get a **New episode** badge when one comes out after you watched (or "New on Friday" when it's less than a week away).
 - **Control Center** like tvOS: opens with the remote's ≡ button (or by going down to the drawer). The shortcuts row scrolls sideways when it doesn't fit.
   - Shortcuts to **Keystone**, **Picture** (mode, color, sharpness, noise reduction), **Sound** (equalizer, DTS, VirtualX) and **Sleep timer** (shows the minutes left).

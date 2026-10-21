@@ -46,6 +46,8 @@ final class Recs {
         String title, backdrop, meta = "", app, pkg;
         String poster;          // the portrait artwork, for the tall cards (null: they crop the backdrop)
         String logo;            // the title's logo (transparent PNG), over the wide card and on its page
+        boolean watchNext;      // from an app's own "continue watching" (WatchNext): opened straight, no page
+        float progress;         // how far you got (0 = not started), for the card's bar
         String link;            // opens the title itself in its app (null: just the app)
         boolean detailed;
         long seenAt;            // Up Next: when it was opened
@@ -143,12 +145,28 @@ final class Recs {
     // MARK: - Up Next (like tvOS): what was opened from the home screen, to pick it up again
 
     /** The latest 3 opened titles whose app is still on the TV. */
+    /** How many cards a tab shows (they slide along as the focus moves, like an Apple TV row). */
+    static final int MAX_CARDS = 10;
+
+    /**
+     * Up Next: what you're actually watching in the apps (their Watch Next rows, newest first), then what you opened
+     * from the home screen; one card per title.
+     */
     List<Pick> upNext() {
         List<Pick> out = new ArrayList<>();
-        synchronized (history) {
-            for (Pick p : history) if (out.size() < 3 && p.pkg != null && installed(p.pkg)) out.add(p);
+        java.util.Set<String> titles = new java.util.HashSet<>();
+        for (Pick p : WatchNext.items(context)) {
+            if (out.size() < MAX_CARDS && p.backdrop != null && titles.add(p.title.toLowerCase(Locale.ROOT))) out.add(p);
         }
-        checkEpisodes(out);
+        List<Pick> mine = new ArrayList<>();
+        synchronized (history) {
+            for (Pick p : history) {
+                if (out.size() + mine.size() < MAX_CARDS && p.pkg != null && installed(p.pkg)
+                        && titles.add(p.title == null ? "" : p.title.toLowerCase(Locale.ROOT))) mine.add(p);
+            }
+        }
+        checkEpisodes(mine);
+        out.addAll(mine);
         return out;
     }
 
@@ -398,7 +416,7 @@ final class Recs {
         // Three per hour, never two from the same franchise ("Law & Order" and "Law & Order: Special…").
         List<Pick> out = new ArrayList<>();
         java.util.Set<String> seen = new java.util.HashSet<>();
-        for (int i = 0; i < list.size() && out.size() < 3; i++) {
+        for (int i = 0; i < list.size() && out.size() < MAX_CARDS; i++) {
             Pick p = list.get((int) ((hour * 3 + i) % list.size()));
             if (seen.add(franchise(p.title))) out.add(p);
         }
@@ -534,7 +552,9 @@ final class Recs {
     }
 
     private File imageFile(Pick p) {
-        return new File(new File(context.getCacheDir(), "recs"), p.backdrop.replace("/", ""));
+        // An app's own image (Watch Next) is a whole URL: named by its hash.
+        String name = p.backdrop.startsWith("http") ? "wn" + Integer.toHexString(p.backdrop.hashCode()) : p.backdrop.replace("/", "");
+        return new File(new File(context.getCacheDir(), "recs"), name);
     }
 
     /** With a key: fetches the list if stale or the time of day (morning/afternoon/night) changed; then the details. */
@@ -991,7 +1011,7 @@ final class Recs {
     private void download(Pick p) throws IOException {
         File f = imageFile(p);
         if (f.exists()) return;
-        fetch(IMAGES + p.backdrop, f);
+        fetch(p.backdrop.startsWith("http") ? p.backdrop : IMAGES + p.backdrop, f);
     }
 
     private static final String POSTERS = "https://image.tmdb.org/t/p/w500";
@@ -1091,7 +1111,7 @@ final class Recs {
             if (forLight != light) return;   // the design changed midway: this one is stale
             synchronized (images) {
                 images.put(p.backdrop, backdrop);
-                while (images.size() > (forLight ? 16 : 4)) images.remove(images.keySet().iterator().next());
+                while (images.size() > (forLight ? 20 : 4)) images.remove(images.keySet().iterator().next());
             }
             notifyListeners();
         } catch (IOException | RuntimeException | OutOfMemoryError e) {

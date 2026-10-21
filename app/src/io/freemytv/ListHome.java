@@ -375,7 +375,13 @@ final class ListHome extends View implements Home, Choreographer.FrameCallback, 
                 changeBackground(1);
                 return;
             case PICK:
-                TitleActivity.open(getContext(), r.pick);
+                if (r.pick.watchNext) {   // an app's own "continue watching": straight back into it
+                    HomeApps.Item it = HomeApps.app(r.pick.pkg, r.pick.title);
+                    it.uri = r.pick.link;
+                    HomeApps.open(activity, it, this, cx, cy, 1, 1);
+                } else {
+                    TitleActivity.open(getContext(), r.pick);
+                }
                 return;
             default:
                 HomeApps.open(activity, r.item, this, cx, cy, 1, 1);

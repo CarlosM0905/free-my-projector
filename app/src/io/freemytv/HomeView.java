@@ -134,8 +134,11 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
     private List<Recs.Pick> cards = new ArrayList<>();
     private final Spring[] topFocus = new Spring[NT + NB];
     private final RectF[] topRects = new RectF[NT + NB];
-    private final Spring[] cardFocus = new Spring[3];
-    private final RectF[] cardRects = new RectF[3];
+    private final Spring[] cardFocus = new Spring[Recs.MAX_CARDS];
+    private final RectF[] cardRects = new RectF[Recs.MAX_CARDS];
+    /** The row of cards slides as the focus moves past its edge (Apple TV): how far, animated. */
+    private final Spring cardShift = new Spring(0.36f, 0.9f, 0);
+    private float cardTop, cardH, cardGap, wideW, tallW;
     private final List<HomeApps.Item> lightButtons = new ArrayList<>();
     private Paint lTitle, lTab, lTabOn, lCardTitle, lCardMeta, lQuote, lTip, lSearch, lKey;
     private Shader lightGradient;
@@ -332,7 +335,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
             topFocus[i] = new Spring(0.26f, 0.85f, 0);
             topRects[i] = new RectF();
         }
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < Recs.MAX_CARDS; i++) {
             cardFocus[i] = new Spring(0.32f, 0.78f, 0);
             cardRects[i] = new RectF();
         }
@@ -372,6 +375,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         handler.postDelayed(tick, 15_000);
         checkNotices();
         Updates.check(getContext(), text -> post(() -> showToast(text)));
+        WatchNext.refresh(getContext(), () -> post(this::updateCards));   // the apps' own "continue watching"
         Football.refresh(getContext(), () -> post(() -> statusDirty = true));
         track = NowPlaying.current(getContext());
         stopWatching = NowPlaying.watch(getContext(), handler, () -> {
@@ -610,6 +614,10 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         boolean statusMoving = step(statusFocus, dt);
         boolean heroMoving = heroFocus.step(dt);
         boolean topMoving = step(topFocus, dt), cardsMoving = step(cardFocus, dt);
+        if (cardShift.step(dt)) {
+            placeCards();
+            cardsMoving = true;
+        }
         if (topMoving) status.invalidate();
         heroMoving |= topMoving | cardsMoving;
         boolean drawerItemsMoving = step(drawerFocus, dt);
@@ -1619,6 +1627,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         if (snap) heroFocus.snap(heroFocus.target);
         boolean topChanged = aim(topFocus, !sheetOpen && zone == Z_TOP ? topIndex : -1, snap);
         heroChanged |= aim(cardFocus, !sheetOpen && zone == Z_CARDS ? cardIndex : -1, snap) | topChanged;
+        followCards(snap);
         statusChanged |= topChanged;
         tilesDirty |= snap || tilesChanged;
         statusDirty |= snap || statusChanged;
@@ -2141,9 +2150,15 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         } else if (zone == Z_CARDS) {
             Recs.Pick p = cardIndex < cards.size() ? cards.get(cardIndex) : null;
             if (p == null) return;
-            click.open();
-            TitleActivity.open(getContext(), p);   // its page first, like the Apple TV app; the hero's button plays right away
-            return;
+            if (p.watchNext) {   // an app's own "continue watching": straight back into it
+                it = HomeApps.app(p.pkg, p.title);
+                it.uri = p.link;
+                r = cardRects[cardIndex];
+            } else {
+                click.open();
+                TitleActivity.open(getContext(), p);   // its page first, like the Apple TV app; the hero's button plays right away
+                return;
+            }
         } else {
             if (shelf.isEmpty()) return;
             it = shelf.get(shelfIndex);
@@ -2191,12 +2206,41 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
             topRects[NT + i].set(right - b, cy - b / 2, right, cy + b / 2);
             right -= b + L_BUTTON_GAP * k;
         }
-        float top = L_CARDS_TOP * k, ch = L_CARD_H * k, g = L_CARD_GAP * k, left = MARGIN * k, tall = L_TALL_W * k;
-        float wide = (CONTENT_R - MARGIN) * k - 2 * tall - 2 * g;
-        cardRects[0].set(left, top, left + wide, top + ch);
-        cardRects[1].set(cardRects[0].right + g, top, cardRects[0].right + g + tall, top + ch);
-        cardRects[2].set(cardRects[1].right + g, top, cardRects[1].right + g + tall, top + ch);
+        cardTop = L_CARDS_TOP * k;
+        cardH = L_CARD_H * k;
+        cardGap = L_CARD_GAP * k;
+        tallW = L_TALL_W * k;
+        wideW = (CONTENT_R - MARGIN) * k - 2 * tallW - 2 * cardGap;   // the first three fill the width, as before
+        placeCards();
         heroDirty = statusDirty = true;
+    }
+
+    /** The cards at their place in the row, slid by `cardShift`: the wide one, then the tall ones. */
+    private void placeCards() {
+        float x = MARGIN * k - cardShift.value;
+        for (int i = 0; i < cardRects.length; i++) {
+            float w = i == 0 ? wideW : tallW;
+            cardRects[i].set(x, cardTop, x + w, cardTop + cardH);
+            x += w + cardGap;
+        }
+        heroDirty = true;
+    }
+
+    /** Slides the row so the focused card is fully in view (the first three never slide). */
+    private void followCards(boolean snap) {
+        float target = 0;
+        if (zone == Z_CARDS && cardIndex > 2) {
+            float right = MARGIN * k + wideW + cardGap + cardIndex * (tallW + cardGap);   // the focused card's right edge, unslid
+            target = Math.max(0, right - CONTENT_R * k);
+        } else if (zone == Z_CARDS || cardIndex <= 2) {
+            target = 0;
+        }
+        if (Math.abs(target - cardShift.target) < 0.5f) return;
+        cardShift.target = target;
+        if (snap || Spring.instant) {
+            cardShift.snap(target);
+            placeCards();
+        }
     }
 
     /** The three cards of the current tab (Explore, Movies, Shows) and the background taken from the first one. */
@@ -2544,10 +2588,11 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
             c.drawText(tabs()[i], r.centerX() - p.measureText(tabs()[i]) / 2, r.centerY() + Ui.halfCap(p), p);
         }
         int top = -1;
-        for (int i = 0; i < 3; i++) if (cardFocus[i].value > 0.02f && (top < 0 || cardFocus[i].value > cardFocus[top].value)) top = i;
+        int n = Math.min(cards.size(), cardRects.length);
+        for (int i = 0; i < Math.max(3, n); i++) if (cardFocus[i].value > 0.02f && (top < 0 || cardFocus[i].value > cardFocus[top].value)) top = i;
         if (tab == SEARCH) drawSearch(c);
         else if (!Recs.hasKey(getContext())) drawClock(c);   // (upstream) no TMDB key: the time and the weather, not empty cards
-        for (int i = 0; i < 3; i++) if (i != top) drawLightCard(c, i);
+        for (int i = 0; i < Math.max(3, n); i++) if (i != top) drawLightCard(c, i);
         if (top >= 0) drawLightCard(c, top);
         drawQuotes(c);
     }
@@ -2592,6 +2637,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
      */
     private void drawLightCard(Canvas c, int i) {
         RectF base = cardRects[i];
+        if (base.right < -40 * k || base.left > getWidth() + 40 * k) return;   // slid out of view
         Recs.Pick p = i < cards.size() ? cards.get(i) : null;
         if (p == null && (tab >= UP_NEXT || !Recs.hasKey(getContext()))) return;   // no empty placeholders (no key: the clock shows)
         float v = cardFocus[i].value, f = Ui.clamp(v), s = 1 + 0.05f * v;
@@ -2639,6 +2685,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
             c.drawRoundRect(cell, r, r, rim);
         }
         if (p == null) return;
+        if (p.progress > 0.01f) drawProgress(c, p.progress, cell);
         if (tab == UP_NEXT && p.fresh != null) drawFreshBadge(c, p.fresh, cell);
         c.drawText(ellipsized(p.title, lCardTitle, bw), base.left, base.bottom + 46 * k, lCardTitle);
         if (i == 0 && p.meta != null && !p.meta.isEmpty()) {
@@ -2647,6 +2694,18 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
     }
 
     private final Paint badgeText = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+    /** How far you got, as on the Apple TV app: a thin white bar on a dim track at the card's bottom. */
+    private void drawProgress(Canvas c, float progress, RectF card) {
+        float pad = 22 * k, h = 6 * k, y = card.bottom - pad - h;
+        tmp.set(card.left + pad, y, card.right - pad, y + h);
+        fill.setShader(null);
+        fill.setColor(0x66000000);
+        c.drawRoundRect(tmp, h / 2, h / 2, fill);
+        tmp.right = tmp.left + (tmp.width()) * progress;
+        fill.setColor(0xF2FFFFFF);
+        c.drawRoundRect(tmp, h / 2, h / 2, fill);
+    }
 
     /** Up Next: "New episode" in an accent pill on the card's top left (like the Apple TV app). */
     private void drawFreshBadge(Canvas c, String text, RectF card) {

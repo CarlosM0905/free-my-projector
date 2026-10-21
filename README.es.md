@@ -28,6 +28,8 @@ El README del proyecto original está en [README-original.md](README-original.md
 - **Logos de los títulos** (del fork de ViralOne): el logo oficial de cada película o serie sobre la tarjeta ancha y en su ficha, como en la app del Apple TV. Las recomendaciones nuevas esperan a que sus fotos estén listas, así las tarjetas nunca se ven grises (del fork de johncovv).
 - **Tarjetas que encajan:** las angostas usan el póster de cada título (como la app del Apple TV) en vez de un trozo de la foto horizontal, y la ancha se recorta un poco más arriba, donde suelen estar las caras.
 - **Top Shelf**, como en tvOS: al pasar por Disney+, Netflix, Prime Video o Crunchyroll en el estante, las tarjetas de arriba muestran lo recomendado de esa app; sube y ábrelo directo.
+- **Continuar viendo desde las propias apps** (idea del Google TV style home de SferaDev): A continuación muestra lo que dejaste a medias en Disney+, Netflix, Crunchyroll y las demás apps que publican el "Watch Next" de Android TV, con barra de avance y "faltan 20 min"; OK te lleva directo a seguir viéndolo.
+- **Filas que siguen:** cada pestaña tiene hasta 10 títulos; la fila se desliza al moverte a la derecha, como en el Apple TV.
 - **A continuación**, como en tvOS: una pestaña con lo último que abriste desde el inicio, para retomarlo. Aparece cuando abres el primer título. Las series muestran **Episodio nuevo** cuando sale uno después de que la viste (o "Nuevo el viernes" si falta menos de una semana).
 - **Centro de control** como el de tvOS: se abre con el botón ≡ del control (o bajando al cajón).
   - Atajos a **Keystone**, **Imagen** (modo, color, nitidez, reducción de ruido), **Sonido** (ecualizador, DTS, VirtualX) y **Apagado** (temporizador; muestra los minutos que quedan).
