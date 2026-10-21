@@ -38,6 +38,7 @@ The original project's README is in [README-original.md](README-original.md).
   - A **device status** card: processor temperature, fan, lamp with its **hours of use** (counted since the app was installed) and the panel's refresh rate (you'll see it switch to 48 or 50 Hz with AFR).
   - **Heat warning**: if the processor goes over 82 °C, a notice appears over any app so you can check the vents (at most once every half hour).
 - Hourly **weather**, sunrise and sunset, and **crypto prices**.
+- **Widgets** (light design, top right, like macOS's): your **football team**'s next match and last result (`football_team` in config, TheSportsDB), the **next episode** of a show in Up Next, and **what's playing** — or the rest of the day's weather. In the classic design, on match day the match takes the quotes' place.
 - **Landscape screensaver**, like the Apple TV and Mac aerials: a full-screen landscape photo every minute (Bing's photos of the day, with the place's name) and a glass box with the time, date, weather and what's playing. Also as a **frame**, like The Frame's Art Mode, or with the recommendations' artwork. Choose it in Home Settings; it starts right away with **Back** on the home screen, like the Apple TV.
 - **Soft navigation sounds**, like tvOS: a tick when you move, two notes when opening and going back.
 - **Dark, light or automatic mode** (light by day, dark from sunset), and a **screensaver** with the artwork and a large clock.
@@ -126,6 +127,7 @@ Everything is in `config.properties` (not committed to git):
 | `currency` | Currency for the crypto prices | `USD` |
 | `temperature` | `C`, `F` or `auto` | `C` |
 | `theme` | `auto` (light by day, dark at night), `dark` or `light` | `dark` |
+| `football_team` | Your team, for the match widget (empty = none) | `Arsenal` |
 
 **The TMDB key:** create a free account at [themoviedb.org](https://www.themoviedb.org/signup), go to [Settings → API](https://www.themoviedb.org/settings/api) and request a developer key. Paste the *API Key* after `tmdb_key=`.
 

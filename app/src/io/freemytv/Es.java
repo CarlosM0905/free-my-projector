@@ -45,6 +45,12 @@ final class Es {
         t("Sound effects", "Sonido");
         t("Sleep timer", "Apagado");
         t("Audio only", "Solo audio");
+        t("NEXT EPISODE", "PRÓXIMO EPISODIO");
+        t("NOW PLAYING", "AHORA SUENA");
+        t("WEATHER", "CLIMA");
+        t("Last: ", "Último: ");
+        t("Last result", "Último resultado");
+        t("at ", "en ");
         t("What should I watch?", "¿Qué veo hoy?");
         t("FOR TONIGHT", "PARA HOY");
         t("Another", "Otra");

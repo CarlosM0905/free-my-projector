@@ -38,6 +38,7 @@ El README del proyecto original está en [README-original.md](README-original.md
   - Una tarjeta con el **estado del equipo**: temperatura del procesador, ventilador, lámpara con sus **horas de uso** (contadas desde que instalas la app) y frecuencia del panel (se ve cambiar a 48 o 50 Hz si tienes AFR).
   - **Aviso de calor**: si el procesador pasa de 82 °C, aparece un aviso sobre cualquier app para que revises las rejillas (como mucho uno cada media hora).
 - **Clima** por hora, amanecer y atardecer, y **precios cripto**.
+- **Widgets** (diseño Ligero, arriba a la derecha, como en macOS): el próximo partido y el último resultado de **tu equipo de fútbol** (`football_team` en la configuración, TheSportsDB), el **próximo episodio** de una serie de A continuación y **lo que suena**, o el clima del resto del día. En el diseño Clásico, el día del partido este reemplaza a las cotizaciones.
 - **Protector de paisajes**, como los fondos aéreos del Apple TV y la Mac: una foto de paisaje a pantalla completa cada minuto (las fotos del día de Bing, con el nombre del lugar) y un recuadro de vidrio con la hora, la fecha, el clima y lo que suena. También en **marco**, como el modo Arte de The Frame, o con las portadas de las recomendaciones. Se elige en los ajustes del inicio, y se activa al instante con **Atrás** en el inicio, como en el Apple TV.
 - **Sonidos suaves al navegar**, como en tvOS: un tic al moverte, dos notas al abrir y al volver.
 - **Modo oscuro fijo, claro fijo o automático** (claro de día, oscuro desde la puesta de sol), y un **protector de pantalla** con las portadas y un reloj grande.
@@ -126,6 +127,7 @@ Todo está en `config.properties` (no se sube a git):
 | `currency` | Moneda de los precios cripto | `USD` |
 | `temperature` | `C`, `F` o `auto` | `C` |
 | `theme` | `auto` (claro de día, oscuro de noche), `dark` o `light` | `dark` |
+| `football_team` | Tu equipo, para el widget de fútbol (vacío = ninguno) | `Real Madrid` |
 
 **La clave de TMDB:** crea una cuenta gratis en [themoviedb.org](https://www.themoviedb.org/signup), entra a [Settings → API](https://www.themoviedb.org/settings/api) y pide una clave de desarrollador. Pega la *API Key* después de `tmdb_key=`.
 

@@ -64,6 +64,7 @@ final class Config {
     static final String TEMPERATURE = "$(prop temperature auto)";
     static final boolean DISABLE_ASSISTANT = $ASSIST;
     static final String THEME = "$(prop theme auto)";
+    static final String FOOTBALL_TEAM = "$(prop football_team '')";
 }
 EOF
 

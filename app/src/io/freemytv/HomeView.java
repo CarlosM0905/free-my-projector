@@ -364,6 +364,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         handler.postDelayed(tick, 15_000);
         checkNotices();
         Updates.check(getContext(), text -> post(() -> showToast(text)));
+        Football.refresh(getContext(), () -> post(() -> statusDirty = true));
         track = NowPlaying.current(getContext());
         stopWatching = NowPlaying.watch(getContext(), handler, () -> {
             track = NowPlaying.current(getContext());
@@ -1120,6 +1121,15 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
             float w = text.measureText(line), icon = cap * 1.6f;
             Symbols.draw(getContext(), c, "play", right - w - gap - icon / 2, base - cap / 2, icon, Ui.alpha(ACCENT, fade));
             c.drawText(line, right - w, base, text);
+            text.setColor(textColor);
+            return;
+        }
+        Football.Match m = Football.next;
+        long until = m == null ? -1 : m.at - System.currentTimeMillis();
+        if (m != null && until > -2 * 3600_000L && until < 2 * 86_400_000L) {   // match day: "⚽ vs Rival · Sun 25 · 15:30"
+            String line = "⚽  " + Football.rival(m) + "  ·  " + Football.when(m);
+            line = ellipsized(line, text, 760 * k);
+            c.drawText(line, right - text.measureText(line), base, text);
             text.setColor(textColor);
             return;
         }

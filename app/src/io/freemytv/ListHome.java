@@ -65,7 +65,8 @@ final class ListHome extends View implements Home, Choreographer.FrameCallback, 
 
     private final Runnable tick = new Runnable() {
         @Override public void run() {
-            invalidate();   // the clock and the switches' state
+            readWidgets();
+            invalidate();   // the clock, the switches' state and the widgets
             handler.postDelayed(this, 15_000);
         }
     };
@@ -440,6 +441,7 @@ final class ListHome extends View implements Home, Choreographer.FrameCallback, 
         }   // one pass: the GPU of a projector can't afford three per frame
 
         drawPreview(c, w, h);
+        drawWidgets(c, w);
         drawList(c, h);
         drawCorner(c, w, h);
     }
@@ -649,6 +651,94 @@ final class ListHome extends View implements Home, Choreographer.FrameCallback, 
         } else if (photo == null) {
             String sym = r.symbol != null ? r.symbol : it != null && it.kind == HomeApps.INPUT ? "hdmi" : "tv";
             Symbols.draw(getContext(), c, sym, cx, cy, 190 * k, Ui.alpha(0xFFEDE6DA, 0.9f * f));
+        }
+    }
+
+    // MARK: - Widgets (top right, like macOS's): football, the next episode, what's playing or the weather
+
+    private NowPlaying.Track widgetTrack;
+    private Recs.Pick widgetEpisode;
+    private final RectF card = new RectF();
+    private final TextPaint wLabel = new TextPaint(Paint.ANTI_ALIAS_FLAG), wMain = new TextPaint(Paint.ANTI_ALIAS_FLAG),
+            wSub = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+
+    /** Read every 15 s (asking the media sessions on every frame would cost). */
+    private void readWidgets() {
+        widgetTrack = NowPlaying.current(getContext());
+        widgetEpisode = null;
+        for (Recs.Pick p : recs.upNext()) {
+            if (p.fresh != null) {
+                widgetEpisode = p;
+                break;
+            }
+        }
+        Football.refresh(getContext(), () -> handler.post(this::invalidate));
+    }
+
+    private void drawWidgets(Canvas c, float w) {
+        List<String[]> cards = new ArrayList<>();   // {label, main, sub, extra}
+        Football.Match next = Football.next, last = Football.last;
+        if (Football.enabled() && (next != null || last != null)) {
+            String team = Config.FOOTBALL_TEAM.trim().toUpperCase(java.util.Locale.ROOT);
+            if (next != null) {
+                cards.add(new String[] {team, Football.rival(next), Football.when(next),
+                        last == null || Football.result(last).isEmpty() ? "" : Ui.tr("Último: ", "Last: ") + Football.result(last)});
+            } else {
+                cards.add(new String[] {team, Football.result(last), Ui.tr("Último resultado", "Last result"), ""});
+            }
+        }
+        if (widgetEpisode != null) {
+            cards.add(new String[] {Ui.tr("PRÓXIMO EPISÓDIO", "NEXT EPISODE"), widgetEpisode.title, widgetEpisode.fresh, ""});
+        }
+        if (widgetTrack != null) {
+            cards.add(new String[] {Ui.tr("TOCANDO AGORA", "NOW PLAYING"), widgetTrack.title,
+                    widgetTrack.artist == null ? "" : widgetTrack.artist, ""});
+        } else {
+            HomeData.Weather wx = HomeData.get(getContext()).weather;
+            if (!Double.isNaN(wx.temp)) {
+                StringBuilder hours = new StringBuilder();
+                for (int i = 0; i < Math.min(3, wx.hours.size()); i++) {
+                    if (i > 0) hours.append("   ");
+                    hours.append(HomeData.hour(wx.hours.get(i))).append(' ').append(HomeData.degrees(wx.hourTemp.get(i)));
+                }
+                // The greeting already says the weather now: the card is about the rest of the day.
+                String range = Double.isNaN(wx.max) ? HomeData.degrees(wx.temp)
+                        : Ui.tr("Máx. ", "H ") + HomeData.degrees(wx.max) + "   " + Ui.tr("Mín. ", "L ") + HomeData.degrees(wx.min);
+                cards.add(new String[] {Ui.tr("CLIMA", "WEATHER"), range, hours.toString(), ""});
+            }
+        }
+        if (cards.isEmpty()) return;
+        float cw = 330 * k, ch = 150 * k, gap = 20 * k, top = 112 * k;
+        float x = w - 80 * k - cards.size() * cw - (cards.size() - 1) * gap;
+        wLabel.setTypeface(Ui.semibold);
+        wLabel.setTextSize(18 * k);
+        wLabel.setLetterSpacing(0.06f);
+        wMain.setTypeface(Ui.semibold);
+        wMain.setTextSize(28 * k);
+        wMain.setColor(0xF2FFFFFF);
+        wSub.setTypeface(Ui.regular);
+        wSub.setTextSize(21 * k);
+        for (String[] d : cards) {
+            card.set(x, top, x + cw, top + ch);
+            fill.setStyle(Paint.Style.FILL);
+            fill.setColor(0x66000000);
+            c.drawRoundRect(card, 26 * k, 26 * k, fill);
+            fill.setStyle(Paint.Style.STROKE);
+            fill.setStrokeWidth(1.5f * k);
+            fill.setColor(0x1FFFFFFF);
+            c.drawRoundRect(card, 26 * k, 26 * k, fill);
+            fill.setStyle(Paint.Style.FILL);
+            float tx = x + 24 * k, room = cw - 48 * k;
+            wLabel.setColor(0xFF0A84FF);
+            c.drawText(TextUtils.ellipsize(d[0], wLabel, room, TextUtils.TruncateAt.END).toString(), tx, top + 38 * k, wLabel);
+            c.drawText(TextUtils.ellipsize(d[1] == null ? "" : d[1], wMain, room, TextUtils.TruncateAt.END).toString(), tx, top + 78 * k, wMain);
+            wSub.setColor(0xB3FFFFFF);
+            c.drawText(TextUtils.ellipsize(d[2] == null ? "" : d[2], wSub, room, TextUtils.TruncateAt.END).toString(), tx, top + 110 * k, wSub);
+            if (!d[3].isEmpty()) {
+                wSub.setColor(0x80FFFFFF);
+                c.drawText(TextUtils.ellipsize(d[3], wSub, room, TextUtils.TruncateAt.END).toString(), tx, top + 136 * k, wSub);
+            }
+            x += cw + gap;
         }
     }
 
