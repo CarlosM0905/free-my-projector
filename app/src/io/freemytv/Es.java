@@ -56,9 +56,11 @@ final class Es {
         t("Dark", "Oscuro");
         t("Light theme", "Claro");
         t("None", "Ninguno");
-        t("← → changes the value  ·  OK on City and Team opens a search", "← → cambia el valor  ·  OK en Ciudad y Equipo abre la búsqueda");
+        t("← → changes the value  ·  OK on City, Team and Key opens the keyboard", "← → cambia el valor  ·  OK en Ciudad, Equipo y Clave abre el teclado");
         t("City name", "Nombre de la ciudad");
         t("Team name", "Nombre del equipo");
+        t("TMDB key", "Clave de TMDB");
+        t("The API Key from themoviedb.org (32 letters and digits)", "La API Key de themoviedb.org (32 letras y números)");
         t("↓ to choose", "↓ para elegir");
         t("OK types  ·  \u2713 confirms  ·  Back leaves", "OK escribe  ·  \u2713 confirma  ·  Atrás sale");
         t("Search", "Buscar");

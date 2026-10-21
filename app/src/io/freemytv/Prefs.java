@@ -74,6 +74,10 @@ final class Prefs {
         if (p != null) p.edit().putBoolean("quotes", on).apply();
     }
 
+    /** The TMDB key (from Ichiro786's and Arthur997's forks): typed on the projector, or config.properties'. */
+    static String tmdbKey() { return get("tmdbKey", Config.TMDB_KEY).trim(); }
+    static void setTmdbKey(String v) { put("tmdbKey", v.trim()); }
+
     /** The football team for the widget ("" = none). */
     static String footballTeam() { return get("footballTeam", Config.FOOTBALL_TEAM).trim(); }
     static void setFootballTeam(String v) { put("footballTeam", v.trim()); }

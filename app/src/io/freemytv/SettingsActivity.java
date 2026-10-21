@@ -106,7 +106,7 @@ public class SettingsActivity extends Activity {
         private final SettingsActivity activity;
         private final Scene scene = new Scene();
         private final Handler handler = new Handler(Looper.getMainLooper());
-        private final Spring[] pop = new Spring[7];
+        private final Spring[] pop = new Spring[8];
         private final RectF tmp = new RectF(), rowRect = new RectF();
         private JSONObject state = new JSONObject(), recs = new JSONObject();
         private boolean hasKey;
@@ -205,7 +205,7 @@ public class SettingsActivity extends Activity {
         }
 
         private int rowCount() {
-            return screen == MAIN ? 6 : screen == PREFS ? 7 : 2;
+            return screen == MAIN ? 6 : screen == PREFS ? 8 : 2;
         }
 
         @Override protected void onDraw(Canvas c) {
@@ -375,7 +375,7 @@ public class SettingsActivity extends Activity {
             Context ctx = getContext();
             String lang = Prefs.language(), temp = Prefs.temperature(), theme = Prefs.theme(), team = Prefs.footballTeam();
             String[] labels = {Ui.tr("Idioma", "Language"), Ui.tr("Cidade", "City"), Ui.tr("Temperatura", "Temperature"),
-                    Ui.tr("Tema", "Theme"), Ui.tr("Movimento", "Motion"), Ui.tr("Criptomoedas", "Crypto prices"), Ui.tr("Time de futebol", "Football team")};
+                    Ui.tr("Tema", "Theme"), Ui.tr("Movimento", "Motion"), Ui.tr("Criptomoedas", "Crypto prices"), Ui.tr("Time de futebol", "Football team"), Ui.tr("Chave do TMDB", "TMDB key")};
             String[] values = {
                     "‹  " + (lang.equals("es") ? "Español" : lang.equals("en") ? "English" : lang.equals("pt") ? "Português" : Ui.tr("Automático", "Automatic")) + "  ›",
                     !cityStatus.isEmpty() ? cityStatus : Prefs.city().isEmpty() ? "—" : Prefs.city(),
@@ -384,7 +384,8 @@ public class SettingsActivity extends Activity {
                             : Ui.tr("Automático", "Automatic")) + "  ›",
                     "‹  " + (HomeView.reducedMotion(ctx) ? Ui.tr("Reduzido", "Reduced") : Ui.tr("Completo", "Full")) + "  ›",
                     "‹  " + (Prefs.quotes() ? Ui.tr("Sim", "On") : Ui.tr("Não", "Off")) + "  ›",
-                    team.isEmpty() ? Ui.tr("Nenhum", "None") : team};
+                    team.isEmpty() ? Ui.tr("Nenhum", "None") : team,
+                    masked(Prefs.tmdbKey())};
             for (int i = 0; i < labels.length; i++) {
                 float y = (LIST_TOP + i * (ROW_H + ROW_GAP)) * k;
                 rowRect.set(LIST_X * k, y, LIST_R * k, y + ROW_H * k);
@@ -397,9 +398,15 @@ public class SettingsActivity extends Activity {
                 c.drawText(v, rowRect.right - 30 * k, base, rowValue);
             }
             Paint hint = Ui.text(Ui.regular, 23 * k, 0x8CFFFFFF);
-            c.drawText(Ui.tr("← → muda o valor  ·  OK em Cidade e Time abre a busca",
-                    "← → changes the value  ·  OK on City and Team opens a search"), LIST_X * k + 30 * k,
-                    (LIST_TOP + 7 * (ROW_H + ROW_GAP) + 40) * k, hint);
+            c.drawText(Ui.tr("← → muda o valor  ·  OK em Cidade, Time e Chave abre o teclado",
+                    "← → changes the value  ·  OK on City, Team and Key opens the keyboard"), LIST_X * k + 30 * k,
+                    (LIST_TOP + 8 * (ROW_H + ROW_GAP) + 40) * k, hint);
+        }
+
+        /** "••••3f9a": enough to tell keys apart, never the whole secret on screen. */
+        private static String masked(String key) {
+            if (key.isEmpty()) return Ui.tr("Nenhuma", "None");
+            return "••••" + key.substring(Math.max(0, key.length() - 4));
         }
 
         private static String next(String[] values, String now, int dir) {
@@ -451,7 +458,7 @@ public class SettingsActivity extends Activity {
         private void startTyping(int row) {
             screen = TYPE;
             typeFor = row;
-            typed = row == 6 ? Prefs.footballTeam() : "";
+            typed = row == 6 ? Prefs.footballTeam() : "";   // the key is never shown back: typed fresh
             keyRow = 0;
             keyCol = 0;
             resultIndex = -1;
@@ -508,7 +515,7 @@ public class SettingsActivity extends Activity {
                     } else if (k == '\u2713') {
                         confirmTyping();
                     } else if (typed.length() < 40) {
-                        typed += typed.isEmpty() || typed.endsWith(" ") ? Character.toUpperCase(k) : k;
+                        typed += typeFor != 7 && (typed.isEmpty() || typed.endsWith(" ")) ? Character.toUpperCase(k) : k;
                     }
                     break;
                 default:
@@ -528,6 +535,12 @@ public class SettingsActivity extends Activity {
 
         /** ✓: the team is saved; the city is searched and its places listed below the keyboard. */
         private void confirmTyping() {
+            if (typeFor == 7) {   // a new key: the recommendations are fetched again with it
+                Prefs.setTmdbKey(typed);
+                screen = PREFS;
+                focus = typeFor;
+                return;
+            }
             if (typeFor == 6) {
                 Prefs.setFootballTeam(typed);
                 Football.next = null;
@@ -566,10 +579,12 @@ public class SettingsActivity extends Activity {
         private void drawTyping(Canvas c) {
             float x = LIST_X * k, right = LIST_R * k;
             Paint heading = Ui.text(Ui.displaySemibold, 34 * k, 0xFFFFFFFF);
-            c.drawText(typeFor == 6 ? Ui.tr("Time de futebol", "Football team") : Ui.tr("Cidade", "City"), x + 30 * k, (LIST_TOP - 24) * k, heading);
+            c.drawText(typeFor == 7 ? Ui.tr("Chave do TMDB", "TMDB key") : typeFor == 6 ? Ui.tr("Time de futebol", "Football team")
+                    : Ui.tr("Cidade", "City"), x + 30 * k, (LIST_TOP - 24) * k, heading);
             // What's typed, with a caret
             Paint big = Ui.text(Ui.medium, 44 * k, typed.isEmpty() ? 0x66FFFFFF : 0xFFFFFFFF);
-            String shown = typed.isEmpty() ? (typeFor == 6 ? Ui.tr("Nome do time", "Team name") : Ui.tr("Nome da cidade", "City name")) : typed;
+            String shown = typed.isEmpty() ? (typeFor == 7 ? Ui.tr("A API Key de themoviedb.org (32 letras e números)", "The API Key from themoviedb.org (32 letters and digits)")
+                    : typeFor == 6 ? Ui.tr("Nome do time", "Team name") : Ui.tr("Nome da cidade", "City name")) : typed;
             float ty = (LIST_TOP + 56) * k;
             c.drawText(shown, x + 30 * k, ty, big);
             if (!typed.isEmpty()) {
@@ -724,7 +739,7 @@ public class SettingsActivity extends Activity {
         private void activate() {
             Context c = getContext();
             if (screen == PREFS) {
-                if (focus == 1 || focus == 6) startTyping(focus);
+                if (focus == 1 || focus == 6 || focus == 7) startTyping(focus);
                 else change(focus, 1);
                 return;
             }
