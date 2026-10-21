@@ -117,6 +117,8 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
      * redrew their glass and text on every frame of the animation (~48 ms a frame on the T972).
      */
     private final Layer drawerCards;
+    /** Rain, storm, snow or fog in the sky, following the real weather (WeatherFx). */
+    private final WeatherFx weatherFx;
     private int zone = Z_SHELF;
 
     // Night look (like Apple's "Automatic" appearance): darker from sunset to sunrise, with a 2 s transition.
@@ -326,9 +328,10 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         toastLayer = new Layer(a, TOAST);
         // Hardware layers on the GPU: only the one that changed is redrawn; moving, fading and scaling stay cheap.
         for (View v : new View[] {status, platter, tiles, drawerCards, drawerLayer, sheetLayer}) v.setLayerType(LAYER_TYPE_HARDWARE, null);
+        weatherFx = new WeatherFx(a);
         glowView = new View(a);
         glowView.setVisibility(INVISIBLE);
-        for (View v : new View[] {sky, glowView, heroLayer, status, platter, tiles, drawerCards, drawerLayer, sheetLayer, toastLayer}) addView(v);
+        for (View v : new View[] {sky, weatherFx, glowView, heroLayer, status, platter, tiles, drawerCards, drawerLayer, sheetLayer, toastLayer}) addView(v);
         drawerLayer.setVisibility(INVISIBLE);
         drawerCards.setVisibility(INVISIBLE);
         for (int i = 0; i < NT + NB; i++) {
@@ -376,6 +379,8 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         checkNotices();
         Updates.check(getContext(), text -> post(() -> showToast(text)));
         WatchNext.refresh(getContext(), () -> post(this::updateCards));   // the apps' own "continue watching"
+        weatherFx.set(WeatherFx.code(getContext(), data.weather.code), dark() < 0.5f);
+        weatherFx.start();
         Football.refresh(getContext(), () -> post(() -> statusDirty = true));
         track = NowPlaying.current(getContext());
         stopWatching = NowPlaying.watch(getContext(), handler, () -> {
@@ -400,6 +405,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         data.removeListener(this);
         recs.removeListener(this);
         if (stopWatching != null) stopWatching.run();
+        weatherFx.stop();
         stopWatching = null;
         if (tvInputs != null) tvInputs.unregisterCallback(inputCallback);
     }
@@ -450,6 +456,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
     }
 
     @Override public void onData() {
+        weatherFx.set(WeatherFx.code(getContext(), data.weather.code), dark() < 0.5f);
         updatePalette();
         checkNight(true);
         layoutStatus();
@@ -471,6 +478,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         int width = MeasureSpec.getSize(widthSpec), height = MeasureSpec.getSize(heightSpec);
         float kk = width / 1920f;
         measure(sky, width, height);
+        measure(weatherFx, width, height);
         measure(heroLayer, width, Math.round(790 * kk));
         measure(status, Math.round(1160 * kk), Math.round(240 * kk));
         // Sized to what they draw (the glass and its shadow; the grown tiles and their shadows): smaller layers are
@@ -492,6 +500,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         int width = r - l, height = b - t;
         float kk = width / 1920f;
         sky.layout(0, 0, width, height);
+        weatherFx.layout(0, 0, width, height);
         place(heroLayer, 0, 0);
         place(status, width - status.getMeasuredWidth(), 0);
         place(platter, 0, Math.round(750 * kk));
@@ -2277,7 +2286,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
             }
         }
         for (Recs.Pick p : recs.wanted()) recs.backdrop(p);   // all the tabs preloaded: switching tabs is instant
-        for (Recs.Pick p : upNext) recs.backdrop(p);
+        for (int i = 0; i < upNext.size() && i < 3; i++) recs.backdrop(upNext.get(i));   // the first three, as for the tabs
         Backdrop b = cards.isEmpty() ? null : recs.backdrop(cards.get(0));
         // Top Shelf: only the cards change; the background stays the tab's (a fade per focused app is too heavy here).
         if (!shelfMode && cards.isEmpty()) b = recs.landscape();   // nothing to show: the landscape of the day

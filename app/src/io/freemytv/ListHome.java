@@ -45,6 +45,8 @@ final class ListHome extends View implements Home, Choreographer.FrameCallback, 
     private final Activity activity;
     /** The animated background (a separate GPU layer behind this view); used when the style is "animated". */
     final Drift drift;
+    /** Rain, storm, snow or fog over the background, following the weather (a layer between it and the list). */
+    final WeatherFx weatherFx;
     private final Recs recs;
     private final Click click;
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -78,6 +80,7 @@ final class ListHome extends View implements Home, Choreographer.FrameCallback, 
         recs.setLight(true);
         click = new Click(a);
         drift = new Drift(a);
+        weatherFx = new WeatherFx(a);
         setFocusable(true);
         name.setTypeface(Ui.displaySemibold);
         section.setTypeface(Ui.medium);
@@ -172,12 +175,14 @@ final class ListHome extends View implements Home, Choreographer.FrameCallback, 
         rebuild(getContext(), true);
         loadBackground(false);
         handler.post(tick);
+        weatherFx.start();
         Updates.check(getContext(), text -> { });
         startFrames();
     }
 
     @Override public void pause() {
         running = false;
+        weatherFx.stop();
         drift.stop();
         recs.removeListener(this);
         handler.removeCallbacks(tick);
@@ -671,6 +676,7 @@ final class ListHome extends View implements Home, Choreographer.FrameCallback, 
     /** Read every 15 s (asking the media sessions on every frame would cost). */
     private void readWidgets() {
         widgetTrack = NowPlaying.current(getContext());
+        weatherFx.set(WeatherFx.code(getContext(), HomeData.get(getContext()).weather.code), false);
         widgetEpisode = null;
         for (Recs.Pick p : recs.upNext()) {
             if (p.fresh != null) {

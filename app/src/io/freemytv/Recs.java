@@ -106,7 +106,9 @@ final class Recs {
     private final ExecutorService io = Executors.newSingleThreadExecutor();
     private final Handler main = new Handler(Looper.getMainLooper());
     private final List<Listener> listeners = new ArrayList<>();
-    private final Map<String, Backdrop> images = new LinkedHashMap<>();   // this hour's, built and ready to draw
+    // This hour's, built and ready to draw. Least recently used first (access order): a card on screen asks for its
+    // photo on every frame, so it is never the one dropped when the cache is full.
+    private final Map<String, Backdrop> images = new LinkedHashMap<>(32, 0.75f, true);
     private final java.util.Set<String> pending = new java.util.HashSet<>();
     private volatile List<Pick> picks = new ArrayList<>();
     private volatile int period = -1;
@@ -680,7 +682,10 @@ final class Recs {
         List<Pick> out = new ArrayList<>();
         java.util.Set<String> seen = new java.util.HashSet<>();
         for (String kind : new String[] {null, "movie", "tv"}) {
-            for (Pick p : now(kind)) if (seen.add(key(p))) out.add(p);
+            // Only the first three of each tab are preloaded (what shows when you switch to it); the rest of a row
+            // loads as it slides into view. Preloading all ten overflowed the cache and the photos kept reloading.
+            List<Pick> tab = now(kind);
+            for (int i = 0; i < tab.size() && i < 3; i++) if (seen.add(key(tab.get(i)))) out.add(tab.get(i));
         }
         return out;
     }
@@ -1111,7 +1116,7 @@ final class Recs {
             if (forLight != light) return;   // the design changed midway: this one is stale
             synchronized (images) {
                 images.put(p.backdrop, backdrop);
-                while (images.size() > (forLight ? 20 : 4)) images.remove(images.keySet().iterator().next());
+                while (images.size() > (forLight ? 24 : 4)) images.remove(images.keySet().iterator().next());
             }
             notifyListeners();
         } catch (IOException | RuntimeException | OutOfMemoryError e) {

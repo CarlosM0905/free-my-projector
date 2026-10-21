@@ -42,6 +42,7 @@ public class HomeActivity extends Activity {
         if (list) {   // the light design's animated background is a layer of its own, behind the list
             android.widget.FrameLayout root = new android.widget.FrameLayout(this);
             root.addView(((ListHome) home).drift);
+            root.addView(((ListHome) home).weatherFx);
             root.addView((android.view.View) home);
             setContentView(root);
         } else {
