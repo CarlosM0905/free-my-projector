@@ -41,6 +41,7 @@ final class Projector {
         {"Volume uniforme", "Reduce loud sounds", "leveler", "toggle:agc"},
         {"Modo cinema", "Cinema mode", "movie", "toggle:cine"},
         {"Lâmpada", "Lamp", "sunny", "toggle:lamp"},
+        {"Ao terminar", "When it ends", "bedtime", "toggle:fin"},
     };
     private static final String SOUND = BRIDGE + ".SONIDO";
     private static final String AFR_OFF = "/data/local/tmp/afr.off";
@@ -60,6 +61,10 @@ final class Projector {
         if (!hasStatus()) return out;   // the switches are the Wanbo ROM's (AFR) and its helper's (sound)
         boolean sound = !c.getPackageManager().queryBroadcastReceivers(new Intent(SOUND).setPackage(BRIDGE), 0).isEmpty();
         for (String[] d : TOGGLES) {
+            if (d[3].equals("toggle:fin")) {   // needs nothing from the ROM: only the media sessions
+                out.add(HomeApps.action(HomeApps.PROJECTOR, d[3], Ui.tr(d[0], d[1]), d[2]));
+                continue;
+            }
             if (d[3].equals("toggle:lamp")) {
                 if (Lamp.supported()) out.add(HomeApps.action(HomeApps.PROJECTOR, d[3], Ui.tr(d[0], d[1]), d[2]));
                 continue;
@@ -86,6 +91,8 @@ final class Projector {
         switch (key) {
             case "toggle:afr":
                 return afrOn == null || afrOn;
+            case "toggle:fin":
+                return Heat.endSleepOn(c);
             case "toggle:lamp":
                 return !Lamp.mode(c).equals("normal");
             case "toggle:cine":
@@ -111,7 +118,9 @@ final class Projector {
         synchronized (OPTIMISTIC) {
             OPTIMISTIC.put(key, new long[] {on ? 1 : 0, System.currentTimeMillis() + 5000});
         }
-        if (key.equals("toggle:cine")) {
+        if (key.equals("toggle:fin")) {
+            Heat.setEndSleep(app, on);
+        } else if (key.equals("toggle:cine")) {
             cinema(app, on);
         } else if (key.equals("toggle:afr")) {
             afrOn = on;

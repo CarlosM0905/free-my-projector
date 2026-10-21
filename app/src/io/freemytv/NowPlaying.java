@@ -49,6 +49,20 @@ final class NowPlaying {
         return null;
     }
 
+    /**
+     * Something is playing (music or video, with or without a title). Some apps (SmartTube) never report "playing" in
+     * their media session, so sound going out counts too, even at volume 0.
+     */
+    static boolean playing(Context c) {
+        android.media.AudioManager am = (android.media.AudioManager) c.getSystemService(Context.AUDIO_SERVICE);
+        if (am != null && am.isMusicActive()) return true;
+        for (MediaController m : controllers(c)) {
+            PlaybackState state = m.getPlaybackState();
+            if (state != null && state.getState() == PlaybackState.STATE_PLAYING) return true;
+        }
+        return false;
+    }
+
     /** Calls `changed` when a track starts, stops or changes (until `stop`). */
     static Runnable watch(Context c, Handler h, Runnable changed) {
         MediaSessionManager msm = c.getSystemService(MediaSessionManager.class);

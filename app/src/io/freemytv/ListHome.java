@@ -352,13 +352,9 @@ final class ListHome extends View implements Home, Choreographer.FrameCallback, 
             case BACKGROUND:
                 changeBackground(1);
                 return;
-            case PICK: {
-                HomeApps.Item it = HomeApps.app(r.pick.pkg, Recs.serviceName(r.pick));
-                it.uri = r.pick.link;
-                recs.remember(r.pick);
-                HomeApps.open(activity, it, this, cx, cy, 1, 1);
+            case PICK:
+                TitleActivity.open(getContext(), r.pick);
                 return;
-            }
             default:
                 HomeApps.open(activity, r.item, this, cx, cy, 1, 1);
                 invalidate();   // a switch flips in place

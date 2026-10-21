@@ -2087,17 +2087,15 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         } else if (zone == Z_RESULTS) {
             Recs.Pick p = resultIndex < results.size() ? results.get(resultIndex) : null;
             if (p == null) return;
-            it = HomeApps.app(p.pkg, Recs.serviceName(p));
-            it.uri = p.link;
-            recs.remember(p);
-            r = resultRect;
+            click.open();
+            TitleActivity.open(getContext(), p);   // its page first, like the Apple TV app
+            return;
         } else if (zone == Z_CARDS) {
             Recs.Pick p = cardIndex < cards.size() ? cards.get(cardIndex) : null;
-            if (p == null || p.pkg == null) return;
-            it = HomeApps.app(p.pkg, Recs.serviceName(p));
-            it.uri = p.link;
-            recs.remember(p);
-            r = cardRects[cardIndex];
+            if (p == null) return;
+            click.open();
+            TitleActivity.open(getContext(), p);   // its page first, like the Apple TV app; the hero's button plays right away
+            return;
         } else {
             if (shelf.isEmpty()) return;
             it = shelf.get(shelfIndex);

@@ -385,6 +385,77 @@ final class Recs {
         return p.backdrop != null && imageFile(p).exists();
     }
 
+    /** The title's photo on disk (1920 wide), for the details page. */
+    File photo(Pick p) {
+        return p.backdrop == null ? null : imageFile(p);
+    }
+
+    /** Free My Projector: what the details page shows besides the card (TMDB, in the TV's language). */
+    static final class Details {
+        String overview = "", year = "", genres = "", length = "", cast = "", trailer;   // trailer: a YouTube id
+        double rating;
+    }
+
+    /** Blocking: call it off the main thread. */
+    Details details(Pick p) throws Exception {
+        JSONObject o = get("/" + p.kind + "/" + p.id + "?language=" + lang()
+                + "&append_to_response=videos,credits&include_video_language=" + (Ui.en ? "en" : lang().substring(0, 2)) + ",en");
+        Details d = new Details();
+        d.overview = o.optString("overview");
+        String date = o.optString(p.kind.equals("movie") ? "release_date" : "first_air_date");
+        d.year = date.length() >= 4 ? date.substring(0, 4) : "";
+        JSONArray genres = o.optJSONArray("genres");
+        List<String> g = new ArrayList<>();
+        for (int i = 0; genres != null && i < genres.length() && i < 3; i++) {
+            String name = genres.getJSONObject(i).optString("name");
+            g.add(Ui.en ? name : genre(name));
+        }
+        d.genres = String.join(", ", g);
+        if (p.kind.equals("movie")) {
+            int m = o.optInt("runtime");
+            if (m > 0) d.length = m >= 60 ? (m / 60) + " h " + (m % 60) + " min" : m + " min";
+        } else {
+            int seasons = o.optInt("number_of_seasons");
+            if (seasons > 0) d.length = seasons == 1 ? Ui.tr("1 temporada", "1 season") : seasons + Ui.tr(" temporadas", " seasons");
+        }
+        d.rating = o.optDouble("vote_average", 0);
+        JSONObject credits = o.optJSONObject("credits");
+        JSONArray cast = credits == null ? null : credits.optJSONArray("cast");
+        List<String> names = new ArrayList<>();
+        for (int i = 0; cast != null && i < cast.length() && names.size() < 4; i++) names.add(cast.getJSONObject(i).optString("name"));
+        d.cast = String.join(", ", names);
+        JSONObject videos = o.optJSONObject("videos");
+        JSONArray list = videos == null ? null : videos.optJSONArray("results");
+        for (int pass = 0; pass < 2 && d.trailer == null; pass++) {   // a trailer first, then a teaser
+            for (int i = 0; list != null && i < list.length(); i++) {
+                JSONObject v = list.getJSONObject(i);
+                if (!"YouTube".equals(v.optString("site"))) continue;
+                if (v.optString("type").equals(pass == 0 ? "Trailer" : "Teaser")) {
+                    d.trailer = v.optString("key");
+                    break;
+                }
+            }
+        }
+        return d;
+    }
+
+    static String toJson(Pick p) {
+        try {
+            return json(p).toString();
+        } catch (Exception e) {
+            return "{}";
+        }
+    }
+
+    static Pick fromJson(String s) {
+        try {
+            List<Pick> l = parse(new JSONArray().put(new JSONObject(s)));
+            return l.isEmpty() ? null : l.get(0);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     private File imageFile(Pick p) {
         return new File(new File(context.getCacheDir(), "recs"), p.backdrop.replace("/", ""));
     }

@@ -45,6 +45,13 @@ final class Es {
         t("Sound effects", "Sonido");
         t("Sleep timer", "Apagado");
         t("Audio only", "Solo audio");
+        t("Cast: ", "Reparto: ");
+        t("Watch on %s", "Ver en %s");
+        t("Not available", "No disponible");
+        t("Trailer", "Tráiler");
+        t("1 season", "1 temporada");
+        t(" seasons", " temporadas");
+        t("When it ends", "Al terminar");
         t("Lamp", "Lámpara");
         t("Night", "Noche");
         t("Home design", "Diseño del inicio");

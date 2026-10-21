@@ -36,7 +36,8 @@ final class Heat {
     private static void tick(Context c) {
         PowerManager pm = (PowerManager) c.getSystemService(Context.POWER_SERVICE);
         if (pm == null || !pm.isInteractive()) return;
-        if (!Lamp.mode(c).equals("normal")) Lamp.enforce(c);   // Wanbo rewrites the lamp when the temperature changes band
+        if (!Lamp.mode(c).equals("normal")) Lamp.enforce(c);
+        endSleep(c);   // Wanbo rewrites the lamp when the temperature changes band
         if (lampOn()) {
             SharedPreferences p = prefs(c);
             p.edit().putLong("lampMs", p.getLong("lampMs", 0) + EVERY).apply();
@@ -49,6 +50,46 @@ final class Heat {
                     "The projector is running hot (%d °C). Make sure its vents aren't blocked.");
             Toast.makeText(c, String.format(java.util.Locale.ROOT, text, t), Toast.LENGTH_LONG).show();
         }
+    }
+
+    static final long END_IDLE = 3 * 60_000L;
+
+    /**
+     * "When it ends" (Control Center): once something has played, three minutes with nothing playing put the projector
+     * to sleep, and the switch turns itself off. An app that goes on to the next episode keeps it waiting.
+     */
+    private static void endSleep(Context c) {
+        SharedPreferences p = prefs(c);
+        if (!p.getBoolean("endSleep", false)) return;
+        long now = System.currentTimeMillis();
+        if (NowPlaying.playing(c)) {
+            p.edit().putBoolean("endSeen", true).putLong("endIdle", 0).apply();
+            return;
+        }
+        if (!p.getBoolean("endSeen", false)) return;
+        long idle = p.getLong("endIdle", 0);
+        if (idle == 0) {
+            p.edit().putLong("endIdle", now).apply();
+        } else if (now - idle >= END_IDLE) {
+            p.edit().putBoolean("endSleep", false).remove("endSeen").remove("endIdle").apply();
+            final Context app = c.getApplicationContext();
+            new Thread(() -> {
+                try (Adb adb = Adb.connect(app, 5000, null)) {
+                    adb.shell("input keyevent KEYCODE_SLEEP");
+                } catch (Exception e) {
+                    AppLog.w("end sleep: " + e.getMessage());
+                }
+            }, "end-sleep").start();
+        }
+    }
+
+    /** "When it ends" on or off (starts waiting for something to play). */
+    static void setEndSleep(Context c, boolean on) {
+        prefs(c).edit().putBoolean("endSleep", on).remove("endSeen").remove("endIdle").apply();
+    }
+
+    static boolean endSleepOn(Context c) {
+        return prefs(c).getBoolean("endSleep", false);
     }
 
     /** The processor's temperature in °C, or -1. */
