@@ -34,6 +34,7 @@ public final class TitleActivity extends Activity {
     private Recs.Pick pick;
     private Recs.Details details;
     private Photo photo;
+    private android.graphics.Bitmap logo;
     private Page page;
     private int focus;   // index in buttons()
     private boolean shuffle;
@@ -85,7 +86,16 @@ public final class TitleActivity extends Activity {
     /** The photo (already on disk from the cards) and the details, in the background. */
     private void load() {
         final java.io.File f = recs.photo(pick);
+        final Recs.Pick forPick = pick;
+        logo = null;
         new Thread(() -> {
+            java.io.File lf = recs.logoFile(forPick);
+            final android.graphics.Bitmap lb = lf == null ? null : BitmapFactory.decodeFile(lf.getPath());
+            runOnUiThread(() -> {
+                if (forPick != pick) return;
+                logo = lb;
+                page.invalidate();
+            });
             Bitmap b = f != null && f.exists() ? BitmapFactory.decodeFile(f.getPath()) : null;
             if (b != null) runOnUiThread(() -> photo.show(b));
             try {
@@ -236,6 +246,7 @@ public final class TitleActivity extends Activity {
         private final TextPaint button = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final RectF r = new RectF();
+        private final Paint logoPaint = new Paint(Paint.FILTER_BITMAP_FLAG);
 
         Page(Context c) {
             super(c);
@@ -269,13 +280,21 @@ public final class TitleActivity extends Activity {
                 small.setLetterSpacing(0);
                 small.setColor(0x8CFFFFFF);
             }
-            title.setTextSize(84 * k);
-            StaticLayout t = layout(pick.title == null ? "" : pick.title, title, width, 2, 0.95f);
-            c.save();
-            c.translate(x, y);
-            t.draw(c);
-            c.restore();
-            y += t.getHeight() + 34 * k;
+            if (logo != null) {   // the title's own logo, like the Apple TV app
+                float s = Math.min(640 * k / logo.getWidth(), 200 * k / logo.getHeight());
+                float lw = logo.getWidth() * s, lh = logo.getHeight() * s;
+                r.set(x, y, x + lw, y + lh);
+                c.drawBitmap(logo, null, r, logoPaint);
+                y += lh + 34 * k;
+            } else {
+                title.setTextSize(84 * k);
+                StaticLayout t = layout(pick.title == null ? "" : pick.title, title, width, 2, 0.95f);
+                c.save();
+                c.translate(x, y);
+                t.draw(c);
+                c.restore();
+                y += t.getHeight() + 34 * k;
+            }
 
             meta.setTextSize(28 * k);
             c.drawText(TextUtils.ellipsize(metaLine(), meta, width, TextUtils.TruncateAt.END).toString(), x, y + 28 * k, meta);

@@ -45,6 +45,7 @@ final class Recs {
         String kind;            // "movie" or "tv"
         String title, backdrop, meta = "", app, pkg;
         String poster;          // the portrait artwork, for the tall cards (null: they crop the backdrop)
+        String logo;            // the title's logo (transparent PNG), over the wide card and on its page
         String link;            // opens the title itself in its app (null: just the app)
         boolean detailed;
         long seenAt;            // Up Next: when it was opened
@@ -57,7 +58,7 @@ final class Recs {
     private static final String IMAGES = "https://image.tmdb.org/t/p/original";
     private static final long LIST_EVERY = 6 * 3600_000L;
     /** Bump when what is saved for each title changes (the saved list is discarded and fetched again). */
-    private static final int CACHE_VERSION = 5;
+    private static final int CACHE_VERSION = 6;
     private static final int MANHA = 0, TARDE = 1, NOITE = 2;
     static final String[] PERIOD_LABEL = {"PARA ESTA MANHÃ", "PARA ESTA TARDE", "PARA ESTA NOITE"};
     static final String[] PERIOD_LABEL_EN = {"THIS MORNING", "THIS AFTERNOON", "TONIGHT"};
@@ -695,6 +696,37 @@ final class Recs {
         list.add(p);
     }
 
+    /** (from ViralOne's fork) The title's logo: in the TV's language, else English, else any. */
+    private static String bestLogo(JSONObject images) {
+        JSONArray logos = images == null ? null : images.optJSONArray("logos");
+        if (logos == null || logos.length() == 0) return null;
+        String want = lang().substring(0, 2), english = null, any = null;
+        for (int i = 0; i < logos.length(); i++) {
+            JSONObject l = logos.optJSONObject(i);
+            if (l == null || !l.optString("file_path").endsWith(".png")) continue;
+            String iso = l.optString("iso_639_1");
+            if (iso.equals(want)) return l.optString("file_path");
+            if (english == null && iso.equals("en")) english = l.optString("file_path");
+            if (any == null) any = l.optString("file_path");
+        }
+        return english != null ? english : any;
+    }
+
+    /** The logo on disk (null: the title has none). Blocking: downloads it the first time. */
+    File logoFile(Pick p) {
+        if (p.logo == null) return null;
+        File f = new File(new File(context.getCacheDir(), "recs"), "logo" + p.logo.replace("/", ""));
+        if (!f.exists()) {
+            try {
+                fetch(POSTERS + p.logo, f);
+            } catch (IOException e) {
+                AppLog.w("logo " + p.title + ": " + e.getMessage());
+                return null;
+            }
+        }
+        return f;
+    }
+
     private static String path(String s) {
         return s == null || s.isEmpty() || s.equals("null") ? null : s;
     }
@@ -702,8 +734,9 @@ final class Recs {
     /** Genre, runtime (or seasons) and the service it's on, among the ones the TV has. */
     private void fetchDetails(Pick p) throws Exception {
         JSONObject o = get("/" + p.kind + "/" + p.id
-                + "?language=" + lang() + "&append_to_response=watch/providers,images&include_image_language=null,pt,en");
+                + "?language=" + lang() + "&append_to_response=watch/providers,images&include_image_language=null," + lang().substring(0, 2) + ",en");
         p.title = title(p, o);
+        p.logo = bestLogo(o.optJSONObject("images"));
         String best = bestBackdrop(o.optJSONObject("images"));
         if (best != null) p.backdrop = best;
         List<String> parts = new ArrayList<>();
@@ -987,7 +1020,12 @@ final class Recs {
                     AppLog.w("poster " + p.title + ": " + e.getMessage());
                 }
             }
-            Backdrop backdrop = Backdrop.make(b, forLight, poster);
+            Bitmap logo = null;
+            if (forLight) {
+                File lf = logoFile(p);
+                if (lf != null) logo = BitmapFactory.decodeFile(lf.getPath());
+            }
+            Backdrop backdrop = Backdrop.make(b, forLight, poster, logo);
             if (forLight != light) return;   // the design changed midway: this one is stale
             synchronized (images) {
                 images.put(p.backdrop, backdrop);
@@ -1032,7 +1070,7 @@ final class Recs {
     }
 
     private static JSONObject json(Pick p) throws org.json.JSONException {
-        return new JSONObject().put("id", p.id).put("kind", p.kind).put("title", p.title).put("backdrop", p.backdrop).put("poster", p.poster == null ? "" : p.poster)
+        return new JSONObject().put("id", p.id).put("kind", p.kind).put("title", p.title).put("backdrop", p.backdrop).put("poster", p.poster == null ? "" : p.poster).put("logo", p.logo == null ? "" : p.logo)
                 .put("meta", p.meta).put("app", p.app == null ? "" : p.app).put("pkg", p.pkg == null ? "" : p.pkg)
                 .put("link", p.link == null ? "" : p.link).put("detailed", p.detailed).put("seenAt", p.seenAt);
     }
@@ -1048,6 +1086,7 @@ final class Recs {
             p.title = o.optString("title");
             p.backdrop = o.optString("backdrop");
             p.poster = path(o.optString("poster"));
+            p.logo = path(o.optString("logo"));
             p.meta = fixGenres(o.optString("meta"));
             p.app = o.optString("app").isEmpty() ? null : o.optString("app");
             p.pkg = o.optString("pkg").isEmpty() ? null : o.optString("pkg");

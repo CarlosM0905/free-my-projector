@@ -2208,7 +2208,23 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         boolean shelfMode = !shelfPicks.isEmpty() && tab != SEARCH;
         List<Recs.Pick> list = shelfMode ? shelfPicks : tab == SEARCH ? new ArrayList<>() : tab == UP_NEXT ? upNext
                 : recs.now(TAB_KIND[tab]);
+        // (from johncovv's fork) A new set of picks for the same tab waits until its photos are ready, so the cards
+        // never turn gray while they load; after 2 minutes it shows anyway. Changing tabs is instant (preloaded).
+        String source = shelfMode ? "shelf:" + topShelf : "tab:" + tab;
+        if (!samePicks(list, cards) && !cards.isEmpty() && source.equals(cardsSource)) {
+            boolean ready = true;
+            for (Recs.Pick p : list) if (p.backdrop != null && recs.backdrop(p) == null) ready = false;
+            long now = SystemClock.uptimeMillis();
+            if (ready) {
+                waitingSince = 0;
+            } else {
+                if (waitingSince == 0) waitingSince = now;
+                if (now - waitingSince < 120_000) list = cards;   // keep these; onRecs comes back when the photos are in
+            }
+        }
+        cardsSource = source;
         if (!samePicks(list, cards)) {
+            waitingSince = 0;
             cards = list;
             cardIndex = Math.min(cardIndex, Math.max(0, list.size() - 1));
             if (zone == Z_CARDS && list.isEmpty()) {
@@ -2226,6 +2242,8 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
     }
 
     private boolean upNextShown;
+    private String cardsSource = "";
+    private long waitingSince;
     /** Now Playing: the track playing in another app (shown instead of the quotes), and how to stop listening. */
     private NowPlaying.Track track;
     private Runnable stopWatching;

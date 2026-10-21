@@ -50,11 +50,14 @@ final class Backdrop {
     }
 
     static Backdrop make(Bitmap src, boolean forLight) {
-        return make(src, forLight, null);
+        return make(src, forLight, null, null);
     }
 
-    /** `poster`: the portrait artwork for the tall cards (null: they're cropped from the photo). */
-    static Backdrop make(Bitmap src, boolean forLight, Bitmap poster) {
+    /**
+     * `poster`: the portrait artwork for the tall cards (null: they're cropped from the photo). `logo`: the title's logo,
+     * drawn into the wide card at its bottom left over a soft shade (once here, so it costs nothing per frame).
+     */
+    static Backdrop make(Bitmap src, boolean forLight, Bitmap poster, Bitmap logo) {
         Bitmap out = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(out);
         Paint photo = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.DITHER_FLAG);
@@ -66,8 +69,9 @@ final class Backdrop {
             // Light design: everything comes from the photo without scrims.
             // The wide card is cut a little above the middle (faces and titles are rarely at the bottom); the tall ones
             // use the poster when there is one, instead of a narrow slice of a landscape photo.
-            Bitmap wide = card(out, WIDE_W, WIDE_H, 0.38f);
-            Bitmap tall = poster != null ? card(poster, TALL_W, TALL_H, 0.5f) : card(out, TALL_W, TALL_H, 0.5f);
+            Bitmap wide = card(out, WIDE_W, WIDE_H, 0.38f, logo);
+            if (logo != null) logo.recycle();
+            Bitmap tall = poster != null ? card(poster, TALL_W, TALL_H, 0.5f, null) : card(out, TALL_W, TALL_H, 0.5f, null);
             if (poster != null) poster.recycle();
             int[] frost = reduce(out, FW, FH, 3, 3);
             int[] light = whiten(frost.clone(), 0.82f);
@@ -152,7 +156,7 @@ final class Backdrop {
 
     /** The center of the photo at the card's aspect ratio, filtered down (halving while possible) to the exact size. */
     /** The card cut from `full` without stretching it; `top` is where the cut sits vertically (0 = top, 0.5 = middle). */
-    private static Bitmap card(Bitmap full, int w, int h, float top) {
+    private static Bitmap card(Bitmap full, int w, int h, float top, Bitmap logo) {
         float ratio = (float) w / h;
         int cw = Math.min(full.getWidth(), Math.round(full.getHeight() * ratio));
         int ch = Math.min(full.getHeight(), Math.round(cw / ratio));
@@ -164,6 +168,20 @@ final class Backdrop {
         }
         Bitmap out = Bitmap.createScaledBitmap(b, w, h, true);
         if (b != full && b != out) b.recycle();
+        if (logo != null) {
+            if (!out.isMutable()) {
+                Bitmap m = out.copy(Bitmap.Config.ARGB_8888, true);
+                if (out != full) out.recycle();
+                out = m;
+            }
+            Canvas c = new Canvas(out);
+            Paint shade = new Paint(Paint.DITHER_FLAG);
+            shade.setShader(new LinearGradient(0, h * 0.45f, 0, h, 0x00000000, 0x8C000000, Shader.TileMode.CLAMP));
+            c.drawRect(0, h * 0.45f, w, h, shade);
+            float s = Math.min(w * 0.36f / logo.getWidth(), h * 0.3f / logo.getHeight());
+            float lw = logo.getWidth() * s, lh = logo.getHeight() * s, pad = h * 0.07f;
+            c.drawBitmap(logo, null, new RectF(pad, h - pad - lh, pad + lw, h - pad), new Paint(Paint.FILTER_BITMAP_FLAG));
+        }
         return gpu(out);
     }
 
