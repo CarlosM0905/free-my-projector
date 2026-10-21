@@ -34,6 +34,7 @@ final class Heat {
     }
 
     private static void tick(Context c) {
+        NetStats.count(c);   // today's data, even while the screen is off
         PowerManager pm = (PowerManager) c.getSystemService(Context.POWER_SERVICE);
         if (pm == null || !pm.isInteractive()) return;
         if (!Lamp.mode(c).equals("normal")) Lamp.enforce(c);

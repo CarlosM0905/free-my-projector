@@ -644,6 +644,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         if (drawerOpen && up - drawerRefreshAt > 1000) {
             drawerRefreshAt = up;
             drawerDirty = true;
+            NetStats.sample();   // the Wi-Fi card's chart: one point a second
         }
         // Opening and closing the drawer only moves the cached layers: redrawing the glass on every frame made the TV
         // drop frames (measured: ~50 ms of GPU per frame). The app tiles have no glass; the top buttons fade out as
@@ -1409,7 +1410,47 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         return true;
     }
 
+    /**
+     * The Wi-Fi card (an idea from the "Clean TV for TCL G10" home): the network and its signal, the band and link
+     * speed, the download speed right now with a small chart of the last 30 seconds, today's data and a speed test.
+     */
+    private void drawWifiCard(Canvas c, RectF r) {
+        drawerCard(c, r);
+        float x = r.left + 34 * k, right = r.right - 34 * k;
+        c.drawText("Wi-Fi", x, r.top + 54 * k, cardTitle);
+        String quality = Network.ssid == null ? "" : Network.rssi >= -55 ? Ui.tr("Excelente", "Excellent")
+                : Network.rssi >= -67 ? Ui.tr("Bom", "Good") : Network.rssi >= -75 ? Ui.tr("Regular", "Fair") : Ui.tr("Fraco", "Weak");
+        c.drawText(quality, right, r.top + 54 * k, cardDimRight);
+        String name = Network.ssid == null ? Ui.tr("Sem dados", "No data") : Network.ssid;
+        c.drawText(TextUtils.ellipsize(name, new TextPaint(cardText), right - x, TextUtils.TruncateAt.END).toString(), x, r.top + 100 * k, cardText);
+        List<String> parts = new ArrayList<>();
+        if (Network.frequency > 0) parts.add(Network.frequency >= 4900 ? "5 GHz" : "2,4 GHz");
+        if (Network.linkMbps > 0) parts.add(Ui.tr("enlace ", "link ") + Network.linkMbps + " Mb/s");
+        c.drawText(String.join("  ·  ", parts), x, r.top + 136 * k, cardDim);
+        // The last 30 seconds of download, as a filled line
+        float[] h = NetStats.history();
+        float max = 1;
+        for (float v : h) max = Math.max(max, v);
+        float gx = x, gw = right - x, gb = r.top + 222 * k, gh = 56 * k;
+        Path line = new Path();
+        line.moveTo(gx, gb);
+        for (int i = 0; i < h.length; i++) line.lineTo(gx + gw * i / (h.length - 1), gb - gh * h[i] / max);
+        line.lineTo(gx + gw, gb);
+        line.close();
+        fill.setShader(null);
+        fill.setColor(Ui.alpha(ACCENT, 0.28f));
+        c.drawPath(line, fill);
+        c.drawText("\u2193 " + NetStats.speed(NetStats.now()), right, r.top + 172 * k, cardDimRight);
+        // Today's data and the last speed test
+        float mbps = NetStats.tested(getContext());
+        String bottom = Ui.tr("Hoje ", "Today ") + NetStats.size(NetStats.today(getContext()))
+                + (mbps > 0 ? "   ·   " + Ui.tr("Teste ", "Test ") + NetStats.speed(mbps * 1e6f) : "");
+        c.drawText(TextUtils.ellipsize(bottom, new TextPaint(cardDim), right - x, TextUtils.TruncateAt.END).toString(), x, r.top + 260 * k, cardDim);
+    }
+
     private void openDrawer() {
+        Network.refresh(getContext(), () -> post(() -> drawerDirty = true));
+        NetStats.testIfOld(getContext(), () -> post(() -> drawerDirty = true));
         if (drawerItems.isEmpty()) return;
         drawerOpen = true;
         drawer.target = 1;
@@ -1480,7 +1521,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         hourTemp.setColor(drawerInk(0.95f));
         pricePaint.setColor(drawerInk(0.95f));
         drawWeatherCard(c, weatherCard);
-        drawQuotesCard(c, quotesCard);
+        drawWifiCard(c, quotesCard);   // the prices stay on the tab row; this card shows the Wi-Fi
         if (projectorStatus) drawProjectorCard(c, projectorCard);
     }
 

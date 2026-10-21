@@ -12,6 +12,8 @@ final class Network {
 
     static volatile String ssid;
     static volatile int rssi;
+    /** The link's speed (Mb/s) and the band's frequency (MHz), for the Wi-Fi card; 0 when unknown. */
+    static volatile int linkMbps, frequency;
     private static volatile long readAt;
     private static volatile boolean reading;
 
@@ -30,6 +32,10 @@ final class Network {
                 if (m.find() && !m.group(1).contains("unknown")) {
                     ssid = m.group(1).replace("\"", "").trim();
                     rssi = Integer.parseInt(m.group(2));
+                    java.util.regex.Matcher l = java.util.regex.Pattern.compile("Link speed: (\\d+)").matcher(line);
+                    linkMbps = l.find() ? Integer.parseInt(l.group(1)) : 0;
+                    java.util.regex.Matcher f = java.util.regex.Pattern.compile("Frequency: (\\d+)").matcher(line);
+                    frequency = f.find() ? Integer.parseInt(f.group(1)) : 0;
                 } else {
                     ssid = null;
                 }

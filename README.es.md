@@ -39,6 +39,7 @@ El README del proyecto original está en [README-original.md](README-original.md
   - **Lámpara**: Normal → **Eco** (≈75 %) → **Noche** (≈50 %). Solo baja el brillo: si el proyector está caliente y Wanbo ya lo bajó más, manda Wanbo. Normal le devuelve la lámpara. No hay "Máximo" porque forzaría el LED.
   - **Al terminar** *(en pruebas)*: apaga el proyector cuando termina lo que estás viendo o escuchando (tres minutos sin nada reproduciéndose) y se desactiva solo. Si la app pasa sola al siguiente capítulo, sigue esperando.
   - **Modo cine**, un solo botón para ver una película: activa Hz auto y Diálogos y apaga Nivelar (aplana la banda sonora). Al apagarlo vuelve todo como estaba.
+  - Una **tarjeta WiFi** (idea del "Clean TV for TCL G10"): la red y su señal, la banda y la velocidad de enlace, la bajada en vivo con un gráfico de 30 segundos, los datos usados hoy y una prueba de velocidad (Cloudflare, como mucho una vez por hora). Toma el lugar de la tarjeta de cripto; los precios siguen en la fila de pestañas.
   - Una tarjeta con el **estado del equipo**: temperatura del procesador, ventilador, lámpara con sus **horas de uso** (contadas desde que instalas la app) y frecuencia del panel (se ve cambiar a 48 o 50 Hz si tienes AFR).
   - **Aviso de calor**: si el procesador pasa de 82 °C, aparece un aviso sobre cualquier app para que revises las rejillas (como mucho uno cada media hora).
 - **Clima** por hora, amanecer y atardecer, y **precios cripto**.

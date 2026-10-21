@@ -78,6 +78,14 @@ final class Es {
         t("What should I watch?", "¿Qué veo hoy?");
         t("FOR TONIGHT", "PARA HOY");
         t("Another", "Otra");
+        t("Excellent", "Excelente");
+        t("Good", "Buena");
+        t("Fair", "Regular");
+        t("Weak", "Débil");
+        t("No data", "Sin datos");
+        t("link ", "enlace ");
+        t("Today ", "Hoy ");
+        t("Test ", "Prueba ");
         t("%s left", "faltan %s");
         t("S", "T");
         t("More like this", "Más como esta");
