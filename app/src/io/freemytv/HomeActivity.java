@@ -39,7 +39,14 @@ public class HomeActivity extends Activity {
         // Free My Projector: the light design (a list of names, no glass) or the classic one, from Home Settings.
         list = ListHome.chosen(this);
         home = list ? new ListHome(this) : new HomeView(this);
-        setContentView((android.view.View) home);
+        if (list) {   // the light design's animated background is a layer of its own, behind the list
+            android.widget.FrameLayout root = new android.widget.FrameLayout(this);
+            root.addView(((ListHome) home).drift);
+            root.addView((android.view.View) home);
+            setContentView(root);
+        } else {
+            setContentView((android.view.View) home);
+        }
         getWindow().setBackgroundDrawable(null);
     }
 

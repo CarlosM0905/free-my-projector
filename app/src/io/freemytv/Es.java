@@ -48,6 +48,7 @@ final class Es {
         t("What should I watch?", "¿Qué veo hoy?");
         t("FOR TONIGHT", "PARA HOY");
         t("Another", "Otra");
+        t("Animated", "Animado");
         t("A movie or show picked at random from your apps", "Una película o serie al azar de tus apps");
         t("Cast: ", "Reparto: ");
         t("Watch on %s", "Ver en %s");

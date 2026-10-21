@@ -31,7 +31,7 @@ import java.util.List;
 final class ListHome extends View implements Home, Choreographer.FrameCallback, Recs.Listener {
     private static final int APP = 0, PICK = 1, ITEM = 2, DREAM = 3, NEXT_BG = 4, BACKGROUND = 5, SHUFFLE = 6;
     /** Background styles ("Fondo"): the landscape sharp, blurred, or plain black. */
-    private static final String[] BG_STYLES = {"sharp", "soft", "black"};
+    private static final String[] BG_STYLES = {"animated", "sharp", "soft", "black"};
 
     private static final class Row {
         int type;
@@ -43,6 +43,8 @@ final class ListHome extends View implements Home, Choreographer.FrameCallback, 
     }
 
     private final Activity activity;
+    /** The animated background (a separate GPU layer behind this view); used when the style is "animated". */
+    final Drift drift;
     private final Recs recs;
     private final Click click;
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -74,6 +76,7 @@ final class ListHome extends View implements Home, Choreographer.FrameCallback, 
         recs = Recs.get(a);
         recs.setLight(true);
         click = new Click(a);
+        drift = new Drift(a);
         setFocusable(true);
         name.setTypeface(Ui.displaySemibold);
         section.setTypeface(Ui.medium);
@@ -174,6 +177,7 @@ final class ListHome extends View implements Home, Choreographer.FrameCallback, 
 
     @Override public void pause() {
         running = false;
+        drift.stop();
         recs.removeListener(this);
         handler.removeCallbacks(tick);
         Choreographer.getInstance().removeFrameCallback(this);
@@ -200,6 +204,19 @@ final class ListHome extends View implements Home, Choreographer.FrameCallback, 
 
     private void loadBackground(boolean next) {
         final Context app = getContext().getApplicationContext();
+        if (bgStyle(app).equals("animated")) {
+            background = null;
+            composed = null;
+            if (next) {   // "Next landscape": the drift moves on now
+                drift.stop();
+                drift.start(drift.index() + 1);
+            } else if (running) {
+                drift.start(app.getSharedPreferences("home-ui", Context.MODE_PRIVATE).getInt("listBg", 0));
+            }
+            invalidate();
+            return;
+        }
+        drift.hide();
         final android.content.SharedPreferences ui = app.getSharedPreferences("home-ui", Context.MODE_PRIVATE);
         new Thread(() -> {
             List<Landscapes.Photo> photos = Landscapes.ready(app);
@@ -237,7 +254,7 @@ final class ListHome extends View implements Home, Choreographer.FrameCallback, 
     }
 
     private static String bgStyle(Context c) {
-        return c.getSharedPreferences("home-ui", Context.MODE_PRIVATE).getString("listBgStyle", "sharp");
+        return c.getSharedPreferences("home-ui", Context.MODE_PRIVATE).getString("listBgStyle", "animated");
     }
 
     /** "Fondo ‹ Nítido ›": the next or previous style, applied right away. */
@@ -412,8 +429,15 @@ final class ListHome extends View implements Home, Choreographer.FrameCallback, 
     @Override protected void onDraw(Canvas c) {
         float w = getWidth(), h = getHeight();
         if (composed == null || composedFrom != background) compose();   // also when the style changes (composed = null)
-        rect.set(0, 0, w, h);
-        c.drawBitmap(composed, null, rect, image);   // one pass: the GPU of a projector can't afford three per frame
+        if (bgStyle(getContext()).equals("animated")) {   // only the left part has shade: don't blend the rest
+            int cw = Math.round(composed.getWidth() * 0.62f);
+            srcRect.set(0, 0, cw, composed.getHeight());
+            rect.set(0, 0, w * 0.62f, h);
+            c.drawBitmap(composed, srcRect, rect, image);
+        } else {
+            rect.set(0, 0, w, h);
+            c.drawBitmap(composed, null, rect, image);
+        }   // one pass: the GPU of a projector can't afford three per frame
 
         drawPreview(c, w, h);
         drawList(c, h);
@@ -421,6 +445,7 @@ final class ListHome extends View implements Home, Choreographer.FrameCallback, 
     }
 
     private Bitmap composed, composedFrom;
+    private final android.graphics.Rect srcRect = new android.graphics.Rect();
 
     /**
      * The background made once (960×540, drawn enlarged): the landscape blurred and dimmed, dark on the left for the
@@ -428,16 +453,26 @@ final class ListHome extends View implements Home, Choreographer.FrameCallback, 
      */
     private void compose() {
         int w = 960, h = 540;
-        Bitmap old = composed;
-        composed = old != null ? old : Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        if (composed == null) composed = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(composed);
-        c.drawColor(0xFF0B0B0D);
+        boolean animated = bgStyle(getContext()).equals("animated");
+        if (animated) {   // over the moving photo: only the shade on the left (the photo is dimmed by Drift)
+            c.drawColor(0, android.graphics.PorterDuff.Mode.CLEAR);
+        } else {
+            c.drawColor(0xFF0B0B0D);
+        }
         Paint p = new Paint(Paint.FILTER_BITMAP_FLAG);
         if (background != null) {
             p.setAlpha(bgStyle(getContext()).equals("sharp") ? 170 : 120);
             c.drawBitmap(background, null, new RectF(0, 0, w, h), p);
         }
         p.setAlpha(255);
+        if (animated) {   // fades out by the 62 % it's drawn to, so its edge doesn't show
+            p.setShader(new LinearGradient(0, 0, w * 0.62f, 0, 0xE60B0B0D, 0x000B0B0D, Shader.TileMode.CLAMP));
+            c.drawRect(0, 0, w, h, p);
+            composedFrom = background;
+            return;
+        }
         p.setShader(new LinearGradient(0, 0, w * 0.6f, 0, 0xF20B0B0D, 0x8C0B0B0D, Shader.TileMode.CLAMP));
         c.drawRect(0, 0, w, h, p);
         p.setShader(new RadialGradient(w * 0.82f, -h * 0.05f, w * 0.45f, 0x30E0A060, 0x00E0A060, Shader.TileMode.CLAMP));
@@ -535,7 +570,7 @@ final class ListHome extends View implements Home, Choreographer.FrameCallback, 
                 return Ui.tr("Um filme ou série ao acaso dos seus apps", "A movie or show picked at random from your apps");
             case BACKGROUND: {
                 String st = bgStyle(c);
-                return "‹  " + (st.equals("soft") ? Ui.tr("Desfocado", "Blurred") : st.equals("black") ? Ui.tr("Preto", "Black")
+                return "‹  " + (st.equals("animated") ? Ui.tr("Animado", "Animated") : st.equals("soft") ? Ui.tr("Desfocado", "Blurred") : st.equals("black") ? Ui.tr("Preto", "Black")
                         : Ui.tr("Nítido", "Sharp")) + "  ›";
             }
             default:
