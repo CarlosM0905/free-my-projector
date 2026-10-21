@@ -144,13 +144,16 @@ final class HomeMode {
             Set<String> present = packages(adb, "");
             // Already off before us (e.g. a ROM that disabled the setup wizard): not ours, so "original" leaves it off.
             Set<String> wasOff = packages(adb, "-d");
+            // (upstream #14) Turning off an app makes Android delete the Wi-Fi networks it saved, and Original can't
+            // bring them back: those apps stay on (usually the first setup's, or the stock home screen's).
+            Set<String> owners = wifiOwners(adb);
             List<String> offBefore = new ArrayList<>();
             for (String pkg : targets) if (wasOff.contains(pkg)) offBefore.add(pkg);
             int done = 0;
             for (String pkg : targets) {
                 done++;
                 busy(c, Ui.tr("Desligando apps (", "Turning off apps (") + done + "/" + targets.size() + ")…");
-                if (PROTECTED.contains(pkg) || !present.contains(pkg) || wasOff.contains(pkg)) continue;
+                if (PROTECTED.contains(pkg) || !present.contains(pkg) || wasOff.contains(pkg) || owners.contains(pkg)) continue;
                 String out = adb.shell("pm disable-user --user 0 " + pkg);
                 if (out.contains("disabled-user")) disabled.add(pkg);
                 else AppLog.w("could not turn off " + pkg + ": " + out.trim());
@@ -290,8 +293,9 @@ final class HomeMode {
                     if (!reverted || !(pkg.equals(packageOf(home)) || pkg.equals(GOOGLE_SETUP))) wanted.add(pkg);
                 }
                 Set<String> disabled = new HashSet<>(stringList(s, "disabled"));
+                Set<String> owners = wifiOwners(adb);
                 for (String pkg : sorted(wanted)) {
-                    if (PROTECTED.contains(pkg) || !present.contains(pkg)) continue;
+                    if (PROTECTED.contains(pkg) || !present.contains(pkg) || owners.contains(pkg)) continue;
                     if (disabledNow.contains(pkg)) {
                         disabled.add(pkg);
                         continue;
@@ -571,5 +575,13 @@ final class HomeMode {
         List<String> list = new ArrayList<>(set);
         Collections.sort(list);
         return list;
+    }
+
+    /** Apps that saved a Wi-Fi network ("cname" in the Wi-Fi service's list of saved networks). */
+    private static Set<String> wifiOwners(Adb adb) throws IOException {
+        Set<String> owners = new HashSet<>();
+        Matcher m = Pattern.compile("cname=([\\w.]+)").matcher(adb.shell("dumpsys wifi | grep -o 'cname=[^ ]*'"));
+        while (m.find()) owners.add(m.group(1));
+        return owners;
     }
 }

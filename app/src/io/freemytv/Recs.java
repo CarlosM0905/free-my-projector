@@ -334,8 +334,10 @@ final class Recs {
     List<Pick> now(String kind) {
         List<Pick> list = new ArrayList<>();
         if (!hasKey(context)) return list;    // no TMDB key: no recommendations
+        Map<String, Boolean> have = new HashMap<>();   // one look per app, not per title (this runs every 15 s)
         for (Pick p : picks) {
-            if ((kind == null || kind.equals(p.kind)) && (!p.detailed || p.pkg != null)) list.add(p);   // app missing: skip
+            if ((kind == null || kind.equals(p.kind))
+                    && (!p.detailed || (p.pkg != null && have.computeIfAbsent(p.pkg, this::installed)))) list.add(p);   // app missing: skip
         }
         if (list.isEmpty()) return list;
         long hour = System.currentTimeMillis() / 3600_000L;
@@ -474,7 +476,7 @@ final class Recs {
     void refreshIfStale() {
         if (!hasKey(context) || fetching) return;
         long now = System.currentTimeMillis();
-        long stamp = Config.TMDB_KEY.hashCode() * 31L + REGION.hashCode();   // a new key or country refetches
+        long stamp = sourceStamp();   // a new key, country or installed streaming-app set refetches (upstream)
         boolean newKey = stamp != keyStamp;
         long sinceFail = now - failedAt;    // negative = the clock went back: don't wait
         if (!newKey && failedAt != 0 && sinceFail >= 0 && sinceFail < 10 * 60_000L) return;
@@ -536,8 +538,10 @@ final class Recs {
         if (!hasKey(context)) return out;
         java.util.Set<String> seen = new java.util.HashSet<>();
         for (Pick p : wanted()) if (hasImage(p) && seen.add(franchise(p.title))) out.add(p);
+        Map<String, Boolean> have = new HashMap<>();
         for (Pick p : picks) {
-            if (p.detailed && p.pkg != null && hasImage(p) && seen.add(franchise(p.title))) out.add(p);
+            if (p.detailed && p.pkg != null && have.computeIfAbsent(p.pkg, this::installed) && hasImage(p)
+                    && seen.add(franchise(p.title))) out.add(p);
         }
         return out;
     }
@@ -692,6 +696,7 @@ final class Recs {
     private void fetchDetails(Pick p) throws Exception {
         JSONObject o = get("/" + p.kind + "/" + p.id
                 + "?language=" + lang() + "&append_to_response=watch/providers,images&include_image_language=null,pt,en");
+        p.title = title(p, o);
         String best = bestBackdrop(o.optJSONObject("images"));
         if (best != null) p.backdrop = best;
         List<String> parts = new ArrayList<>();
@@ -826,6 +831,30 @@ final class Recs {
         return first;
     }
 
+    /**
+     * (upstream) Without a title in the TV's language TMDB answers with the original one, so a Korean series reads
+     * "닥터X: 하얀 마피아의 시대". Then the English title, when TMDB has one (one more request, only for those).
+     */
+    private String title(Pick p, JSONObject o) {
+        String field = p.kind.equals("movie") ? "title" : "name";
+        String own = o.optString(field, p.title);
+        String original = o.optString("original_language");
+        if (Ui.en || own.isEmpty() || !own.equals(o.optString("original_" + field))
+                || lang().startsWith(original) || "en".equals(original)) return own;
+        try {
+            String english = get("/" + p.kind + "/" + p.id + "?language=en-US").optString(field);
+            return english.isEmpty() ? own : english;
+        } catch (Exception e) {
+            return own;
+        }
+    }
+
+    private long sourceStamp() {
+        long stamp = Config.TMDB_KEY.hashCode() * 31L + REGION.hashCode();
+        for (String[] service : SERVICES) stamp = stamp * 31L + (installed(service[2]) ? service[2].hashCode() : 0);
+        return stamp;
+    }
+
     private boolean installed(String pkg) {
         return HomeApps.launchIntent(context.getPackageManager(), pkg) != null;
     }
@@ -946,6 +975,13 @@ final class Recs {
     }
 
     private static void prune(File dir) {
+        // (upstream) A download cut off when the system stopped the app leaves its .part behind.
+        long stale = System.currentTimeMillis() - 10 * 60_000L;
+        File[] parts = dir.listFiles((d, name) -> name.endsWith(".part"));
+        for (int i = 0; parts != null && i < parts.length; i++) {
+            //noinspection ResultOfMethodCallIgnored
+            if (parts[i].lastModified() < stale) parts[i].delete();
+        }
         File[] files = dir.listFiles();
         if (files == null || files.length <= 24) return;
         Arrays.sort(files, (a, b) -> Long.compare(a.lastModified(), b.lastModified()));

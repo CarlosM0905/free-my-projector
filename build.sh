@@ -78,7 +78,7 @@ ASSETS="-A app/assets"; [ -n "$EXE" ] && ASSETS=""
   --min-sdk-version "$MIN_API" --target-sdk-version 33 $ASSETS -0 ttf
 [ -n "$EXE" ] && "${JAVA_HOME:+$JAVA_HOME/bin/}jar" -u -0 -f out/base.apk -C app assets
 "$JAVAC" -nowarn -Xlint:-options -source 8 -target 8 -bootclasspath "$AJ$SEP$BT/core-lambda-stubs.jar" -classpath "$AJ" \
-  -d out/classes $(find app/src out/gen -name '*.java')
+  -encoding UTF-8 -d out/classes $(find app/src out/gen -name '*.java')
 "$BT/d8$BAT" --release --min-api "$MIN_API" --lib "$AJ" --output out $(find out/classes -name '*.class')
 if command -v zip >/dev/null 2>&1; then (cd out && zip -qj base.apk classes.dex)
 else (cd out && "${JAVA_HOME:+$JAVA_HOME/bin/}jar" uf base.apk classes.dex); fi   # Git Bash on Windows has no zip
