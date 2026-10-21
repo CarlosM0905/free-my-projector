@@ -87,6 +87,18 @@ final class Es {
         t("Off", "Desactivado");
         t("Focus", "Enfoque");
         t("Focusing…", "Enfocando…");
+        t("Screen setup", "Ajustar pantalla");
+        t("STEP %d OF 3", "PASO %d DE 3");
+        t("OK: next  ·  ← →: adjust by hand  ·  Back: leave", "OK: siguiente  ·  ← →: ajustar a mano  ·  Atrás: salir");
+        t("Picture shape", "Forma de la imagen");
+        t("The edges should be straight, parallel to the wall's.", "Los bordes deben verse rectos, paralelos a los de la pared.");
+        t("Looks right", "Está bien");
+        t("Adjust corners", "Ajustar esquinas");
+        t("Brightness", "Brillo");
+        t("Normal by day, Eco in the evening, Night for a dark room (less heat and noise).", "Normal de día, Eco en la tarde-noche, Noche para un cuarto oscuro (menos calor y ruido).");
+        t("Suggested now", "Sugerido ahora");
+        t("All set", "Listo");
+        t("OK to go back", "OK para volver");
         t("OK: autofocus  ·  ← →: manual  ·  Back: done", "OK: autoenfoque  ·  ← →: manual  ·  Atrás: terminar");
         t("← → to move · ↓ to hide · OK when done", "← → para mover · ↓ para ocultar · OK para terminar");
         t("%s is in All Apps now", "%s ahora está en Todas las apps");

@@ -120,8 +120,38 @@ final class Adb implements Closeable {
 
     /** Runs a command in the TV's shell and returns its output (stdout and stderr together). */
     String shell(String command) throws IOException {
+        return service("shell:" + command);
+    }
+
+    /**
+     * Free My Projector: a connection whose shell is root, for what only root may write (the lens motor, jfocus).
+     * After a reboot adbd runs as "shell"; on ROMs that allow it (ro.debuggable=1, like Wanbo's) this asks it to restart
+     * as root, as `adb root` does, once per boot. Falls back to a normal connection.
+     */
+    static Adb connectRoot(Context c) throws IOException {
+        Adb a = connect(c, 5000, null);
+        if (a.shell("id -u").trim().equals("0")) return a;
+        try {
+            a.service("root:");
+        } catch (IOException ignored) {   // adbd restarts and drops the connection
+        }
+        a.close();
+        for (int i = 0; i < 12; i++) {
+            try {
+                Thread.sleep(700);
+                Adb b = connect(c, 5000, null);
+                if (b.shell("id -u").trim().equals("0")) return b;
+                b.close();
+            } catch (IOException | InterruptedException ignored) {
+            }
+        }
+        return connect(c, 5000, null);
+    }
+
+    /** Opens an adbd service ("shell:…", "root:") and returns what it writes until it closes. */
+    private String service(String destination) throws IOException {
         int local = nextLocalId++;
-        send(OPEN, local, 0, ("shell:" + command + "\0").getBytes(StandardCharsets.UTF_8));
+        send(OPEN, local, 0, (destination + "\0").getBytes(StandardCharsets.UTF_8));
         int remote = 0;
         ByteArrayOutputStream result = new ByteArrayOutputStream();
         while (true) {
