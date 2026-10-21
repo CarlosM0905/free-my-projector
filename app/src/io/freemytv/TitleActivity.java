@@ -35,6 +35,11 @@ public final class TitleActivity extends Activity {
     private Recs.Details details;
     private Photo photo;
     private android.graphics.Bitmap logo;
+    /** "More like this": titles on your apps, with their posters (index i of the focus after the buttons). */
+    private java.util.List<Recs.Pick> similar = new java.util.ArrayList<>();
+    private android.graphics.Bitmap[] similarArt = new android.graphics.Bitmap[0];
+    /** The pages opened from "More like this": Back returns to the one before. */
+    private final java.util.ArrayDeque<Recs.Pick> history = new java.util.ArrayDeque<>();
     private Page page;
     private int focus;   // index in buttons()
     private boolean shuffle;
@@ -85,7 +90,6 @@ public final class TitleActivity extends Activity {
 
     /** The photo (already on disk from the cards) and the details, in the background. */
     private void load() {
-        final java.io.File f = recs.photo(pick);
         final Recs.Pick forPick = pick;
         logo = null;
         new Thread(() -> {
@@ -96,11 +100,13 @@ public final class TitleActivity extends Activity {
                 logo = lb;
                 page.invalidate();
             });
+            java.io.File f = recs.photoNow(forPick);
             Bitmap b = f != null && f.exists() ? BitmapFactory.decodeFile(f.getPath()) : null;
             if (b != null) runOnUiThread(() -> photo.show(b));
             try {
                 Recs.Details d = recs.details(pick);
                 runOnUiThread(() -> {
+                    if (forPick != pick) return;
                     details = d;
                     if (keepFocus != null && buttons().contains(keepFocus)) focus = buttons().indexOf(keepFocus);
                     keepFocus = null;
@@ -108,6 +114,19 @@ public final class TitleActivity extends Activity {
                 });
             } catch (Exception e) {
                 AppLog.w("details: " + e.getMessage());
+            }
+            try {
+                java.util.List<Recs.Pick> more = recs.similar(forPick);
+                android.graphics.Bitmap[] art = new android.graphics.Bitmap[more.size()];
+                for (int i = 0; i < art.length; i++) art[i] = recs.posterBitmap(more.get(i));
+                runOnUiThread(() -> {
+                    if (forPick != pick) return;
+                    similar = more;
+                    similarArt = art;
+                    page.invalidate();
+                });
+            } catch (Exception e) {
+                AppLog.w("similar: " + e.getMessage());
             }
         }, "title").start();
     }
@@ -119,7 +138,8 @@ public final class TitleActivity extends Activity {
             case KeyEvent.KEYCODE_DPAD_LEFT:
             case KeyEvent.KEYCODE_DPAD_RIGHT:
                 if (down) {
-                    int to = Math.max(0, Math.min(buttons().size() - 1, focus + (e.getKeyCode() == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : -1)));
+                    int to = Math.max(0, Math.min(buttons().size() + similar.size() - 1,
+                            focus + (e.getKeyCode() == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : -1)));
                     if (to != focus) {
                         focus = to;
                         click.move();
@@ -137,7 +157,8 @@ public final class TitleActivity extends Activity {
             case KeyEvent.KEYCODE_BACK:
                 if (!down) {
                     click.back();
-                    finish();
+                    if (!history.isEmpty()) show(history.pop());   // back to the page before
+                    else finish();
                 }
                 return true;
             default:
@@ -164,12 +185,33 @@ public final class TitleActivity extends Activity {
         return b;
     }
 
+    /** Another title's page in place of this one. */
+    private void show(Recs.Pick p) {
+        pick = p;
+        details = null;
+        logo = null;
+        similar = new java.util.ArrayList<>();
+        similarArt = new android.graphics.Bitmap[0];
+        focus = 0;
+        photo.animate().cancel();
+        photo.setAlpha(0);
+        page.invalidate();
+        load();
+    }
+
     private boolean hasTrailer() {
         return details != null && details.trailer != null;
     }
 
     private void activate() {
         click.open();
+        if (focus >= buttons().size()) {   // a title from "More like this": its page, in place of this one
+            int i = focus - buttons().size();
+            if (i >= similar.size()) return;
+            history.push(pick);
+            show(similar.get(i));
+            return;
+        }
         String what = buttons().get(Math.min(focus, buttons().size() - 1));
         if (what.equals("another")) {
             Recs.Pick next = another();
@@ -317,12 +359,49 @@ public final class TitleActivity extends Activity {
             float by = h - 200 * k, bh = 84 * k;
             String watch = "▶  " + (pick.pkg == null ? Ui.tr("Indisponível", "Not available")
                     : String.format(Ui.tr("Assistir no %s", "Watch on %s"), Recs.serviceName(pick)));
+            drawSimilar(c, w, h, k);
             java.util.List<String> b = buttons();
             float bx = x - 24 * k;
             for (int i = 0; i < b.size(); i++) {
                 String label = b.get(i).equals("watch") ? watch : b.get(i).equals("trailer") ? Ui.tr("Trailer", "Trailer")
                         : "↻  " + Ui.tr("Outra", "Another");
                 bx = drawButton(c, label, bx + 24 * k, by, bh, focus == i, k);
+            }
+        }
+
+        /** "More like this": posters at the bottom right; the focused one lifts and gets a white rim. */
+        private void drawSimilar(Canvas c, float w, float h, float k) {
+            if (similar.isEmpty()) return;
+            float ph = 270 * k, pw = ph * 2 / 3, gap = 22 * k, n = similar.size();
+            float x = w - 120 * k - n * pw - (n - 1) * gap, y = h - 120 * k - ph;
+            small.setTextSize(24 * k);
+            small.setColor(0xCCFFFFFF);
+            c.drawText(Ui.tr("Mais como este", "More like this"), x, y - 22 * k, small);
+            small.setColor(0x8CFFFFFF);
+            for (int i = 0; i < n; i++) {
+                boolean on = focus == buttons().size() + i;
+                float px = x + i * (pw + gap), lift = on ? 10 * k : 0, grow = on ? 8 * k : 0;
+                r.set(px - grow, y - lift - grow, px + pw + grow, y + ph - lift + grow);
+                fill.setColor(0x33000000);
+                c.drawRoundRect(r.left, r.top + 12 * k, r.right, r.bottom + 16 * k, 16 * k, 16 * k, fill);
+                if (i < similarArt.length && similarArt[i] != null) {
+                    c.save();
+                    android.graphics.Path clip = new android.graphics.Path();
+                    clip.addRoundRect(r, 14 * k, 14 * k, android.graphics.Path.Direction.CW);
+                    c.clipPath(clip);
+                    c.drawBitmap(similarArt[i], null, r, logoPaint);
+                    c.restore();
+                } else {
+                    fill.setColor(0x33FFFFFF);
+                    c.drawRoundRect(r, 14 * k, 14 * k, fill);
+                }
+                if (on) {
+                    fill.setStyle(Paint.Style.STROKE);
+                    fill.setStrokeWidth(4 * k);
+                    fill.setColor(0xFFFFFFFF);
+                    c.drawRoundRect(r, 14 * k, 14 * k, fill);
+                    fill.setStyle(Paint.Style.FILL);
+                }
             }
         }
 

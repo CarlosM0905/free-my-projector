@@ -262,6 +262,57 @@ final class Recs {
         return out;
     }
 
+    /**
+     * "More like this" for a title's page (from johncovv's fork): TMDB's recommendations that are on this TV's apps, with
+     * their poster and deep link. Blocking: call it off the main thread.
+     */
+    List<Pick> similar(Pick of) throws Exception {
+        List<Pick> out = new ArrayList<>();
+        if (!hasKey(context)) return out;
+        JSONArray results = get("/" + of.kind + "/" + of.id + "/recommendations?language=" + lang()).optJSONArray("results");
+        for (int i = 0; results != null && i < results.length() && i < 14 && out.size() < 4; i++) {
+            JSONObject o = results.getJSONObject(i);
+            Pick p = new Pick();
+            p.id = o.optInt("id");
+            p.kind = of.kind;
+            p.title = o.optString(of.kind.equals("movie") ? "title" : "name");
+            p.backdrop = path(o.optString("backdrop_path", ""));
+            p.poster = path(o.optString("poster_path", ""));
+            if (p.poster == null || p.backdrop == null) continue;
+            JSONObject br = get("/" + p.kind + "/" + p.id + "/watch/providers").getJSONObject("results").optJSONObject(REGION);
+            JSONArray flat = br == null ? null : br.optJSONArray("flatrate");
+            for (int j = 0; flat != null && j < flat.length() && p.app == null; j++) {
+                String[] sv = service(flat.getJSONObject(j).optString("provider_name"));
+                if (sv != null && installed(sv[2])) {
+                    p.app = sv[1];
+                    p.pkg = sv[2];
+                }
+            }
+            if (p.app == null) continue;   // not on this TV's apps
+            try {
+                p.link = link(p);
+            } catch (Exception e) {
+                AppLog.w("link for " + p.title + ": " + e.getMessage());
+            }
+            p.meta = SERVICE_NAME.get(p.app);
+            p.detailed = true;
+            out.add(p);
+        }
+        return out;
+    }
+
+    /** A title's poster (342 px wide), downloaded the first time. Blocking. */
+    Bitmap posterBitmap(Pick p) {
+        if (p.poster == null) return null;
+        File f = new File(new File(context.getCacheDir(), "recs"), "poster342" + p.poster.replace("/", ""));
+        try {
+            if (!f.exists()) fetch("https://image.tmdb.org/t/p/w342" + p.poster, f);
+            return BitmapFactory.decodeFile(f.getPath());
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
     /** Frees the ready images except these (the home screen is hidden; the rest are rebuilt when it comes back). */
     void keepOnly(List<Pick> keep) {
         java.util.Set<String> wanted = new java.util.HashSet<>();
@@ -398,6 +449,17 @@ final class Recs {
         all.addAll(picks);
         for (Pick p : all) if (p.pkg != null && installed(p.pkg) && hasImage(p) && seen.add(key(p))) out.add(p);
         return out;
+    }
+
+    /** The title's photo, downloaded if it isn't on disk yet (a title from "More like this"). Blocking. */
+    File photoNow(Pick p) {
+        if (p.backdrop == null) return null;
+        try {
+            download(p);
+            return imageFile(p);
+        } catch (IOException e) {
+            return null;
+        }
     }
 
     /** The title's photo on disk (1920 wide), for the details page. */
