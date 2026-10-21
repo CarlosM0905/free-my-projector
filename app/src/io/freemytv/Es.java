@@ -109,7 +109,7 @@ final class Es {
         t("Off", "Desactivado");
         t("Focus", "Enfoque");
         t("Focusing…", "Enfocando…");
-        t("Screen setup", "Ajustar pantalla");
+        t("Screen setup", "Pantalla");
         t("STEP %d OF 3", "PASO %d DE 3");
         t("OK: next  ·  ← →: adjust by hand  ·  Back: leave", "OK: siguiente  ·  ← →: ajustar a mano  ·  Atrás: salir");
         t("Picture shape", "Forma de la imagen");

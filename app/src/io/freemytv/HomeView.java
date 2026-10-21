@@ -77,7 +77,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
     private static final int SMOKE = 0xFF111113, INK = 0xFF1C1C1E, WHITE = 0xFFF5F5F7;
     private static final int UP_COLOR = 0xFF30D158, DOWN_COLOR = 0xFFFF453A;
     private static final long TOAST_MS = 6000, FADE_MS = 800;
-    private static final int SKY = 0, HERO = 1, STATUS = 2, PLATTER = 3, TILES = 4, DRAWER = 5, SHEET = 6, TOAST = 7;
+    private static final int SKY = 0, HERO = 1, STATUS = 2, PLATTER = 3, TILES = 4, DRAWER = 5, SHEET = 6, TOAST = 7, CARDS = 8;
     private static final int Z_STATUS = 0, Z_HERO = 1, Z_SHELF = 2, Z_DRAWER = 3;
     private static final ExecutorService LOADER = Executors.newSingleThreadExecutor();
     // Light design (the L_ constants): title, tab bar, three recommendation cards and the shelf.
@@ -112,6 +112,11 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
     private final SharedPreferences ui;
     private final TvInputManager tvInputs;
     private final Layer sky, heroLayer, status, platter, tiles, drawerLayer, sheetLayer, toastLayer;
+    /**
+     * The Control Center's cards (weather, prices, projector) on a layer of their own (upstream's idea): moving the focus
+     * redrew their glass and text on every frame of the animation (~48 ms a frame on the T972).
+     */
+    private final Layer drawerCards;
     private int zone = Z_SHELF;
 
     // Night look (like Apple's "Automatic" appearance): darker from sunset to sunrise, with a 2 s transition.
@@ -263,7 +268,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
             // The layer may be shifted (bottom drawer): the glass reads the background from where it really is. The
             // drawer and the top buttons are always drawn as if resting in place (they are only visible there and are
             // not redrawn while they move).
-            scene.setOffset(0, kind == DRAWER || kind == STATUS ? 0 : getTranslationY());
+            scene.setOffset(0, kind == DRAWER || kind == CARDS || kind == STATUS ? 0 : getTranslationY());
             switch (kind) {
                 case SKY: drawSky(c); break;
                 case HERO: drawLightTop(c); break;
@@ -271,6 +276,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
                 case PLATTER: drawPlatter(c); break;
                 case TILES: drawTiles(c); break;
                 case DRAWER: drawDrawer(c); break;
+                case CARDS: drawDrawerCards(c); break;
                 case SHEET: drawSheet(c); break;
                 default: drawToast(c); break;
             }
@@ -312,14 +318,16 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         platter = new Layer(a, PLATTER);
         tiles = new Layer(a, TILES);
         drawerLayer = new Layer(a, DRAWER);
+        drawerCards = new Layer(a, CARDS);
         sheetLayer = new Layer(a, SHEET);
         toastLayer = new Layer(a, TOAST);
         // Hardware layers on the GPU: only the one that changed is redrawn; moving, fading and scaling stay cheap.
-        for (View v : new View[] {status, platter, tiles, drawerLayer, sheetLayer}) v.setLayerType(LAYER_TYPE_HARDWARE, null);
+        for (View v : new View[] {status, platter, tiles, drawerCards, drawerLayer, sheetLayer}) v.setLayerType(LAYER_TYPE_HARDWARE, null);
         glowView = new View(a);
         glowView.setVisibility(INVISIBLE);
-        for (View v : new View[] {sky, glowView, heroLayer, status, platter, tiles, drawerLayer, sheetLayer, toastLayer}) addView(v);
+        for (View v : new View[] {sky, glowView, heroLayer, status, platter, tiles, drawerCards, drawerLayer, sheetLayer, toastLayer}) addView(v);
         drawerLayer.setVisibility(INVISIBLE);
+        drawerCards.setVisibility(INVISIBLE);
         for (int i = 0; i < NT + NB; i++) {
             topFocus[i] = new Spring(0.26f, 0.85f, 0);
             topRects[i] = new RectF();
@@ -450,7 +458,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
     }
 
     private void invalidateAll() {
-        for (View v : new View[] {sky, heroLayer, status, platter, tiles, drawerLayer}) v.invalidate();
+        for (View v : new View[] {sky, heroLayer, status, platter, tiles, drawerCards, drawerLayer}) v.invalidate();
     }
 
     // MARK: - Size and layers
@@ -466,6 +474,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         measure(platter, width, Math.round(320 * kk));
         measure(tiles, width, Math.round(270 * kk));
         measure(drawerLayer, width, Math.round(600 * kk));
+        measure(drawerCards, width, Math.round(600 * kk));
         measure(sheetLayer, width, height);
         measure(toastLayer, Math.round(1000 * kk), Math.round(220 * kk));
         setMeasuredDimension(width, height);
@@ -484,6 +493,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         place(platter, 0, Math.round(750 * kk));
         place(tiles, 0, Math.round(790 * kk));
         place(drawerLayer, 0, Math.round(470 * kk));
+        place(drawerCards, 0, Math.round(470 * kk));
         sheetLayer.layout(0, 0, width, height);
         sheetLayer.setPivotX(width / 2f);
         sheetLayer.setPivotY(height / 2f);
@@ -630,6 +640,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         if (statusMoving || statusDirty || glassFade || bgEnded) status.invalidate();
         if (heroMoving || heroDirty || heroFading) heroLayer.invalidate();
         if (drawerItemsMoving || drawerDirty || glassFade || bgEnded) drawerLayer.invalidate();
+        if (drawerDirty || glassFade || bgEnded) drawerCards.invalidate();   // not on every frame of a focus move
         if (gridMoving || gridDirty) sheetLayer.invalidate();
         if (drawerMoving || bgFading || bgEnded) sky.invalidate();
         if (glowMoving || glowDirty) placeGlow();
@@ -670,9 +681,11 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         show(platter, home, lift);
         show(tiles, home, lift);
         float da = home * smoothstep(0.1f, 0.6f, dc);
-        drawerLayer.setTranslationY((1 - d) * shift);
-        drawerLayer.setAlpha(da);
-        drawerLayer.setVisibility(da > 0.002f ? VISIBLE : INVISIBLE);
+        for (View v : new View[] {drawerCards, drawerLayer}) {
+            v.setTranslationY((1 - d) * shift);
+            v.setAlpha(da);
+            v.setVisibility(da > 0.002f ? VISIBLE : INVISIBLE);
+        }
         sheetLayer.setVisibility(s > 0.001f || sheetOpen ? VISIBLE : INVISIBLE);
         sheetLayer.setAlpha(s);
         float scale = 1.04f - 0.04f * s;
@@ -1437,6 +1450,18 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         for (int i = 0; i < drawerItems.size(); i++) if (drawerFocus[i].value > 0.02f && (top < 0 || drawerFocus[i].value > drawerFocus[top].value)) top = i;
         for (int i = 0; i < drawerItems.size(); i++) if (i != top) drawClippedTile(c, i);
         if (top >= 0) drawClippedTile(c, top);
+    }
+
+    private void drawDrawerCards(Canvas c) {
+        if (drawerItems.isEmpty()) return;
+        cardTitle.setColor(tone(L_DIM, 0xB3FFFFFF));
+        cardText.setColor(drawerInk(0.95f));
+        cardDim.setColor(tone(L_DIM, 0xADFFFFFF));
+        cardDimRight.setColor(tone(L_FAINT, 0x99FFFFFF));
+        bigTemp.setColor(drawerInk(1));
+        hourPaint.setColor(tone(L_DIM, 0xADFFFFFF));
+        hourTemp.setColor(drawerInk(0.95f));
+        pricePaint.setColor(drawerInk(0.95f));
         drawWeatherCard(c, weatherCard);
         drawQuotesCard(c, quotesCard);
         if (projectorStatus) drawProjectorCard(c, projectorCard);

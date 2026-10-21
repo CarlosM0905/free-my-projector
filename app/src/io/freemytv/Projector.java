@@ -23,7 +23,7 @@ final class Projector {
     /** {label pt, label en, symbol, target}. target: "package/.Activity", or "bridge:package/.Activity". */
     private static final String[][] CONTROLS = {
         {"Keystone", "Keystone", "tv", "com.android.tv.settings/.device.keystone.KeyStoneActivity"},
-        {"Ajustar tela", "Screen setup", "focus", "io.freemytv/.FocusActivity"},
+        {"Tela", "Screen setup", "focus", "io.freemytv/.FocusActivity"},
         {"Imagem", "Picture", "sparkles", "bridge:com.droidlogic.tv.settings/.pqsettings.PictrueModeActivity"},
         {"Efeitos de som", "Sound effects", "speaker", "bridge:com.droidlogic.tv.settings/.tvoption.TvOptionActivity"},
         {"Timer para desligar", "Sleep timer", "bedtime", TIMER},
