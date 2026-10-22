@@ -12,7 +12,9 @@ import android.widget.Toast;
  * - a notice when the processor runs hot (the projector throttles and video stutters; usually a blocked vent),
  * - the lamp's hours of use (picture on and lamp on), shown on the Control Center's projector card, and a reminder to
  *   clean the vents and the filter every 500 of them (dust is what makes these projectors run hot),
- * - the free memory on the Control Center's Memory tile.
+ * - the free memory on the Control Center's Memory tile,
+ * - sleep when unused (Preferences): nothing playing and the remote untouched for 2, 3 or 4 hours (like Projectivy's
+ *   idle detection; a projector left on for nothing wears its lamp).
  */
 final class Heat {
     private Heat() {}
@@ -43,6 +45,7 @@ final class Heat {
         if (pm == null || !pm.isInteractive()) return;
         if (!Lamp.mode(c).equals("normal")) Lamp.enforce(c);
         endSleep(c);   // Wanbo rewrites the lamp when the temperature changes band
+        idleSleep(c);
         if (lampOn()) {
             SharedPreferences p = prefs(c);
             long lamp = p.getLong("lampMs", 0) + EVERY;
@@ -95,6 +98,62 @@ final class Heat {
                 }
             }, "end-sleep").start();
         }
+    }
+
+    static final int[] IDLE_HOURS = {0, 2, 3, 4};   // 0: never
+    private static volatile boolean checkingIdle;
+
+    static int idleHours(Context c) {
+        return prefs(c).getInt("idleHours", 0);
+    }
+
+    static void nextIdleHours(Context c, int dir) {
+        int at = 0;
+        for (int i = 0; i < IDLE_HOURS.length; i++) if (IDLE_HOURS[i] == idleHours(c)) at = i;
+        int n = IDLE_HOURS.length;
+        prefs(c).edit().putInt("idleHours", IDLE_HOURS[((at + dir) % n + n) % n]).remove("quietSince").apply();
+    }
+
+    /**
+     * Counts the time with nothing playing; once it reaches the limit, asks the system (one ADB call) when the remote
+     * was last used. Untouched for that long: sleep. Otherwise the count restarts from that last key press.
+     */
+    private static void idleSleep(Context c) {
+        int hours = idleHours(c);
+        if (hours <= 0 || checkingIdle) return;
+        SharedPreferences p = prefs(c);
+        long now = System.currentTimeMillis(), limit = hours * 3600_000L;
+        if (NowPlaying.playing(c)) {
+            p.edit().remove("quietSince").apply();
+            return;
+        }
+        long quiet = p.getLong("quietSince", 0);
+        if (quiet == 0 || quiet > now) {
+            p.edit().putLong("quietSince", now).apply();
+            return;
+        }
+        if (now - quiet < limit) return;
+        checkingIdle = true;
+        final Context app = c.getApplicationContext();
+        new Thread(() -> {
+            try (Adb adb = Adb.connect(app, 5000, null)) {
+                java.util.regex.Matcher m = java.util.regex.Pattern.compile("mLastUserActivityTime=(\\d+)")
+                        .matcher(adb.shell("dumpsys power"));
+                long idle = m.find() ? android.os.SystemClock.uptimeMillis() - Long.parseLong(m.group(1)) : 0;
+                if (idle >= limit) {
+                    p.edit().remove("quietSince").apply();
+                    AppLog.w("idle " + idle / 60_000 + " min: sleep");
+                    adb.shell("input keyevent KEYCODE_SLEEP");
+                } else {
+                    p.edit().putLong("quietSince", System.currentTimeMillis() - Math.max(0, idle)).apply();
+                }
+            } catch (Exception e) {
+                AppLog.w("idle sleep: " + e.getMessage());
+                p.edit().putLong("quietSince", System.currentTimeMillis()).apply();
+            } finally {
+                checkingIdle = false;
+            }
+        }, "idle-sleep").start();
     }
 
     /** "When it ends" on or off (starts waiting for something to play). */

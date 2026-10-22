@@ -205,7 +205,7 @@ public class SettingsActivity extends Activity {
         }
 
         private int rowCount() {
-            return screen == MAIN ? 6 : screen == PREFS ? 9 : 2;
+            return screen == MAIN ? 6 : screen == PREFS ? 10 : 2;
         }
 
         @Override protected void onDraw(Canvas c) {
@@ -375,7 +375,9 @@ public class SettingsActivity extends Activity {
             Context ctx = getContext();
             String lang = Prefs.language(), temp = Prefs.temperature(), theme = Prefs.theme(), team = Prefs.footballTeam();
             String[] labels = {Ui.tr("Idioma", "Language"), Ui.tr("Cidade", "City"), Ui.tr("Temperatura", "Temperature"),
-                    Ui.tr("Tema", "Theme"), Ui.tr("Movimento", "Motion"), Ui.tr("Criptomoedas", "Crypto prices"), Ui.tr("Time de futebol", "Football team"), Ui.tr("Chave do TMDB", "TMDB key"), Ui.tr("Fundos", "Backgrounds")};
+                    Ui.tr("Tema", "Theme"), Ui.tr("Movimento", "Motion"), Ui.tr("Criptomoedas", "Crypto prices"), Ui.tr("Time de futebol", "Football team"), Ui.tr("Chave do TMDB", "TMDB key"), Ui.tr("Fundos", "Backgrounds"),
+                    Ui.tr("Dormir sem uso", "Sleep when unused")};
+            int idle = Heat.idleHours(ctx);
             String[] values = {
                     "‹  " + (lang.equals("es") ? "Español" : lang.equals("en") ? "English" : lang.equals("pt") ? "Português" : Ui.tr("Automático", "Automatic")) + "  ›",
                     !cityStatus.isEmpty() ? cityStatus : Prefs.city().isEmpty() ? "—" : Prefs.city(),
@@ -387,7 +389,8 @@ public class SettingsActivity extends Activity {
                     team.isEmpty() ? Ui.tr("Nenhum", "None") : team,
                     masked(Prefs.tmdbKey()),
                     Backgrounds.mine(ctx).isEmpty() ? Ui.tr("Paisagens do dia", "Landscapes of the day")
-                            : String.format(Ui.tr("%d seus", "%d of yours"), Backgrounds.mine(ctx).size())};
+                            : String.format(Ui.tr("%d seus", "%d of yours"), Backgrounds.mine(ctx).size()),
+                    "‹  " + (idle <= 0 ? Ui.tr("Nunca", "Never") : String.format(Ui.tr("Após %d h", "After %d h"), idle)) + "  ›"};
             for (int i = 0; i < labels.length; i++) {
                 float y = (LIST_TOP + i * (ROW_H + ROW_GAP)) * k;
                 rowRect.set(LIST_X * k, y, LIST_R * k, y + ROW_H * k);
@@ -402,7 +405,7 @@ public class SettingsActivity extends Activity {
             Paint hint = Ui.text(Ui.regular, 23 * k, 0x8CFFFFFF);
             c.drawText(Ui.tr("← → muda o valor  ·  OK em Cidade, Time e Chave abre o teclado",
                     "← → changes the value  ·  OK on City, Team and Key opens the keyboard"), LIST_X * k + 30 * k,
-                    (LIST_TOP + 9 * (ROW_H + ROW_GAP) + 40) * k, hint);
+                    (LIST_TOP + 10 * (ROW_H + ROW_GAP) + 40) * k, hint);
         }
 
         /** "••••3f9a": enough to tell keys apart, never the whole secret on screen. */
@@ -442,6 +445,9 @@ public class SettingsActivity extends Activity {
                 }
                 case 5:
                     Prefs.setQuotes(!Prefs.quotes());
+                    break;
+                case 9:
+                    Heat.nextIdleHours(c, dir);
                     break;
                 default:
                     return;

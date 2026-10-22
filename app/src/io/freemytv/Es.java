@@ -203,6 +203,9 @@ final class Es {
         t("%d MB free", "%d MB libres");
         t("%d MB freed · %d MB free", "%d MB liberados · %d MB libres");
         t("Couldn't free the memory.", "No se pudo liberar la memoria.");
+        t("Sleep when unused", "Dormir sin uso");
+        t("Never", "Nunca");
+        t("After %d h", "Tras %d h");
         t("%d lamp hours: clean the vents and the dust filter (with the projector off and cool).",
                 "%d horas de lámpara: limpia las rejillas y el filtro de polvo (con el proyector apagado y frío).");
         t("The lamp turns off and the music keeps playing. Any button brings the picture back.",
