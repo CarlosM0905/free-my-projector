@@ -84,7 +84,7 @@ The original project's README is in [README-original.md](README-original.md).
 | | Free My TV | Free My Projector |
 |---|---|---|
 | Android | 12 or later | **9 or later** |
-| Languages | English, Portuguese | **+ Spanish** |
+| Languages | English, Portuguese | **+ Spanish, French, German, Russian, Chinese, Japanese, Turkish, Indonesian** (`app/assets/i18n`) |
 | Glass effects | Android 13 shaders | flat glass on Android 9–12 (like the original on Android 12) |
 | Performance | modern TV chips | **light mode** on Android < 12: no blurred shadows (on the T972 it went from 46 to 7 ms per frame) |
 | Internal ADB | `127.0.0.1:5555` | also `:3333`, the one Wanbo projectors ship open |
@@ -137,7 +137,7 @@ Everything is in `config.properties` (not committed to git):
 | `tmdb_region` | Your country (two letters): which title is on which app. Picking a city in Preferences sets it too | `ES` |
 | `latitude`, `longitude` | Your city, for the weather and sunset | `40.4168`, `-3.7038` |
 | `city` | The name on the weather card | `Madrid` |
-| `language` | `auto` (follows the projector), `es`, `en` or `pt` | `en` |
+| `language` | `auto` (follows the projector), `es`, `en`, `pt`, `fr`, `de`, `ru`, `zh-CN`, `ja`, `tr` or `id`; also in Preferences | `en` |
 | `currency` | Currency for the crypto prices | `USD` |
 | `temperature` | `C`, `F` or `auto` | `C` |
 | `theme` | `auto` (light by day, dark at night), `dark` or `light` | `dark` |

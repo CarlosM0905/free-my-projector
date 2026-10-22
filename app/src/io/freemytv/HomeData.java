@@ -115,7 +115,7 @@ final class HomeData {
 
     /** City search for Preferences (Open-Meteo geocoding, like upstream): {label, name, latitude, longitude, country}. */
     static List<String[]> findCity(String name) throws Exception {
-        String lang = Ui.en ? "en" : Ui.es ? "es" : "pt";
+        String lang = Ui.LANG.substring(0, 2);   // Open-Meteo names places in most languages
         JSONObject o = new JSONObject(get("https://geocoding-api.open-meteo.com/v1/search?count=10&format=json&language=" + lang
                 + "&name=" + java.net.URLEncoder.encode(name.trim(), "UTF-8")));
         JSONArray results = o.optJSONArray("results");
@@ -302,18 +302,28 @@ final class HomeData {
     static String condition(int code, boolean day) {
         if (code < 0) return "";
         if (Ui.es) return Es.condition(code, day);
-        if (Ui.en) {
-            if (code == 0) return "Clear";
-            if (code == 1) return day ? "Mostly Sunny" : "Mostly Clear";
-            if (code == 2) return "Partly Cloudy";
-            if (code == 3) return "Cloudy";
-            if (code == 45 || code == 48) return "Fog";
-            if (code >= 51 && code <= 57) return "Drizzle";
-            if (code == 65 || code == 67 || code == 82) return "Heavy Rain";
-            if (code >= 71 && code <= 77 || code == 85 || code == 86) return "Snow";
-            if (code >= 95) return "Thunderstorms";
-            return "Rain";
-        }
+        if (!Ui.en && !Ui.pt) return Ui.t(conditionEnglish(code, day));
+        return Ui.en ? conditionEnglish(code, day) : conditionPortuguese(code, day);
+    }
+
+    /** Every condition, for the catalogues (tools/i18n_keys.py reads tables named *_EN). */
+    static final String[] CONDITIONS_EN = {"Clear", "Mostly Sunny", "Mostly Clear", "Partly Cloudy", "Cloudy", "Fog", "Drizzle",
+            "Heavy Rain", "Snow", "Thunderstorms", "Rain"};
+
+    private static String conditionEnglish(int code, boolean day) {
+        if (code == 0) return "Clear";
+        if (code == 1) return day ? "Mostly Sunny" : "Mostly Clear";
+        if (code == 2) return "Partly Cloudy";
+        if (code == 3) return "Cloudy";
+        if (code == 45 || code == 48) return "Fog";
+        if (code >= 51 && code <= 57) return "Drizzle";
+        if (code == 65 || code == 67 || code == 82) return "Heavy Rain";
+        if (code >= 71 && code <= 77 || code == 85 || code == 86) return "Snow";
+        if (code >= 95) return "Thunderstorms";
+        return "Rain";
+    }
+
+    private static String conditionPortuguese(int code, boolean day) {
         if (code == 0) return day ? "Céu limpo" : "Noite limpa";
         if (code == 1) return "Poucas nuvens";
         if (code == 2) return "Parcialmente nublado";
@@ -358,7 +368,7 @@ final class HomeData {
 
     static String hour(long at) {
         return Ui.en ? new SimpleDateFormat("h a", Locale.US).format(new java.util.Date(at))
-                : new SimpleDateFormat("HH'h'", PT).format(new java.util.Date(at));
+                : new SimpleDateFormat(Ui.es || Ui.pt ? "HH'h'" : "HH:00", PT).format(new java.util.Date(at));
     }
 
     /** How long ago the data was fetched, if it's stale (no internet): "12 min ago". */
@@ -369,6 +379,7 @@ final class HomeData {
         long minutes = age / 60_000;
         if (Ui.es) return Es.ago(minutes);
         if (Ui.en) return minutes < 60 ? minutes + " min ago" : (minutes / 60) + " h ago";
+        if (!Ui.pt) return minutes < 60 ? String.format(Ui.t("%d min ago"), minutes) : String.format(Ui.t("%d h ago"), minutes / 60);
         return minutes < 60 ? "há " + minutes + " min" : "há " + (minutes / 60) + " h";
     }
 }

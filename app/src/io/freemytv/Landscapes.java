@@ -15,7 +15,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * Free My Projector: the landscapes of the framed screensaver ("Paisajes", like The Frame's art mode): Bing's photos
@@ -61,7 +60,9 @@ final class Landscapes {
         fetching = true;
         new Thread(() -> {
             try {
-                String market = Ui.es ? "es-ES" : Ui.en ? "en-US" : "pt-BR";
+                // Bing's photo of the day speaks a few markets; the rest get the English captions
+                String market = Ui.es ? "es-ES" : Ui.pt ? "pt-BR" : Ui.LANG.equals("fr") ? "fr-FR" : Ui.LANG.equals("de") ? "de-DE"
+                        : Ui.LANG.equals("ja") ? "ja-JP" : Ui.LANG.equals("zh-CN") ? "zh-CN" : "en-US";
                 JSONArray all = new JSONArray();
                 for (int idx : new int[] {0, 8}) {
                     JSONArray images = new JSONObject(get("https://www.bing.com/HPImageArchive.aspx?format=js&n=8&idx="
@@ -141,8 +142,6 @@ final class Landscapes {
 
     /** "domingo, 19 de octubre" in the TV's language. */
     static String date(long now) {
-        Locale l = Ui.es ? new Locale("es") : Ui.en ? Locale.US : new Locale("pt", "BR");
-        String s = new java.text.SimpleDateFormat(Ui.en ? "EEEE, MMMM d" : "EEEE, d 'de' MMMM", l).format(new java.util.Date(now));
-        return s;
+        return Ui.date(now);
     }
 }

@@ -756,8 +756,7 @@ final class DreamView extends View implements Screensaver.Dream, Choreographer.F
             float base = clockBase + 76 * k;
             String symbol = Symbols.weather(wx.code, wx.isDay);
             String now = HomeData.degrees(wx.temp);
-            String range = Ui.en ? "H:" + HomeData.degrees(wx.max) + "  L:" + HomeData.degrees(wx.min)
-                    : "Máx. " + HomeData.degrees(wx.max) + "  Mín. " + HomeData.degrees(wx.min);
+            String range = Ui.highLow(HomeData.degrees(wx.max), HomeData.degrees(wx.min), "  ");
             float sw = Symbols.width(getContext(), symbol, 32 * k);
             float width = sw + 12 * k + weatherPaint.measureText(now) + 18 * k + weatherDim.measureText(range);
             float x = cx - width / 2;

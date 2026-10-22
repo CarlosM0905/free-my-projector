@@ -12,7 +12,7 @@ import java.util.Locale;
 final class Prefs {
     private Prefs() {}
 
-    static final String[] LANGUAGES = {"auto", "es", "en", "pt"};
+    static final String[] LANGUAGES = {"auto", "es", "en", "pt", "fr", "de", "ru", "zh-CN", "ja", "tr", "id"};
     static final String[] TEMPERATURES = {"auto", "C", "F"};
     static final String[] THEMES = {"auto", "dark", "light"};
 
@@ -30,10 +30,12 @@ final class Prefs {
         if (p != null) p.edit().putString(key, value).apply();
     }
 
-    /** "auto" (the projector's language), "es", "en" or "pt". */
+    /** "auto" (the projector's language) or one of LANGUAGES. */
     static String language() {
         String v = get("language", Config.LANGUAGE).trim().toLowerCase(Locale.ROOT);
-        return v.startsWith("es") ? "es" : v.startsWith("en") ? "en" : v.startsWith("pt") ? "pt" : "auto";
+        if (v.startsWith("zh")) return "zh-CN";
+        for (String l : LANGUAGES) if (!l.equals("auto") && v.startsWith(l)) return l;
+        return "auto";
     }
 
     static void setLanguage(String v) { put("language", v); }

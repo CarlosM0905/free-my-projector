@@ -86,3 +86,8 @@ TVs that don't run Google TV or Android TV (Samsung, LG and others): the way is 
   *Original* can bring it back.
 - Don't change the TV's picture, sound, network or account settings.
 - Keep the way back working: the *Original* mode and the watchdog.
+
+Languages: English is the code's text; Spanish is `Es.java`; Portuguese is the first text of each `Ui.tr("pt", "en")`.
+The rest (fr, de, ru, zh-CN, ja, tr, id) are catalogues in `app/assets/i18n/<lang>.json`, keyed by the English text.
+`python tools/i18n_keys.py` lists every key; a new text needs its translation in every catalogue (missing ones show in
+English). English-only tables go through `Ui.t()` / `Ui.trAll()`, and are found by the `*_EN` name.

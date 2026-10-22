@@ -46,7 +46,7 @@ public final class BackgroundActivity extends Activity {
     }
 
     private String[] suggestions() {
-        return Ui.en ? SUGGESTIONS_EN : SUGGESTIONS_ES;
+        return Ui.en ? SUGGESTIONS_EN : Ui.es ? SUGGESTIONS_ES : Ui.trAll(SUGGESTIONS_EN);
     }
 
     @Override

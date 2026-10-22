@@ -84,7 +84,7 @@ El README del proyecto original está en [README-original.md](README-original.md
 | | Free My TV | Free My Projector |
 |---|---|---|
 | Android | 12 o superior | **9 o superior** |
-| Idiomas | inglés, portugués | **+ español** |
+| Idiomas | inglés, portugués | **+ español, francés, alemán, ruso, chino, japonés, turco, indonesio** (`app/assets/i18n`) |
 | Efectos de vidrio | shaders de Android 13 | vidrio plano en Android 9–12 (como el original en Android 12) |
 | Rendimiento | chips de TV modernos | **modo liviano** en Android < 12: sin sombras difuminadas (en el T972 bajó de 46 a 7 ms por cuadro) |
 | ADB interno | `127.0.0.1:5555` | también `:3333`, el que traen abierto los Wanbo |
@@ -137,7 +137,7 @@ Todo está en `config.properties` (no se sube a git):
 | `tmdb_region` | Tu país (dos letras): qué título está en qué app. Elegir la ciudad en Preferencias también lo fija | `ES` |
 | `latitude`, `longitude` | Tu ciudad, para el clima y el atardecer | `40.4168`, `-3.7038` |
 | `city` | El nombre en la tarjeta del clima | `Madrid` |
-| `language` | `auto` (sigue al proyector), `es`, `en` o `pt` | `es` |
+| `language` | `auto` (sigue al proyector), `es`, `en`, `pt`, `fr`, `de`, `ru`, `zh-CN`, `ja`, `tr` o `id`; también en Preferencias | `es` |
 | `currency` | Moneda de los precios cripto | `USD` |
 | `temperature` | `C`, `F` o `auto` | `C` |
 | `theme` | `auto` (claro de día, oscuro de noche), `dark` o `light` | `dark` |

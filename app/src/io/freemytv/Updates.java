@@ -54,7 +54,7 @@ final class Updates {
                 for (String[] s : SOURCES) {
                     try {
                         String name = update(app, prefs, s);
-                        if (name != null) notice.show(Ui.es ? name + " se actualizó." : Ui.tr(name + " foi atualizado.", name + " was updated."));
+                        if (name != null) notice.show(String.format(Ui.tr("%s foi atualizado.", "%s was updated."), name));
                     } catch (Exception e) {
                         failed = true;
                         AppLog.w("update " + s[0] + ": " + e.getMessage());

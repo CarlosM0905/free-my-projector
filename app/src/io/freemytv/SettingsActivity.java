@@ -299,6 +299,7 @@ public class SettingsActivity extends Activity {
             if (!hasKey) line = Ui.tr("Sem chave do TMDB: veja o README (config.properties).", "No TMDB key: see the README (config.properties).");
             else if (!error.isEmpty()) line = Ui.tr("Erro: ", "Error: ") + error + ".";
             else if (count > 0 && Ui.es) line = "Activas · " + count + " títulos de las apps del proyector, 3 nuevos cada hora.";
+            else if (count > 0 && !Ui.en && !Ui.pt) line = String.format(Ui.t("On · %d titles from the projector's apps, 3 new ones every hour."), count);
             else if (count > 0) line = Ui.tr("Ligadas · " + count + " títulos nos apps da TV, 3 novos a cada hora.",
                     "On · " + count + " titles from the TV's apps, 3 new ones every hour.");
             else line = Ui.tr("Buscando os títulos…", "Fetching titles…");
@@ -379,7 +380,7 @@ public class SettingsActivity extends Activity {
                     Ui.tr("Dormir sem uso", "Sleep when unused"), Ui.tr("Hora de dormir", "Bedtime")};
             int idle = Heat.idleHours(ctx);
             String[] values = {
-                    "‹  " + (lang.equals("es") ? "Español" : lang.equals("en") ? "English" : lang.equals("pt") ? "Português" : Ui.tr("Automático", "Automatic")) + "  ›",
+                    "‹  " + Ui.languageName(lang) + "  ›",
                     !cityStatus.isEmpty() ? cityStatus : Prefs.city().isEmpty() ? "—" : Prefs.city(),
                     "‹  " + (temp.equals("C") ? "°C" : temp.equals("F") ? "°F" : Ui.tr("Automática", "Automatic")) + "  ›",
                     "‹  " + (theme.equals("dark") ? Ui.tr("Escuro", "Dark") : theme.equals("light") ? Ui.tr("Claro", "Light theme")
@@ -693,6 +694,10 @@ public class SettingsActivity extends Activity {
             long minutes = Math.max(0, (System.currentTimeMillis() - at) / 60_000);
             if (Ui.es) return minutes < 1 ? "ahora" : minutes < 48 * 60 ? Es.ago(minutes) : "hace " + (minutes / 1440) + " días";
             if (minutes < 1) return Ui.tr("agora", "now");
+            if (!Ui.en && !Ui.pt) {   // the catalogues
+                return minutes < 60 ? String.format(Ui.t("%d min ago"), minutes) : minutes < 48 * 60
+                        ? String.format(Ui.t("%d h ago"), minutes / 60) : String.format(Ui.t("%d days ago"), minutes / 1440);
+            }
             if (minutes < 60) return Ui.tr("há " + minutes + " min", minutes + " min ago");
             if (minutes < 48 * 60) return Ui.tr("há " + (minutes / 60) + " h", (minutes / 60) + " h ago");
             return Ui.tr("há " + (minutes / 1440) + " dias", (minutes / 1440) + " days ago");

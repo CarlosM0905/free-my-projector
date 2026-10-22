@@ -90,6 +90,7 @@ final class Recs {
         SERVICE_NAME.put("globoplay", "Globoplay");
         SERVICE_NAME.put("max", "Max");
         SERVICE_NAME.put("appletv", "Apple TV");
+        SERVICE_NAME.put("crunchyroll", "Crunchyroll");
     }
 
     private static Recs instance;
@@ -267,7 +268,7 @@ final class Recs {
             List<String> parts = new ArrayList<>();
             if (kind.equals("tv")) parts.add(Ui.tr("Série", "Series"));
             if (date.length() >= 4) parts.add(date.substring(0, 4));
-            parts.add(SERVICE_NAME.get(p.app));
+            if (!serviceName(p).isEmpty()) parts.add(serviceName(p));
             p.meta = String.join(" · ", parts);
             try {
                 p.link = link(p);
@@ -387,7 +388,7 @@ final class Recs {
     String error() { return error; }
 
     static String periodLabel() {
-        return (Ui.en ? PERIOD_LABEL_EN : Ui.es ? Es.PERIOD_LABEL : PERIOD_LABEL)[period(System.currentTimeMillis())];
+        return (Ui.en ? PERIOD_LABEL_EN : Ui.es ? Es.PERIOD_LABEL : Ui.pt ? PERIOD_LABEL : Ui.trAll(PERIOD_LABEL_EN))[period(System.currentTimeMillis())];
     }
 
     private static int period(long now) {
@@ -433,7 +434,8 @@ final class Recs {
 
     /** Name of the service the pick is on ("Netflix"), or empty. */
     static String serviceName(Pick p) {
-        return p == null || p.app == null ? "" : SERVICE_NAME.get(p.app);
+        String name = p == null || p.app == null ? null : SERVICE_NAME.get(p.app);
+        return name == null ? "" : name;   // a service without a display name: none, rather than "null"
     }
 
     /** The pick's ready backdrop (or null: builds it in the background and notifies when it's ready). */
@@ -575,6 +577,11 @@ final class Recs {
         fetching = true;
         io.execute(() -> {
             try {
+                // A new language (or key, or country) also changes the titles' own texts and art: fetch them again.
+                if (newKey) {
+                    for (Pick old : picks) old.detailed = false;
+                    for (Pick old : wanted()) old.detailed = false;
+                }
                 if (stale) fetchList(p);
                 // One failing title doesn't stop the others; whatever has no app on the TV is not downloaded.
                 int failures = 0, tried = 0;
@@ -752,7 +759,18 @@ final class Recs {
 
     /** Language of titles and genres; the services come from the region. */
     private static String lang() {
-        return Ui.en ? "en-US" : Ui.es ? "es-MX" : "pt-BR";
+        if (Ui.en) return "en-US";
+        if (Ui.es) return "es-MX";
+        if (Ui.pt) return "pt-BR";
+        switch (Ui.LANG) {   // TMDB's own language tags
+            case "fr": return "fr-FR";
+            case "de": return "de-DE";
+            case "ru": return "ru-RU";
+            case "ja": return "ja-JP";
+            case "tr": return "tr-TR";
+            case "id": return "id-ID";
+            default: return Ui.LANG;   // zh-CN
+        }
     }
 
     private static void alternate(List<Pick> out, java.util.Set<String> seen, List<Pick> a, List<Pick> b, int max) {
@@ -837,8 +855,7 @@ final class Recs {
             else if (minutes > 0) parts.add(minutes >= 60 ? (minutes / 60) + " h " + (minutes % 60) + " min" : minutes + " min");
         } else {
             int seasons = o.optInt("number_of_seasons");
-            if (seasons > 0 && Ui.en) parts.add(seasons == 1 ? "1 season" : seasons + " seasons");
-            else if (seasons > 0) parts.add(seasons == 1 ? "1 temporada" : seasons + " temporadas");
+            if (seasons > 0) parts.add(seasons == 1 ? Ui.tr("1 temporada", "1 season") : seasons + Ui.tr(" temporadas", " seasons"));
         }
         JSONObject wp = o.optJSONObject("watch/providers");
         JSONObject br = wp == null ? null : wp.optJSONObject("results") == null ? null : wp.optJSONObject("results").optJSONObject(Prefs.region());
@@ -850,7 +867,7 @@ final class Recs {
                 p.pkg = s[2];
             }
         }
-        if (p.app != null) parts.add(SERVICE_NAME.get(p.app));
+        if (!serviceName(p).isEmpty()) parts.add(serviceName(p));
         p.meta = String.join(" · ", parts);
         if (p.app != null) {
             try {
@@ -908,13 +925,18 @@ final class Recs {
         {"Talk", "Entrevistas"},
     };
 
+    /** TMDB keeps these TV genres in English in every language; tools/i18n_keys.py reads tables named *_EN. */
+    static final String[] GENRES_EN = {"Action & Adventure", "Sci-Fi & Fantasy", "War & Politics", "Kids", "News", "Soap", "Talk"};
+
     private static String genre(String name) {
+        if (!Ui.es && !Ui.pt) return Ui.t(name);
         for (String[] g : Ui.es ? Es.GENRES : GENRES_PT) if (g[0].equalsIgnoreCase(name)) return g[1];
         return name;
     }
 
     /** The same for lists saved earlier ("Série · Action & Adventure · …" in Portuguese). */
     private static String fixGenres(String meta) {
+        if (!Ui.es && !Ui.pt) return meta;
         for (String[] g : Ui.es ? Es.GENRES : GENRES_PT) {
             meta = meta.replace(" · " + g[0] + " ·", " · " + g[1] + " ·");
             if (meta.endsWith(" · " + g[0])) meta = meta.substring(0, meta.length() - g[0].length()) + g[1];
@@ -975,7 +997,7 @@ final class Recs {
     }
 
     private long sourceStamp() {
-        long stamp = Prefs.tmdbKey().hashCode() * 31L + Prefs.region().hashCode();
+        long stamp = (Prefs.tmdbKey().hashCode() * 31L + Prefs.region().hashCode()) * 31L + Ui.LANG.hashCode();   // a new language refetches
         for (String[] service : SERVICES) stamp = stamp * 31L + (installed(service[2]) ? service[2].hashCode() : 0);
         return stamp;
     }

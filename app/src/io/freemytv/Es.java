@@ -78,6 +78,7 @@ final class Es {
         t("What should I watch?", "¿Qué veo hoy?");
         t("FOR TONIGHT", "PARA HOY");
         t("Another", "Otra");
+        t("%s was updated.", "%s se actualizó.");
         t("Air", "Aire");
         t("No data right now.", "Sin datos por ahora.");
         t("Good", "Buena");

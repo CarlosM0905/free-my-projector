@@ -474,7 +474,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
     }
 
     private static String[] tabs() {
-        return Ui.en ? TABS_EN : Ui.es ? Es.TABS : TABS;
+        return Ui.en ? TABS_EN : Ui.es ? Es.TABS : Ui.pt ? TABS : Ui.trAll(TABS_EN);
     }
 
     @Override public void onData() {
@@ -1882,8 +1882,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         String now = HomeData.degrees(wx.temp);
         c.drawText(now, x + sw + 18 * k - Ui.leftBearing(bigTemp, now), r.top + 170 * k, bigTemp);
         c.drawText(HomeData.condition(wx.code, wx.isDay), x, r.top + 220 * k, cardText);
-        c.drawText(Ui.en ? "H:" + HomeData.degrees(wx.max) + "   L:" + HomeData.degrees(wx.min)
-                : "Máx. " + HomeData.degrees(wx.max) + "   Mín. " + HomeData.degrees(wx.min), x, r.top + 258 * k, cardDim);
+        c.drawText(Ui.highLow(HomeData.degrees(wx.max), HomeData.degrees(wx.min), "   "), x, r.top + 258 * k, cardDim);
         float split = r.left + 392 * k;
         fill.setShader(null);
         fill.setColor(tone(0x1A000000, 0x24FFFFFF));
@@ -3036,8 +3035,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         HomeData.Weather wx = data.weather;
         if (Double.isNaN(wx.temp)) return;
         String line = HomeData.degrees(wx.temp) + "  " + (Ui.es ? Es.condition(wx.code, wx.isDay) : HomeData.condition(wx.code, wx.isDay))
-                + "   " + (Ui.en ? "H:" + HomeData.degrees(wx.max) + "  L:" + HomeData.degrees(wx.min)
-                : "Máx. " + HomeData.degrees(wx.max) + "  Mín. " + HomeData.degrees(wx.min));
+                + "   " + Ui.highLow(HomeData.degrees(wx.max), HomeData.degrees(wx.min), "  ");
         float size = 40 * k, base = 626 * k;
         String symbol = Symbols.weather(wx.code, wx.isDay);
         float sw = Symbols.width(getContext(), symbol, size);
