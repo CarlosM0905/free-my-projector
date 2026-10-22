@@ -12,7 +12,7 @@ import android.widget.Toast;
  * - a notice when the processor runs hot (the projector throttles and video stutters; usually a blocked vent),
  * - the lamp's hours of use (picture on and lamp on), shown on the Control Center's projector card, and a reminder to
  *   clean the vents and the filter every 500 of them (dust is what makes these projectors run hot),
- * - the free memory on the Control Center's Memory tile,
+ * - the free memory and storage on the Control Center's tiles, and the Bluetooth speaker connected,
  * - sleep when unused (Preferences): nothing playing and the remote untouched for 2, 3 or 4 hours (like Projectivy's
  *   idle detection; a projector left on for nothing wears its lamp).
  */
@@ -30,6 +30,7 @@ final class Heat {
         final Context app = c.getApplicationContext();
         handler = new Handler(Looper.getMainLooper());
         Projector.updateMemory();
+        Bt.refresh(app);
         handler.postDelayed(new Runnable() {
             @Override public void run() {
                 tick(app);
@@ -41,6 +42,7 @@ final class Heat {
     private static void tick(Context c) {
         NetStats.count(c);   // today's data, even while the screen is off
         Projector.updateMemory();
+        Bt.refresh(c);
         PowerManager pm = (PowerManager) c.getSystemService(Context.POWER_SERVICE);
         if (pm == null || !pm.isInteractive()) return;
         if (!Lamp.mode(c).equals("normal")) Lamp.enforce(c);

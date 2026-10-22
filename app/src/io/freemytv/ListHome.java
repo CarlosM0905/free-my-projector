@@ -605,6 +605,7 @@ final class ListHome extends View implements Home, Choreographer.FrameCallback, 
                         return "‹  " + (m.equals("eco") ? "Eco" : m.equals("night") ? Ui.tr("Noite", "Night") : "Normal") + "  ›";
                     }
                     if ("toggle:cine".equals(it.key)) return "‹  " + Projector.sceneLabel(c, Ui.tr("Desligado", "Off")) + "  ›";
+                    if (it.key.equals(Bt.KEY)) return Bt.label(Ui.tr("Nenhum", "None"));
                     if (it.key.equals(Projector.RAM) || it.key.equals(Projector.STORAGE)) return Projector.label(c, it);
                     if (Projector.isToggle(it.key)) return Projector.isOn(c, it.key) ? Ui.tr("Ligado", "On") : Ui.tr("Desligado", "Off");
                     if (Projector.timerOn(c, it)) return Projector.label(c, it);

@@ -49,6 +49,7 @@ final class Projector {
         {"Ao terminar", "When it ends", "bedtime", "toggle:fin"},
         {"Memória", "Memory", "memory", RAM},
         {"Armazenamento", "Storage", "storage", STORAGE},
+        {"Bluetooth", "Bluetooth", "bluetooth", Bt.KEY},
     };
     private static final String SOUND = BRIDGE + ".SONIDO";
     private static volatile long freeMb = -1, freeDiskMb = -1;
@@ -71,6 +72,10 @@ final class Projector {
         for (String[] d : TOGGLES) {
             if (d[3].equals("toggle:fin") || d[3].equals(RAM) || d[3].equals(STORAGE)) {   // need nothing from the ROM
                 out.add(HomeApps.action(HomeApps.PROJECTOR, d[3], Ui.tr(d[0], d[1]), d[2]));
+                continue;
+            }
+            if (d[3].equals(Bt.KEY)) {
+                if (Bt.supported()) out.add(HomeApps.action(HomeApps.PROJECTOR, d[3], Ui.tr(d[0], d[1]), d[2]));
                 continue;
             }
             if (d[3].equals("toggle:lamp")) {
@@ -123,6 +128,8 @@ final class Projector {
             case RAM:
             case STORAGE:
                 return false;
+            case Bt.KEY:
+                return Bt.connected();
             case "toggle:lamp":
                 return !Lamp.mode(c).equals("normal");
             case "toggle:cine":
@@ -150,6 +157,10 @@ final class Projector {
         }
         if (key.equals(STORAGE)) {
             freeStorage(app);
+            return;
+        }
+        if (key.equals(Bt.KEY)) {   // lit while a speaker is connected; pressed, it opens pairing
+            Bt.open(app);
             return;
         }
         final boolean on = !isOn(app, key);
@@ -241,6 +252,7 @@ final class Projector {
             long mb = freeMb;
             return mb > 0 ? Ui.tr(mb + " MB livres", mb + " MB free") : it.label;
         }
+        if (it.key.equals(Bt.KEY)) return Bt.label(it.label);   // "JBL Go · 80 %"
         if (it.key.equals(STORAGE)) {
             long mb = freeDiskMb;
             return mb > 0 ? String.format(Ui.tr("%s livres", "%s free"), size(mb)) : it.label;
