@@ -207,6 +207,11 @@ final class Projector {
         return p.getString("scene", p.getBoolean("cine", false) ? "cine" : "off");   // "cine": before scenes
     }
 
+    /** A scene by name ("off", "cine", "sport", "music"): asked by voice. */
+    static void setScene(Context c, String next) {
+        if (java.util.Arrays.asList(SCENES).contains(next)) scene(c.getApplicationContext(), next);
+    }
+
     private static void scene(Context app, String next) {
         android.content.SharedPreferences p = prefs(app);
         android.content.SharedPreferences.Editor e = p.edit().putString("scene", next).remove("cine");

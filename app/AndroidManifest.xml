@@ -14,6 +14,9 @@
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <!-- Free My Projector: Screen Time on the Control Center (allowed through the TV's own ADB). -->
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
+    <!-- Voice search (Voice): the system's recognition service only listens for apps that may record. Granted through
+         the TV's own ADB when Free My Projector's voice is chosen; nothing is recorded by the app itself. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <!-- Android 11+: without this list the app can't "see" the other apps (getLeanbackLaunchIntentForPackage
          returns null). The shelf and streaming apps, the live TV apps and, through the <intent>, every TV app
@@ -96,6 +99,17 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
+        <!-- Free My Projector: voice, over whatever is playing. In the key process: the microphone's release reaches it. -->
+        <activity
+            android:name=".Voice"
+            android:process=":keys"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:launchMode="singleTask"
+            android:screenOrientation="landscape"
+            android:theme="@style/FreeMyTV.Overlay" />
 
         <!-- Free My Projector: the quick timer's end, shown over whatever is playing. -->
         <activity
@@ -195,9 +209,9 @@
             android:exported="false"
             android:permission="android.permission.BIND_JOB_SERVICE" />
 
-        <!-- Free My Projector: the remote's Home button on Wanbo projectors (RemoteKeys), seen before the system opens
-             Google's home screen. Its own process: the system waits for it on every key, so the home screen must never be
-             able to slow it down. -->
+        <!-- Free My Projector: the remote's Home button on Wanbo projectors and its microphone (RemoteKeys), seen before
+             the system. Its own process: the system waits for it on every key, so the home screen must never be able to
+             slow it down. -->
         <service
             android:name=".RemoteKeyService"
             android:process=":keys"

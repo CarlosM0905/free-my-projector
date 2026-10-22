@@ -238,9 +238,112 @@ final class Recs {
      * Search (like tvOS): movies and shows matching the text that are on a service installed on this TV, in this
      * country, with their deep link. Blocking: call it off the main thread.
      */
+    /**
+     * Free My Projector: genres said in a sentence ("películas de terror", "series de comedia", "anime", "algo de
+     * acción"), in Spanish, English and Portuguese, without accents: {words, TMDB movie genre, TMDB TV genre} (0 = none).
+     */
+    private static final Object[][] GENRES_SAID = {
+        {"terror|horror|miedo|de miedo|scary", 27, 9648},
+        {"comedia|comedias|comedy|comedies|graciosas|comicas|risa|humor|comedia romantica", 35, 35},
+        {"accion|action|acao", 28, 10759},
+        {"aventura|aventuras|adventure|adventures", 12, 10759},
+        {"anime|animacion|animadas|animados|dibujos|dibujos animados|caricaturas|animation|cartoons|desenhos|animacao", 16, 16},
+        {"drama|dramas|dramaticas", 18, 18},
+        {"romance|romanticas|romantica|romanticos|romantic|amor|de amor", 10749, 18},
+        {"ciencia ficcion|sci fi|scifi|science fiction|ficcion cientifica|ficcao cientifica|espaciales", 878, 10765},
+        {"fantasia|fantasy|fantasticas", 14, 10765},
+        {"suspenso|suspense|thriller|thrillers|suspenso psicologico", 53, 9648},
+        {"misterio|mystery|misterios", 9648, 9648},
+        {"crimen|criminales|policiales|policiacas|policiacos|crime|detectives|policial|policiais", 80, 80},
+        {"documental|documentales|documentary|documentaries|documentarios", 99, 99},
+        {"infantiles|ninos|para ninos|kids|para chicos|familia|familiares|family|criancas|infantil", 10751, 10762},
+        {"guerra|belicas|belicos|war", 10752, 10768},
+        {"western|vaqueros|del oeste|faroeste", 37, 37},
+        {"musicales|musical|musicals", 10402, 0},
+        {"reality|realities|reality show|reality shows", 0, 10764},
+    };
+
+    /** Which genre (row of GENRES_SAID) a sentence asks for, or -1. */
+    private static int genreSaid(String plain) {
+        for (int i = 0; i < GENRES_SAID.length; i++) {
+            if (java.util.regex.Pattern.compile("(^| )(" + GENRES_SAID[i][0] + ")( |$)").matcher(plain).find()) return i;
+        }
+        return -1;
+    }
+
+    /** The streaming services on this TV, by their TMDB provider ids in your region ("8|337|…"). */
+    private String serviceIds() throws Exception {
+        StringBuilder ids = new StringBuilder();
+        JSONArray providers = get("/watch/providers/movie?language=" + lang() + "&watch_region=" + Prefs.region()).getJSONArray("results");
+        for (int i = 0; i < providers.length(); i++) {
+            JSONObject o = providers.getJSONObject(i);
+            String[] sv = service(o.optString("provider_name"));
+            if (sv != null && installed(sv[2])) ids.append(ids.length() == 0 ? "" : "|").append(o.getInt("provider_id"));
+        }
+        return ids.toString();
+    }
+
+    /** "películas de terror": the most popular of that genre on the TV's services, movies and/or shows. */
+    private List<Pick> searchGenre(String plain, int g) throws Exception {
+        List<Pick> found = new ArrayList<>();
+        String ids = serviceIds();
+        if (ids.isEmpty()) return found;
+        boolean movies = plain.matches(".*\\b(pelicula|peliculas|film|filme|filmes|movie|movies|cine)\\b.*");
+        boolean shows = plain.matches(".*\\b(serie|series|show|shows|programa|programas|novela|novelas)\\b.*");
+        if (!movies && !shows) movies = shows = true;
+        boolean anime = plain.matches(".*\\banime\\b.*");
+        List<Pick> m = new ArrayList<>(), t = new ArrayList<>();
+        for (String kind : new String[] {"movie", "tv"}) {
+            int genre = (int) GENRES_SAID[g][kind.equals("movie") ? 1 : 2];
+            if (genre == 0 || (kind.equals("movie") ? !movies : !shows)) continue;
+            JSONArray r = get("/discover/" + kind + "?language=" + lang() + "&watch_region=" + Prefs.region()
+                    + "&with_watch_monetization_types=flatrate&include_adult=false&sort_by=popularity.desc"
+                    + "&vote_count.gte=" + (kind.equals("movie") ? 50 : 20) + "&with_genres=" + genre
+                    + (anime ? "&with_original_language=ja" : "")
+                    + "&with_watch_providers=" + URLEncoder.encode(ids, "UTF-8")).getJSONArray("results");
+            for (int i = 0; i < r.length() && i < 8; i++) add(kind.equals("movie") ? m : t, r.getJSONObject(i), kind);
+        }
+        List<Pick> mixed = new ArrayList<>();
+        alternate(mixed, new java.util.HashSet<>(), m, t, 10);
+        for (Pick p : mixed) {
+            if (found.size() >= 6) break;
+            if (onApp(p, null)) found.add(p);
+        }
+        return found;
+    }
+
+    /** Which of the TV's apps has the title (TMDB watch providers): sets app, package, meta and link. */
+    private boolean onApp(Pick p, String date) throws Exception {
+        JSONObject br = get("/" + p.kind + "/" + p.id + "/watch/providers").getJSONObject("results").optJSONObject(Prefs.region());
+        JSONArray flat = br == null ? null : br.optJSONArray("flatrate");
+        for (int j = 0; flat != null && j < flat.length() && p.app == null; j++) {
+            String[] sv = service(flat.getJSONObject(j).optString("provider_name"));
+            if (sv != null && installed(sv[2])) {
+                p.app = sv[1];
+                p.pkg = sv[2];
+            }
+        }
+        if (p.app == null) return false;   // not on this TV's apps
+        List<String> parts = new ArrayList<>();
+        if (p.kind.equals("tv")) parts.add(Ui.tr("Série", "Series"));
+        if (date != null && date.length() >= 4) parts.add(date.substring(0, 4));
+        if (!serviceName(p).isEmpty()) parts.add(serviceName(p));
+        p.meta = String.join(" · ", parts);
+        try {
+            p.link = link(p);
+        } catch (Exception e) {
+            AppLog.w("link for " + p.title + ": " + e.getMessage());
+        }
+        p.detailed = true;
+        return true;
+    }
+
     List<Pick> search(String query) throws Exception {
         List<Pick> out = new ArrayList<>();
         if (!hasKey(context) || query.trim().isEmpty()) return out;
+        String plain = VoiceCommands.plain(query);
+        int g = genreSaid(plain);
+        if (g >= 0) return searchGenre(plain, g);   // a genre, not a title
         JSONArray results = get("/search/multi?language=" + lang() + "&include_adult=false&query="
                 + URLEncoder.encode(query.trim(), "UTF-8")).getJSONArray("results");
         for (int i = 0; i < results.length() && i < 10 && out.size() < 4; i++) {

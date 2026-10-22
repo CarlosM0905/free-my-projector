@@ -58,6 +58,7 @@ public class HomeActivity extends Activity {
             return;
         }
         if (home != null) home.resume();
+        searchFrom(getIntent());
         WhatsNew.maybeShow(this);
     }
 
@@ -78,7 +79,19 @@ public class HomeActivity extends Activity {
     /** Home button pressed on the home screen: back to the entry state (focus on the first app, sheet closed). */
     @Override protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+        setIntent(intent);
         if (home != null) home.reset(true);
+        searchFrom(intent);
+    }
+
+    /** Free My Projector: a search asked by voice (VoiceCommands) opens the Search tab with those words. */
+    static final String EXTRA_SEARCH = "search";
+
+    private void searchFrom(Intent intent) {
+        String q = intent == null ? null : intent.getStringExtra(EXTRA_SEARCH);
+        if (q == null || q.trim().isEmpty() || !(home instanceof HomeView)) return;
+        intent.removeExtra(EXTRA_SEARCH);
+        ((HomeView) home).searchFor(q);
     }
 
     @Override protected void onDestroy() {

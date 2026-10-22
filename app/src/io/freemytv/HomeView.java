@@ -2724,6 +2724,21 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
 
     private final RectF resultRect = new RectF();
 
+    /** A search asked by voice: the Search tab with those words, the results coming in. */
+    void searchFor(String text) {
+        String q = text.toLowerCase(Ui.en ? java.util.Locale.US : Ui.PT).trim();
+        query = q.length() > 40 ? q.substring(0, 40) : q;
+        selectTab(SEARCH);
+        topIndex = SEARCH;
+        zone = Z_KEYS;
+        resultIndex = 0;
+        retarget(true);
+        focusResults = true;   // asked by voice: the first result gets the focus as soon as it's there (OK opens it)
+        runSearch();
+    }
+
+    private boolean focusResults;
+
     private void type(char ch) {
         if (ch == '\u232B') {
             if (query.isEmpty()) return;
@@ -2733,6 +2748,10 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
             query += ch;
         }
         click.move();
+        runSearch();
+    }
+
+    private void runSearch() {
         heroDirty = true;
         final int serial = ++searchSerial;
         final String q = query;
@@ -2767,6 +2786,12 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
                     results = f;
                     searching = false;
                     resultIndex = Math.min(resultIndex, Math.max(0, searchRows() - 1));
+                    if (focusResults && searchRows() > 0 && zone == Z_KEYS) {
+                        zone = Z_RESULTS;
+                        resultIndex = 0;
+                        retarget(false);
+                    }
+                    focusResults = false;
                     if (zone == Z_RESULTS && searchRows() == 0) zone = Z_KEYS;
                     heroDirty = true;
                 });

@@ -106,7 +106,7 @@ public class SettingsActivity extends Activity {
         private final SettingsActivity activity;
         private final Scene scene = new Scene();
         private final Handler handler = new Handler(Looper.getMainLooper());
-        private final Spring[] pop = new Spring[11];   // the longest list: Preferences
+        private final Spring[] pop = new Spring[12];   // the longest list: Preferences
         private final RectF tmp = new RectF(), rowRect = new RectF();
         private JSONObject state = new JSONObject(), recs = new JSONObject();
         private boolean hasKey;
@@ -205,7 +205,7 @@ public class SettingsActivity extends Activity {
         }
 
         private int rowCount() {
-            return screen == MAIN ? 6 : screen == PREFS ? 11 : 2;
+            return screen == MAIN ? 6 : screen == PREFS ? 12 : 2;
         }
 
         @Override protected void onDraw(Canvas c) {
@@ -377,7 +377,8 @@ public class SettingsActivity extends Activity {
             String lang = Prefs.language(), temp = Prefs.temperature(), theme = Prefs.theme(), team = Prefs.footballTeam();
             String[] labels = {Ui.tr("Idioma", "Language"), Ui.tr("Cidade", "City"), Ui.tr("Temperatura", "Temperature"),
                     Ui.tr("Tema", "Theme"), Ui.tr("Movimento", "Motion"), Ui.tr("Criptomoedas", "Crypto prices"), Ui.tr("Time de futebol", "Football team"), Ui.tr("Chave do TMDB", "TMDB key"), Ui.tr("Fundos", "Backgrounds"),
-                    Ui.tr("Dormir sem uso", "Sleep when unused"), Ui.tr("Hora de dormir", "Bedtime")};
+                    Ui.tr("Dormir sem uso", "Sleep when unused"), Ui.tr("Hora de dormir", "Bedtime"),
+                    Ui.tr("Busca por voz", "Voice search")};
             int idle = Heat.idleHours(ctx);
             String[] values = {
                     "‹  " + Ui.languageName(lang) + "  ›",
@@ -392,9 +393,10 @@ public class SettingsActivity extends Activity {
                     Backgrounds.mine(ctx).isEmpty() ? Ui.tr("Paisagens do dia", "Landscapes of the day")
                             : String.format(Ui.tr("%d seus", "%d of yours"), Backgrounds.mine(ctx).size()),
                     "‹  " + (idle <= 0 ? Ui.tr("Nunca", "Never") : String.format(Ui.tr("Após %d h", "After %d h"), idle)) + "  ›",
-                    "‹  " + Bedtime.label(ctx) + "  ›"};
-            // Eleven rows: a little tighter than the other lists so the hint still fits on the screen.
-            final float rowH = 64, rowGap = 6;
+                    "‹  " + Bedtime.label(ctx) + "  ›",
+                    "‹  " + (RemoteKeys.voiceOn(ctx) ? "Free My Projector" : "Google") + "  ›"};
+            // Twelve rows: a little tighter than the other lists so the hint still fits on the screen.
+            final float rowH = 60, rowGap = 4;
             for (int i = 0; i < labels.length; i++) {
                 float y = (LIST_TOP + i * (rowH + rowGap)) * k;
                 rowRect.set(LIST_X * k, y, LIST_R * k, y + rowH * k);
@@ -455,6 +457,9 @@ public class SettingsActivity extends Activity {
                     break;
                 case 10:
                     Bedtime.next(c, dir);
+                    break;
+                case 11:   // the microphone: our voice panel, or Google's search as it came
+                    RemoteKeys.setVoice(c, !RemoteKeys.voiceOn(c));
                     break;
                 default:
                     return;
