@@ -63,7 +63,7 @@ final class Projector {
             if (d[3].endsWith(".FocusActivity") && !FocusActivity.supported()) continue;
             out.add(HomeApps.action(HomeApps.PROJECTOR, d[3], Ui.tr(d[0], d[1]), d[2]));
         }
-        if (!hasStatus()) return out;   // the switches are the Wanbo ROM's (AFR) and its helper's (sound)
+        if (!hasStatus()) return ordered(c, out);   // the switches are the Wanbo ROM's (AFR) and its helper's (sound)
         boolean sound = !c.getPackageManager().queryBroadcastReceivers(new Intent(SOUND).setPackage(BRIDGE), 0).isEmpty();
         for (String[] d : TOGGLES) {
             if (d[3].equals("toggle:fin") || d[3].equals(RAM)) {   // need nothing from the ROM
@@ -78,7 +78,26 @@ final class Projector {
             out.add(HomeApps.action(HomeApps.PROJECTOR, d[3], Ui.tr(d[0], d[1]), d[2]));
         }
         if (afrOn == null) checkAfr(c);
-        return out;
+        return ordered(c, out);
+    }
+
+    /** In the order you left them (OK held on one in the Control Center); new ones after, in their usual place. */
+    private static List<HomeApps.Item> ordered(Context c, List<HomeApps.Item> items) {
+        final List<String> saved = java.util.Arrays.asList(prefs(c).getString("order", "").split(","));
+        final List<HomeApps.Item> original = new ArrayList<>(items);
+        java.util.Collections.sort(items, (a, b) -> Integer.compare(rank(saved, original, a), rank(saved, original, b)));
+        return items;
+    }
+
+    private static int rank(List<String> saved, List<HomeApps.Item> original, HomeApps.Item it) {
+        int at = saved.indexOf(it.key);
+        return at >= 0 ? at : 1000 + original.indexOf(it);
+    }
+
+    static void saveOrder(Context c, List<HomeApps.Item> items) {
+        StringBuilder keys = new StringBuilder();
+        for (HomeApps.Item it : items) if (it.kind == HomeApps.PROJECTOR) keys.append(keys.length() > 0 ? "," : "").append(it.key);
+        prefs(c).edit().putString("order", keys.toString()).apply();
     }
 
     // MARK: - Switches

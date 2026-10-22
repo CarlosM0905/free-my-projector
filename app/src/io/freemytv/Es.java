@@ -186,6 +186,7 @@ final class Es {
         t("OK to go back", "OK para volver");
         t("OK: autofocus  ·  ← →: manual  ·  Back: done", "OK: autoenfoque  ·  ← →: manual  ·  Atrás: terminar");
         t("← → to move · ↓ to hide · OK when done", "← → para mover · ↓ para ocultar · OK para terminar");
+        t("← → to move · OK when done", "← → para mover · OK para terminar");
         t("%s is in All Apps now", "%s ahora está en Todas las apps");
         t("Back on the home screen", "De vuelta en el inicio");
         t("%s is on the home screen", "%s está en el inicio");

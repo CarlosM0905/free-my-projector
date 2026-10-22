@@ -240,6 +240,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
     private boolean okDown, backDown;
     /** Editing the shelf (tvOS: hold OK on an app): the app being moved, or -1. */
     private int editing = -1;
+    private int drawerEditing = -1;   // a Control Center button being moved (OK held on it)
     private boolean okHeld;
 
     private Paint labelPaint, metaPaint, clockPaint, buttonPaint, capsuleText, tipPaint, quotePaint, staleQuote;
@@ -682,7 +683,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         bgWasFading = bgFading;
         if (statusMoving || statusDirty || glassFade || bgEnded) status.invalidate();
         if (heroMoving || heroDirty || heroFading) heroLayer.invalidate();
-        if (drawerItemsMoving || drawerDirty || glassFade || bgEnded) drawerLayer.invalidate();
+        if (drawerItemsMoving || drawerDirty || glassFade || bgEnded || drawerEditing >= 0) drawerLayer.invalidate();
         if (drawerDirty || widgetsMoving || glassFade || bgEnded) drawerCards.invalidate();   // not for the shortcuts' focus
         if (gridMoving || gridDirty) sheetLayer.invalidate();
         if (drawerMoving || bgFading || bgEnded) sky.invalidate();
@@ -1517,6 +1518,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
 
     private void closeDrawer() {
         drawerOpen = false;
+        drawerEditing = -1;
         drawer.target = 0;
         zone = Z_SHELF;
         for (Spring f : drawerFocus) f.snap(0);   // the drawer goes away: its focus doesn't need to animate
@@ -1561,8 +1563,15 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         if (drawerInputs < drawerItems.size()) c.drawText(Ui.tr("Atalhos", "Shortcuts"), drawerClipL + 4 * k, titleBase, rowTitle);   // stays put when the row scrolls
         int top = -1;
         for (int i = 0; i < drawerItems.size(); i++) if (drawerFocus[i].value > 0.02f && (top < 0 || drawerFocus[i].value > drawerFocus[top].value)) top = i;
-        for (int i = 0; i < drawerItems.size(); i++) if (i != top) drawClippedTile(c, i);
-        if (top >= 0) drawClippedTile(c, top);
+        for (int i = 0; i < drawerItems.size(); i++) if (i != top && i != drawerEditing) drawClippedTile(c, i);
+        if (top >= 0 && top != drawerEditing) drawClippedTile(c, top);
+        if (drawerEditing >= 0 && drawerEditing < drawerItems.size()) {   // jiggles on top while you move it, like the shelf
+            c.save();
+            c.rotate(1.8f * (float) Math.sin(SystemClock.uptimeMillis() / 70.0),
+                    drawerRects[drawerEditing].centerX(), drawerRects[drawerEditing].centerY());
+            drawClippedTile(c, drawerEditing);
+            c.restore();
+        }
     }
 
     private void drawDrawerCards(Canvas c) {
@@ -2162,7 +2171,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
                         okHeld = hold();   // held about half a second
                     }
                 } else {
-                    if (editing >= 0 && okDown && !okHeld) endEditing();
+                    if ((editing >= 0 || drawerEditing >= 0) && okDown && !okHeld) endEditing();
                     else if (okDown && !okHeld && !e.isCanceled()) activate();
                     okDown = false;
                 }
@@ -2188,7 +2197,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
                     if (e.getRepeatCount() == 0) backDown = true;
                 } else {
                     if (backDown && !e.isCanceled()) {
-                        if (editing >= 0) endEditing();
+                        if (editing >= 0 || drawerEditing >= 0) endEditing();
                         else back();
                     }
                     backDown = false;
@@ -2247,6 +2256,13 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
             reload();
             return true;
         }
+        if (drawerOpen && zone == Z_DRAWER && drawerIndex < drawerItems.size()
+                && drawerItems.get(drawerIndex).kind == HomeApps.PROJECTOR) {   // Control Center: your order (macOS Tahoe)
+            drawerEditing = drawerIndex;
+            drawerDirty = true;
+            showToast(Ui.tr("← → para mover · OK para terminar", "← → to move · OK when done"));
+            return true;
+        }
         if (zone != Z_SHELF || shelf.isEmpty() || drawerOpen) return false;
         editing = shelfIndex;
         showToast(Ui.tr("← → para mover · ↓ para ocultar · OK para terminar", "← → to move · ↓ to hide · OK when done"));
@@ -2255,7 +2271,25 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
 
     private void endEditing() {
         editing = -1;
-        tilesDirty = true;
+        drawerEditing = -1;
+        tilesDirty = drawerDirty = true;
+    }
+
+    /** Moving a Control Center button: left/right swaps it with its neighbor among the projector's buttons. */
+    private void moveDrawerEditing(int dx) {
+        int to = drawerEditing + dx;
+        if (dx == 0 || to < 0 || to >= drawerItems.size() || drawerItems.get(to).kind != HomeApps.PROJECTOR) return;
+        List<HomeApps.Item> list = new ArrayList<>(drawerItems);
+        java.util.Collections.swap(list, drawerEditing, to);
+        Spring s = drawerFocus[drawerEditing];
+        drawerFocus[drawerEditing] = drawerFocus[to];
+        drawerFocus[to] = s;
+        drawerItems = list;
+        drawerEditing = drawerIndex = to;
+        Projector.saveOrder(getContext(), list);
+        click.move();
+        drawerDirty = true;
+        retarget(false);
     }
 
     /** Editing the shelf: left/right moves the app, down hides it (to All Apps), up does nothing. */
@@ -2284,6 +2318,10 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
     private void move(int dx, int dy) {
         if (editing >= 0) {
             moveEditing(dx, dy);
+            return;
+        }
+        if (drawerEditing >= 0) {
+            moveDrawerEditing(dx);
             return;
         }
         if (sheetOpen) {
