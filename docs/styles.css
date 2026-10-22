@@ -232,6 +232,8 @@ h2 {
 }
 .compare .tag { position: absolute; bottom: 16px; padding: 6px 12px; border-radius: 99px; font-size: 13px; font-weight: 600; background: rgba(0,0,0,.55); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 .compare .tag.l { left: 16px; } .compare .tag.r { right: 16px; }
+.compare .tag { transition: opacity .25s ease; }
+.compare .tag.gone { opacity: 0; }
 .compare:focus-visible { outline: 2px solid var(--violet); outline-offset: 4px; }
 
 /* Install */

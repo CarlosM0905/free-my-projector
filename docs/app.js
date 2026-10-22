@@ -58,7 +58,15 @@
   // Compare the two designs: drag, click or use the arrow keys
   document.querySelectorAll(".compare").forEach((box) => {
     let at = 50;
-    const set = (v) => { at = Math.max(0, Math.min(100, v)); box.style.setProperty("--split", at + "%"); box.setAttribute("aria-valuenow", Math.round(at)); };
+    const left = box.querySelector(".tag.l"), right = box.querySelector(".tag.r");
+    const set = (v) => {
+      at = Math.max(0, Math.min(100, v));
+      box.style.setProperty("--split", at + "%");
+      box.setAttribute("aria-valuenow", Math.round(at));
+      // A design pushed out of view takes its label with it
+      left.classList.toggle("gone", at < 14);
+      right.classList.toggle("gone", at > 86);
+    };
     const fromEvent = (e) => { const r = box.getBoundingClientRect(); set(((e.clientX - r.left) / r.width) * 100); };
     let dragging = false;
     box.addEventListener("pointerdown", (e) => { dragging = true; box.setPointerCapture(e.pointerId); fromEvent(e); });
