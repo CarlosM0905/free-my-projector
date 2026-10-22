@@ -393,7 +393,9 @@ final class HomeApps {
             items.add(it);
         }
         Collections.sort(items, (a, b) -> a.label.toLowerCase(Locale.ROOT).compareTo(b.label.toLowerCase(Locale.ROOT)));
-        items.add(special(c, SETTINGS, "freemytv-settings", "Free My Projector", "sparkles"));
+        Item settings = special(c, SETTINGS, "freemytv-settings", "Free My Projector", "sparkles");
+        settings.tile = appTile(c, null, c.getPackageName(), 0);   // its own banner, like every other app here
+        items.add(settings);
         return items;
     }
 
