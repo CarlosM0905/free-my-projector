@@ -123,6 +123,12 @@ final class VoiceCommands {
             return new Command(Ui.tr("Início", "Home"), VoiceCommands::home);
         }
 
+        // A question, or something only Google knows: "¿quién ganó el partido?", "¿qué tiempo hará mañana?"
+        if (google(c) != null && (QUESTION.matcher(t).find() || has(t, GENERAL))) {
+            final String q = said.trim().replaceFirst("(?i)^(busca en google|buscar en google|google|search google for|pesquisa no google) ", "");
+            return new Command(Ui.tr("Perguntando ao Google…", "Asking Google…"), ctx -> askGoogle(ctx, q));
+        }
+
         // An app: "abre Netflix", or just its name ("Spotify")
         m = OPEN.matcher(t);
         String wanted = m.find() ? m.group(5) : t;
@@ -144,6 +150,32 @@ final class VoiceCommands {
                 new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
                         .setClassName(ctx.getPackageName(), ctx.getPackageName() + ".HomeActivity")
                         .putExtra(HomeActivity.EXTRA_SEARCH, query)));
+    }
+
+    /** Questions start like this (Spanish, English, Portuguese), and "busca en Google…" asks for Google outright. */
+    private static final Pattern QUESTION = Pattern.compile("^(que|quien|quienes|como|cuando|donde|cuanto|cuanta|cuantos|cuantas|"
+            + "por que|porque|cual|cuales|a que hora|what|whats|who|whos|how|when|where|why|which|is|are|do|does|did|can|will|"
+            + "o que|quem|quando|onde|quanto|quanta|qual|quais|busca en google|buscar en google|google|search google|pesquisa no google) ");
+    /** Things only a search engine knows, wherever they are in the sentence. */
+    private static final String GENERAL = "clima|el tiempo|tiempo hace|tiempo hara|pronostico|weather|forecast|noticias|news|resultado|"
+            + "resultados|marcador|partido|score|traduce|traducir|translate|chiste|joke|definicion|significa|significado|receta|recipe|"
+            + "dolar|tipo de cambio|exchange rate|hora es|time is it|previsao do tempo|tempo vai fazer";
+
+    /** Google's search on Android TV, if it's on this TV: it takes a question already written. */
+    static Intent google(Context c) {
+        Intent i = new Intent("android.search.action.GLOBAL_SEARCH").setPackage("com.google.android.katniss");
+        return i.resolveActivity(c.getPackageManager()) == null ? null : i;
+    }
+
+    /** Hands the words to Google (an answer, the weather, the score…); without it, our search. */
+    static void askGoogle(Context c, String q) {
+        Intent g = google(c);
+        if (g != null) {
+            start(c, g.putExtra("query", q));
+        } else {
+            start(c, new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+                    .setClassName(c.getPackageName(), c.getPackageName() + ".HomeActivity").putExtra(HomeActivity.EXTRA_SEARCH, q));
+        }
     }
 
     /** The TV app whose name matches best (the whole name, or a name that starts the sentence: "spotify por favor"). */

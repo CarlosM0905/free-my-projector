@@ -79,6 +79,7 @@ final class Es {
         t("FOR TONIGHT", "PARA HOY");
         t("Another", "Otra");
         t("%s was updated.", "%s se actualizó.");
+        t("Asking Google…", "Preguntando a Google…");
         t("Home", "Inicio");
         t("I didn't catch that. Try again.", "No te entendí. Inténtalo de nuevo.");
         t("Listening…", "Te escucho…");

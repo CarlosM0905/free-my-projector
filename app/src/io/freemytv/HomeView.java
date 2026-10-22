@@ -2790,6 +2790,8 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
                         zone = Z_RESULTS;
                         resultIndex = 0;
                         retarget(false);
+                    } else if (focusResults && searchRows() == 0 && VoiceCommands.google(getContext()) != null) {
+                        VoiceCommands.askGoogle(getContext(), q);   // asked by voice and not in your apps: Google answers
                     }
                     focusResults = false;
                     if (zone == Z_RESULTS && searchRows() == 0) zone = Z_KEYS;
