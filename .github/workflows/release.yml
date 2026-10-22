@@ -38,11 +38,18 @@ jobs:
       - name: Build
         run: bash build.sh
 
-      # The notes come from the commits since the previous tag ("feat:" → New, "fix:" → Fixes); the projector shows
-      # them in its "What's New" sheet after updating itself.
+      # The notes: the tag's message, or the commits since the previous tag ("feat:" → New, "fix:" → Fixes). The
+      # projector shows them in its "What's New" sheet after updating itself.
       - name: Notes
         if: github.ref_type == 'tag'
         run: |
+          # An annotated tag's message is the notes, written by hand (git tag -a v1.2.0 -F notes.md); without one,
+          # they're made from the commits.
+          git fetch --force origin "refs/tags/$GITHUB_REF_NAME:refs/tags/$GITHUB_REF_NAME"
+          if [ "$(git cat-file -t "$GITHUB_REF_NAME")" = tag ]; then
+            git tag -l --format='%(contents:body)' "$GITHUB_REF_NAME" > notes.md
+            if [ -s notes.md ]; then cat notes.md; exit 0; fi
+          fi
           prev=$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || true)
           range=${prev:+$prev..}$GITHUB_REF_NAME
           section() { lines=$(git log --no-merges --pretty='- %s' "$range" | grep -E "^- ($2)(\(|:)" | sed -E 's/^- [a-z]+(\([^)]*\))?: */- /'); [ -n "$lines" ] && printf '## %s\n%s\n\n' "$1" "$lines"; true; }
