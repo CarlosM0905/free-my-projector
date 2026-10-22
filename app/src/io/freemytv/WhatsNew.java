@@ -5,8 +5,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Canvas;
+import android.graphics.LinearGradient;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
+import android.graphics.Shader;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -148,6 +152,7 @@ public final class WhatsNew extends Activity {
         private final List<StaticLayout> layouts = new ArrayList<>();
         private final List<Line> lines = new ArrayList<>();
         private final RectF tmp = new RectF();
+        private final Paint fade = new Paint();
         private final Spring scroll = new Spring(0.22f, 0.9f, 0);
         private float k = 1, contentHeight;
         private int w, h;
@@ -164,6 +169,7 @@ public final class WhatsNew extends Activity {
             scene.setMotion(0.5f, 0.2f);
             scene.applyPalette();
             setFocusable(true);
+            fade.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_IN));
         }
 
         void show(List<Line> got) {
@@ -237,8 +243,8 @@ public final class WhatsNew extends Activity {
             if (!loaded) {
                 Ui.spinner(c, left + 410 * k, h / 2f, 22 * k, seconds, spinner);
             } else {
-                c.save();
-                c.clipRect(0, top - 10 * k, w, bottom);
+                float clipTop = top - 10 * k;
+                int layer = c.saveLayer(0, clipTop, w, bottom, null);
                 float y = top - scroll.value;
                 for (int i = 0; i < layouts.size(); i++) {
                     StaticLayout s = layouts.get(i);
@@ -251,7 +257,17 @@ public final class WhatsNew extends Activity {
                     c.restore();
                     y += s.getHeight() + (isHeader ? 22 : 26) * k;
                 }
-                c.restore();
+                // The notes fade out where they're cut, like a tvOS list: at the bottom while there's more below, at
+                // the top once scrolled.
+                boolean above = scroll.value > 1, below = scroll.value < maxScroll() - 1;
+                if (above || below) {
+                    float span = bottom - clipTop;
+                    fade.setShader(new LinearGradient(0, clipTop, 0, bottom,
+                            new int[] {above ? 0 : 0xFF000000, 0xFF000000, 0xFF000000, below ? 0 : 0xFF000000},
+                            new float[] {0, Math.min(0.4f, 70 * k / span), Math.max(0.6f, 1 - 130 * k / span), 1}, Shader.TileMode.CLAMP));
+                    c.drawRect(0, clipTop, w, bottom, fade);
+                }
+                c.restoreToCount(layer);
             }
             // The one button, always focused: tvOS's "Continue".
             float bw = 360 * k, bh = 84 * k, bx = left + 410 * k, by = h - 130 * k;
