@@ -226,7 +226,7 @@
  "Removed": "Kaldırıldı",
  "Restoring the original home screen…": "Orijinal ana ekran geri yükleniyor…",
  "S": "S",
- "STEP %d OF 3": "ADIM %d / 3",
+ "STEP %d OF %d": "ADIM %d / %d",
  "Saving…": "Kaydediliyor…",
  "Scene": "Sahne",
  "Scene: Cinema": "Sahne: Sinema",

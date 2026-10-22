@@ -226,7 +226,7 @@
  "Removed": "Удалено",
  "Restoring the original home screen…": "Восстановление заводского главного экрана…",
  "S": "С",
- "STEP %d OF 3": "ШАГ %d ИЗ 3",
+ "STEP %d OF %d": "ШАГ %d ИЗ %d",
  "Saving…": "Сохранение…",
  "Scene": "Сцена",
  "Scene: Cinema": "Сцена: Кино",

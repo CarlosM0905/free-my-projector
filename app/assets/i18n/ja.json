@@ -226,7 +226,7 @@
  "Removed": "削除しました",
  "Restoring the original home screen…": "元のホーム画面に戻しています…",
  "S": "S",
- "STEP %d OF 3": "ステップ %d / 3",
+ "STEP %d OF %d": "ステップ %d / %d",
  "Saving…": "保存中…",
  "Scene": "シーン",
  "Scene: Cinema": "シーン：シネマ",

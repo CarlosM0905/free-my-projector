@@ -54,7 +54,7 @@ final class Projector {
     };
     private static final String SOUND = BRIDGE + ".SONIDO";
     private static volatile long freeMb = -1, freeDiskMb = -1;
-    private static final String AFR_OFF = "/data/local/tmp/afr.off";
+    private static final String AFR_OFF = "/data/local/tmp/afr.off", AFR_SERVICE = "/vendor/bin/wanbo-tweaks.sh";
     private static volatile Boolean afrOn;   // read once through the TV's own ADB (the file isn't readable by apps)
     private static final java.util.Map<String, long[]> OPTIMISTIC = new java.util.HashMap<>();   // key → {on, until}
 
@@ -83,7 +83,11 @@ final class Projector {
                 if (Lamp.supported()) out.add(HomeApps.action(HomeApps.PROJECTOR, d[3], Ui.tr(d[0], d[1]), d[2]));
                 continue;
             }
-            if (!d[3].equals("toggle:afr") && !sound) continue;   // cinema mode also sets the sound
+            if (d[3].equals("toggle:afr")) {   // the ROM's frame-rate service (wanbo-tweaks); a Wanbo as it came has none
+                if (new java.io.File(AFR_SERVICE).exists()) out.add(HomeApps.action(HomeApps.PROJECTOR, d[3], Ui.tr(d[0], d[1]), d[2]));
+                continue;
+            }
+            if (!sound) continue;   // cinema mode also sets the sound
             out.add(HomeApps.action(HomeApps.PROJECTOR, d[3], Ui.tr(d[0], d[1]), d[2]));
         }
         if (afrOn == null) checkAfr(c);

@@ -226,7 +226,7 @@
  "Removed": "已移除",
  "Restoring the original home screen…": "正在恢复原来的主屏幕…",
  "S": "第",
- "STEP %d OF 3": "第 %d 步，共 3 步",
+ "STEP %d OF %d": "第 %d 步，共 %d 步",
  "Saving…": "正在保存…",
  "Scene": "场景",
  "Scene: Cinema": "场景：影院",

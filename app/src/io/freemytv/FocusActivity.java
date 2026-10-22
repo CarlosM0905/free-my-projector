@@ -36,6 +36,20 @@ public final class FocusActivity extends Activity {
         return new java.io.File(MOTOR + "len_goforward").exists();
     }
 
+    /**
+     * The lens motor and jfocus need root, which the TV's own ADB only has on a debuggable system (the community ROM);
+     * on a Wanbo as it came the assistant starts at the shape step, and focus stays with Wanbo's own button.
+     */
+    static final boolean focusable = "1".equals(prop("ro.debuggable"));
+
+    static String prop(String name) {
+        try {
+            return (String) Class.forName("android.os.SystemProperties").getMethod("get", String.class).invoke(null, name);
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -44,7 +58,11 @@ public final class FocusActivity extends Activity {
         click = new Click(this);
         screen = new Screen(this);
         setContentView(screen);
-        auto();
+        if (focusable) {
+            auto();
+        } else {
+            step = SHAPE;   // a projector as it came: Wanbo's own focus, then shape and brightness here
+        }
     }
 
     @Override
@@ -204,7 +222,10 @@ public final class FocusActivity extends Activity {
             // "1 of 3", over the title
             small.setTextSize(22 * k);
             small.setColor(0xFF0A84FF);
-            if (step < DONE) c.drawText(String.format(Ui.tr("PASSO %d DE 3", "STEP %d OF 3"), step + 1), w / 2, h / 2 - 230 * k, small);
+            if (step < DONE) {
+                int first = focusable ? FOCUS : SHAPE;
+                c.drawText(String.format(Ui.tr("PASSO %d DE %d", "STEP %d OF %d"), step - first + 1, DONE - first), w / 2, h / 2 - 230 * k, small);
+            }
             big.setTextSize(64 * k);
             hint.setTextSize(30 * k);
             switch (step) {

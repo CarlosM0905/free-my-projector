@@ -198,7 +198,7 @@ final class Es {
         t("Focus", "Enfoque");
         t("Focusing…", "Enfocando…");
         t("Screen setup", "Pantalla");
-        t("STEP %d OF 3", "PASO %d DE 3");
+        t("STEP %d OF %d", "PASO %d DE %d");
         t("OK: next  ·  ← →: adjust by hand  ·  Back: leave", "OK: siguiente  ·  ← →: ajustar a mano  ·  Atrás: salir");
         t("Picture shape", "Forma de la imagen");
         t("The edges should be straight, parallel to the wall's.", "Los bordes deben verse rectos, paralelos a los de la pared.");
