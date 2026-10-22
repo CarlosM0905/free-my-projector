@@ -30,10 +30,23 @@ final class Landscapes {
 
     private static volatile boolean fetching;
 
-    /** The photos already on disk, newest first (empty the first time; `refresh` fills it). */
+    /** With fewer of your own backgrounds than this, the landscapes of the day follow them, so the screensaver still changes. */
+    private static final int OWN_ENOUGH = 5;
+
+    /**
+     * The photos to show, newest first: your own backgrounds (picked from a search) and, while you have fewer than
+     * OWN_ENOUGH, the landscapes of the day after them. Empty the first time; `refresh` fills it.
+     */
     static List<Photo> ready(Context c) {
-        List<Photo> mine = Backgrounds.mine(c);   // your own backgrounds, picked from a search, come first
-        if (!mine.isEmpty()) return mine;
+        List<Photo> mine = Backgrounds.mine(c);
+        if (mine.size() >= OWN_ENOUGH) return mine;
+        List<Photo> out = new ArrayList<>(mine);
+        out.addAll(ofTheDay(c));
+        return out;
+    }
+
+    /** The landscapes of the day already on disk, newest first. */
+    private static List<Photo> ofTheDay(Context c) {
         List<Photo> out = new ArrayList<>();
         try {
             JSONArray list = new JSONArray(prefs(c).getString("list", "[]"));
@@ -56,7 +69,7 @@ final class Landscapes {
     static void refresh(Context c, Runnable done) {
         final Context app = c.getApplicationContext();
         long now = System.currentTimeMillis(), at = prefs(app).getLong("at", 0);
-        if (fetching || (now - at >= 0 && now - at < 12 * 3600_000L && !ready(app).isEmpty())) return;
+        if (fetching || (now - at >= 0 && now - at < 12 * 3600_000L && !ofTheDay(app).isEmpty())) return;
         fetching = true;
         new Thread(() -> {
             try {
