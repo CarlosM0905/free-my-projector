@@ -1,10 +1,10 @@
 <div align="center">
 
-<img src="docs/assets/icon-512.png" width="96" alt="">
+<img src="docs/assets/logo.svg" width="96" alt="">
 
 # Free My Projector
 
-[English](README.md) · **Español**
+**[Sitio web](https://carlosm0905.github.io/free-my-projector/es/)** · [English](README.md) · **Español**
 
 **Una pantalla de inicio rápida y sin anuncios para proyectores con Android 9 o superior.**
 

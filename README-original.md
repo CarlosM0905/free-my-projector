@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/assets/icon-512.png" width="96" alt="">
+<img src="app/res/drawable-nodpi/icon.png" width="96" alt="">
 
 # Free My TV
 

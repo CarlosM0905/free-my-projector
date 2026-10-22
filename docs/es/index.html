@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Free My Projector — un inicio mejor para tu proyector</title>
+  <meta name="description" content="Un inicio rápido y sin anuncios para proyectores Android, diseñado como tvOS. Centro de control, letras, widgets, keystone y enfoque, protector de paisajes. Gratis y de código abierto.">
+  <meta name="theme-color" content="#050507">
+  <link rel="canonical" href="https://carlosm0905.github.io/free-my-projector/es/">
+  <link rel="alternate" hreflang="en" href="https://carlosm0905.github.io/free-my-projector/">
+  <link rel="alternate" hreflang="es" href="https://carlosm0905.github.io/free-my-projector/es/">
+  <link rel="alternate" hreflang="x-default" href="https://carlosm0905.github.io/free-my-projector/">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="es_ES">
+  <meta property="og:title" content="Free My Projector">
+  <meta property="og:description" content="Un inicio rápido y sin anuncios para proyectores Android, diseñado como tvOS.">
+  <meta property="og:url" content="https://carlosm0905.github.io/free-my-projector/es/">
+  <meta property="og:image" content="https://carlosm0905.github.io/free-my-projector/assets/og.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="../assets/logo.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../assets/icon-180.png">
+  <link rel="preload" href="../assets/fonts/InterVariable.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="../assets/logo.svg" alt="">Free My Projector</a>
+    <nav class="nav-links">
+      <a href="#inicio">Inicio</a>
+      <a href="#centro-de-control">Centro de control</a>
+      <a href="#proyector">Proyector</a>
+      <a href="#instalar">Instalar</a>
+      <a href="#preguntas">Preguntas</a>
+    </nav>
+    <a class="lang" href="../" hreflang="en" lang="en">English</a>
+    <a class="btn btn-primary" href="https://github.com/CarlosM0905/free-my-projector/releases/latest">Descargar</a>
+  </div>
+</header>
+
+<main id="top">
+
+  <section class="hero">
+    <div class="wrap">
+      <span class="eyebrow reveal"><span class="dot"></span>Versión <span data-version>1.1.0</span> · Android 9 o superior</span>
+      <h1 class="reveal">Tu proyector, <span class="grad">libre.</span></h1>
+      <p class="lede reveal">Un inicio rápido y sin anuncios para proyectores Android, diseñado como tvOS. Tus apps primero, qué ver esta noche y todos los controles del proyector a un botón.</p>
+      <div class="cta reveal">
+        <a class="btn btn-primary" href="https://github.com/CarlosM0905/free-my-projector/releases/latest">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>
+          Descargar el APK
+        </a>
+        <a class="btn btn-ghost" href="https://github.com/CarlosM0905/free-my-projector">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.4-4-1.4-.6-1.4-1.3-1.8-1.3-1.8-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.7 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .5Z"/></svg>
+          Ver en GitHub
+        </a>
+      </div>
+      <p class="fine reveal">Gratis y de código abierto · Sin cuenta · Sin anuncios · Un botón para volver atrás</p>
+
+      <div class="stage reveal">
+        <div class="beam"></div>
+        <div class="screen">
+          <img class="night" src="../img/home-dark.webp" srcset="../img/home-dark-800.webp 800w, ../img/home-dark.webp 1600w" sizes="(max-width: 1200px) 100vw, 1180px" alt="El inicio de noche: una tarjeta grande de película, dos pósters y el dock de apps" fetchpriority="high">
+          <img class="day off" src="../img/home-light.webp" srcset="../img/home-light-800.webp 800w, ../img/home-light.webp 1600w" sizes="(max-width: 1200px) 100vw, 1180px" alt="El mismo inicio de día, con el tema claro">
+        </div>
+      </div>
+      <div class="daynight" role="group" aria-label="Tema">
+        <button data-mode="night" aria-pressed="true">Noche</button>
+        <button data-mode="day" aria-pressed="false">Día</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker-track">
+      <span>Sin anuncios ni filas patrocinadas</span><span>Se actualiza solo</span><span>Keystone y enfoque</span><span>Letras al ritmo de la canción</span><span>Protector de paisajes</span><span>Claro y oscuro según la hora</span><span>Código abierto, MIT</span><span>Fluido en un proyector de 2 GB</span>
+      <span>Sin anuncios ni filas patrocinadas</span><span>Se actualiza solo</span><span>Keystone y enfoque</span><span>Letras al ritmo de la canción</span><span>Protector de paisajes</span><span>Claro y oscuro según la hora</span><span>Código abierto, MIT</span><span>Fluido en un proyector de 2 GB</span>
+    </div>
+  </div>
+
+  <section class="section" id="inicio">
+    <div class="wrap">
+      <p class="kicker v reveal">El inicio</p>
+      <h2 class="reveal">Qué ver esta noche, en las apps que ya tienes.</h2>
+      <p class="section-lede reveal">Películas y series que de verdad están en tus apps, con su arte y su logo. Un botón las abre justo donde se ven. Nada patrocinado, nada que no hayas instalado.</p>
+
+      <div class="bento">
+        <article class="tile glow reveal" style="--glow: rgba(255,122,182,.28)">
+          <h3>Una ficha para cada título.</h3>
+          <p>Sinopsis, reparto, puntuación y tráiler sobre su propio arte. “Más como esta” te sigue llevando.</p>
+          <div class="shot"><img src="../img/title-800.webp" alt="La ficha de una película con su logo, sinopsis, los botones Ver y Tráiler, y otras parecidas" loading="lazy"></div>
+        </article>
+        <article class="tile glow reveal" style="--glow: rgba(100,210,255,.22)">
+          <h3>Una búsqueda que conoce tus apps.</h3>
+          <p>Escribe unas letras con el control: primero aparecen tus apps y los interruptores del proyector, luego lo que puedes ver.</p>
+          <div class="shot zoom"><img src="../img/search.webp" alt="La búsqueda con un teclado de una fila, con una app como primer resultado" loading="lazy"></div>
+        </article>
+        <article class="tile third reveal">
+          <i class="tile-icon" style="--icon:url(../assets/symbols/play.png)"></i>
+          <h3>A continuación.</h3>
+          <p>Retoma el episodio que dejaste en Disney+ y otras apps, con lo que falta.</p>
+        </article>
+        <article class="tile third reveal">
+          <i class="tile-icon" style="--icon:url(../assets/symbols/dice.png)"></i>
+          <h3>¿Qué veo hoy?</h3>
+          <p>Un botón tira los dados y elige una película o serie de tus propias apps.</p>
+        </article>
+        <article class="tile third reveal">
+          <i class="tile-icon" style="--icon:url(../assets/symbols/sunny.png)"></i>
+          <h3>Día y noche.</h3>
+          <p>Claro de día y oscuro de noche, según la salida y la puesta del sol en tu ciudad.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="centro-de-control">
+    <div class="wrap">
+      <p class="kicker c reveal">Centro de control</p>
+      <h2 class="reveal">Un botón. Todo lo demás.</h2>
+      <p class="section-lede reveal">Pulsa el botón de menú del control en cualquier parte del inicio. Entradas, imagen, sonido, la lámpara y el apagado están ahí, y debajo una fila de widgets que se recorre como en tvOS.</p>
+
+      <div class="cc reveal">
+        <div class="shot">
+          <img src="../img/control-center.webp" alt="El Centro de control: el dock de apps, una fila de atajos del proyector y las tarjetas de clima, Wi-Fi y proyector" loading="lazy">
+          <img src="../img/widgets.webp" alt="La fila de widgets: calidad del aire, sol y luna, calendario con el próximo feriado y un temporizador" loading="lazy" style="opacity:0">
+          <img src="../img/control-center-dark.webp" alt="El Centro de control de noche, con el tema oscuro" loading="lazy" style="opacity:0">
+        </div>
+        <div class="cc-dots" role="group" aria-label="Vistas del Centro de control">
+          <button aria-label="Atajos"></button><button aria-label="Widgets"></button><button aria-label="De noche"></button>
+        </div>
+      </div>
+
+      <div class="chips reveal">
+        <span class="chip"><i style="--icon:url(../assets/symbols/sunny.png)"></i>Clima por hora</span>
+        <span class="chip"><i style="--icon:url(../assets/symbols/wifi.png)"></i>Velocidad y datos del Wi-Fi</span>
+        <span class="chip"><i style="--icon:url(../assets/symbols/thermometer.png)"></i>Temperatura y ventilador</span>
+        <span class="chip"><i style="--icon:url(../assets/symbols/sparkles.png)"></i>Calidad del aire y UV</span>
+        <span class="chip"><i style="--icon:url(../assets/symbols/bedtime.png)"></i>Sol y luna</span>
+        <span class="chip"><i style="--icon:url(../assets/symbols/bell.png)"></i>Calendario y feriados</span>
+        <span class="chip"><i style="--icon:url(../assets/symbols/tv.png)"></i>Tiempo de uso</span>
+        <span class="chip"><i style="--icon:url(../assets/symbols/bell.png)"></i>Temporizador rápido</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="proyector">
+    <div class="wrap">
+      <p class="kicker a reveal">Hecho para proyectores</p>
+      <h2 class="reveal">Los controles que tu proyector escondía en menús.</h2>
+      <p class="section-lede reveal">Hecho sobre un Wanbo T6 Max y probado en él todos los días. En otros proyectores Android, lo que el hardware no permite simplemente no aparece.</p>
+
+      <div class="feats">
+        <div class="feat reveal" style="--c:#b49bff"><i style="--icon:url(../assets/symbols/tv.png)"></i><h3>Keystone</h3><p>Endereza la imagen desde el sillón.</p></div>
+        <div class="feat reveal" style="--c:#64d2ff"><i style="--icon:url(../assets/symbols/focus.png)"></i><h3>Asistente de pantalla</h3><p>Enfoque, forma y brillo en tres pasos.</p></div>
+        <div class="feat reveal" style="--c:#ffc266"><i style="--icon:url(../assets/symbols/sunny.png)"></i><h3>Lámpara Eco y Noche</h3><p>Menos brillo, menos calor y menos ruido para las pelis tarde.</p></div>
+        <div class="feat reveal" style="--c:#ff7ab6"><i style="--icon:url(../assets/symbols/music.png)"></i><h3>Solo audio</h3><p>Lámpara apagada, música encendida. Cualquier botón trae la imagen.</p></div>
+        <div class="feat reveal" style="--c:#ff9f0a"><i style="--icon:url(../assets/symbols/movie.png)"></i><h3>Escenas</h3><p>Cine, Deportes o Música: imagen y sonido de una vez.</p></div>
+        <div class="feat reveal" style="--c:#30d158"><i style="--icon:url(../assets/symbols/sync.png)"></i><h3>Hz automático</h3><p>El panel sigue los cuadros por segundo del video. Sin tirones.</p></div>
+        <div class="feat reveal" style="--c:#64d2ff"><i style="--icon:url(../assets/symbols/voice.png)"></i><h3>Diálogos claros</h3><p>Voces arriba, explosiones abajo, para las noches tranquilas.</p></div>
+        <div class="feat reveal" style="--c:#bf5af2"><i style="--icon:url(../assets/symbols/bedtime.png)"></i><h3>Hora de dormir</h3><p>A tu hora, un panel discreto ofrece apagar en 30 minutos.</p></div>
+        <div class="feat reveal" style="--c:#ff453a"><i style="--icon:url(../assets/symbols/thermometer.png)"></i><h3>Vigila el calor</h3><p>Avisa antes de que se caliente demasiado, y cuenta las horas de lámpara.</p></div>
+        <div class="feat reveal" style="--c:#b49bff"><i style="--icon:url(../assets/symbols/memory.png)"></i><h3>Memoria</h3><p>La memoria libre de un vistazo; púlsalo para cerrar lo inactivo.</p></div>
+        <div class="feat reveal" style="--c:#ffc266"><i style="--icon:url(../assets/symbols/storage.png)"></i><h3>Almacenamiento</h3><p>Limpia solo la caché de las apps y te dice cuánto liberó.</p></div>
+        <div class="feat reveal" style="--c:#0a84ff"><i style="--icon:url(../assets/symbols/bluetooth.png)"></i><h3>Bluetooth</h3><p>Tu parlante y su batería, iluminado mientras está conectado.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section lyrics-sec">
+    <div class="wrap">
+      <div class="split">
+        <div>
+          <p class="kicker p reveal">Letras</p>
+          <h2 class="reveal">Canta lo que esté sonando.</h2>
+          <p class="section-lede reveal">Spotify, YouTube Music o cualquier reproductor: la letra aparece línea por línea al ritmo de la canción, grande para toda la sala. Gratis, sin cuenta y guardada para la próxima.</p>
+        </div>
+        <div class="shot reveal"><img src="../img/lyrics-800.webp" srcset="../img/lyrics-800.webp 800w, ../img/lyrics.webp 1600w" sizes="(max-width: 900px) 100vw, 640px" alt="La letra de una canción tradicional en líneas grandes blancas sobre negro" loading="lazy"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <p class="kicker v reveal">Protector de pantalla</p>
+      <h2 class="reveal">Cuando pausas, la pared se vuelve ventana.</h2>
+      <p class="section-lede reveal">Un paisaje por minuto, con la hora, el clima y lo que suena, como los fondos aéreos del Apple TV. O busca fotos libres y elige las tuyas.</p>
+      <div class="shot big-shot reveal"><img src="../img/screensaver.webp" srcset="../img/screensaver-800.webp 800w, ../img/screensaver.webp 1600w" sizes="(max-width: 1200px) 100vw, 1180px" alt="El protector: una montaña nevada con la hora, la fecha y el clima" loading="lazy"></div>
+      <div class="bento">
+        <article class="tile reveal">
+          <h3>Tus propios fondos.</h3>
+          <p>Busca fotos destacadas de Wikimedia Commons con el control y guarda las que te gusten.</p>
+          <div class="shot"><img src="../img/backgrounds-800.webp" alt="El buscador de fondos: sugerencias sobre una cuadrícula de fotos de playa" loading="lazy"></div>
+        </article>
+        <article class="tile reveal">
+          <h3>Novedades tras cada actualización.</h3>
+          <p>Se actualiza solo desde GitHub, revisa la firma y te cuenta qué cambió.</p>
+          <div class="shot"><img src="../img/whats-new-800.webp" alt="La hoja de Novedades con los cambios de la versión" loading="lazy"></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap center">
+      <p class="kicker c reveal">Dos diseños</p>
+      <h2 class="reveal">Vidrio y pósters, o una lista tranquila.</h2>
+      <p class="section-lede reveal">El diseño clásico muestra arte grande. El diseño ligero es una lista de nombres sobre un paisaje que se mueve despacio: el más fluido en hardware modesto. Arrastra para comparar.</p>
+      <div class="compare reveal" tabindex="0" role="slider" aria-label="Comparar los dos diseños" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50">
+        <img src="../img/home-dark.webp" alt="Diseño clásico" loading="lazy">
+        <img class="after" src="../img/light-design.webp" alt="Diseño ligero" loading="lazy">
+        <div class="handle"></div>
+        <span class="tag l">Clásico</span><span class="tag r">Ligero</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="instalar">
+    <div class="wrap">
+      <p class="kicker a reveal">Instalar</p>
+      <h2 class="reveal">Diez minutos y una computadora.</h2>
+      <p class="section-lede reveal">Necesitas una computadora en el mismo Wi-Fi que el proyector, con <a href="https://developer.android.com/tools/releases/platform-tools" style="text-decoration:underline">adb</a>, y la depuración por red activada en el proyector (los Wanbo la traen abierta en el puerto 3333).</p>
+      <div class="steps">
+        <div class="step reveal">
+          <h3>Descarga</h3>
+          <p>Baja <code>FreeMyTV.apk</code> de la última versión en GitHub.</p>
+          <a class="btn btn-ghost" style="margin-top:18px" href="https://github.com/CarlosM0905/free-my-projector/releases/latest">Última versión</a>
+        </div>
+        <div class="step reveal">
+          <h3>Instala</h3>
+          <p>Conéctate al proyector e instala. Usa la dirección de tu proyector.</p>
+          <div class="code"><pre>adb connect 192.168.1.50:3333
+adb install -r FreeMyTV.apk</pre><button type="button" data-done="Copiado">Copiar</button></div>
+        </div>
+        <div class="step reveal">
+          <h3>Cambia</h3>
+          <p>En el proyector abre <b>Free My Projector → Inicio → Free My Projector</b>, espera un minuto y pulsa Inicio. Pon tu ciudad y una clave gratis de TMDB en Preferencias.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="preguntas">
+    <div class="wrap">
+      <p class="kicker v reveal">Preguntas</p>
+      <h2 class="reveal">Buenas preguntas.</h2>
+      <div class="faq reveal">
+        <details><summary>¿En qué proyectores funciona?</summary><p>Android 9 o superior, con depuración por red. Está hecho y probado en un Wanbo T6 Max (Amlogic T972); el keystone, el enfoque, la lámpara y el ventilador usan ese hardware y simplemente no aparecen donde no pueden funcionar. El inicio, el Centro de control, las letras y el protector funcionan en cualquier equipo Android TV.</p></details>
+        <details><summary>¿Necesito root?</summary><p>No. Usa la propia depuración por red del proyector, la misma con la que lo instalaste, para cambiar el inicio y llegar a algunos ajustes.</p></details>
+        <details><summary>¿Cómo vuelvo al inicio original?</summary><p>Abre Free My Projector → Inicio → Original. Tu inicio, protector y apps vuelven como estaban. Si el nuevo inicio se cierra tres veces en cinco minutos, vuelve solo.</p></details>
+        <details><summary>¿Por qué pide una clave de TMDB?</summary><p>Las recomendaciones, el arte y las fichas vienen de The Movie Database. Una clave personal es gratis y toma dos minutos; sin ella igual tienes el inicio, un reloj grande y todo lo demás.</p></details>
+        <details><summary>¿Recoge algún dato?</summary><p>Sin cuenta y sin analíticas. Habla con TMDB, Open-Meteo (clima y aire), Wikimedia Commons (fondos), lrclib (letras) y GitHub (actualizaciones), y nada más.</p></details>
+        <details><summary>¿Cómo se actualiza?</summary><p>Una vez al día revisa la última versión de este proyecto en GitHub y la instala solo si es más nueva y está firmada con la misma clave. Después de actualizar, una hoja te muestra las novedades.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="final">
+    <div class="wrap">
+      <img class="icon reveal" src="../assets/logo.svg" alt="">
+      <h2 class="reveal">La noche de cine, <span class="grad">mejorada.</span></h2>
+      <div class="cta reveal">
+        <a class="btn btn-primary" href="https://github.com/CarlosM0905/free-my-projector/releases/latest">Descargar el APK</a>
+        <a class="btn btn-ghost" href="https://github.com/CarlosM0905/free-my-projector">Código fuente</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Free My Projector · Licencia MIT · Un fork de <a href="https://github.com/simbasjungles/free-my-tv">Free My TV</a> de simbasjungles.</span>
+    <nav>
+      <a href="https://github.com/CarlosM0905/free-my-projector">GitHub</a>
+      <a href="https://github.com/CarlosM0905/free-my-projector/releases">Versiones</a>
+      <a href="https://github.com/CarlosM0905/free-my-projector/issues">Reportar un problema</a>
+      <a href="../" hreflang="en" lang="en">English</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="../app.js" defer></script>
+</body>
+</html>

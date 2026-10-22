@@ -1,10 +1,10 @@
 <div align="center">
 
-<img src="docs/assets/icon-512.png" width="96" alt="">
+<img src="docs/assets/logo.svg" width="96" alt="">
 
 # Free My Projector
 
-**English** · [Español](README.es.md)
+**[Website](https://carlosm0905.github.io/free-my-projector/)** · **English** · [Español](README.es.md)
 
 **A fast, ad-free home screen for projectors running Android 9 or later.**
 
