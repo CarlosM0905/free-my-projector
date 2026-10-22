@@ -240,15 +240,25 @@ public final class Lyrics extends Activity {
             final int mine = ++serial;
             final Context app = getContext().getApplicationContext();
             io.execute(() -> {
-                Words w;
-                int result;
-                try {
-                    w = load(app, t);
-                    result = w == null ? NONE : READY;
-                } catch (Exception e) {
-                    AppLog.w("lyrics: " + e.getMessage());
-                    w = null;
-                    result = FAILED;
+                Words w = null;
+                int result = FAILED;
+                // lrclib.net is often busy for a moment (HTTP 503): a few tries, a little further apart each time.
+                for (int attempt = 0; ; attempt++) {
+                    try {
+                        w = load(app, t);
+                        result = w == null ? NONE : READY;
+                        break;
+                    } catch (Exception e) {
+                        if (attempt >= 3 || mine != serial) {
+                            AppLog.w("lyrics: " + e.getMessage());
+                            break;
+                        }
+                        try {
+                            Thread.sleep(3000L * (attempt + 1));
+                        } catch (InterruptedException stop) {
+                            return;   // the screen closed
+                        }
+                    }
                 }
                 final Words found = w;
                 final int done = result;
@@ -355,7 +365,7 @@ public final class Lyrics extends Activity {
                 float top = base + tops[i];
                 if (top > getHeight() || top + layouts[i].getHeight() < 170 * k) continue;
                 int alpha = !timed ? 0xD9 : i == current ? 0xFF : i < current ? 0x40 : 0x59;
-                line.setAlpha(alpha);
+                line.setAlpha((int) (alpha * Ui.clamp((top - 170 * k) / (90 * k))));   // fades out under the song's name
                 c.save();
                 c.translate(x, top);
                 layouts[i].draw(c);
