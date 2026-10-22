@@ -10,7 +10,9 @@ import android.widget.Toast;
 /**
  * Free My Projector: once a minute, in the home's process (alive for Now Playing even while other apps play):
  * - a notice when the processor runs hot (the projector throttles and video stutters; usually a blocked vent),
- * - the lamp's hours of use (picture on and lamp on), shown on the Control Center's projector card.
+ * - the lamp's hours of use (picture on and lamp on), shown on the Control Center's projector card, and a reminder to
+ *   clean the vents and the filter every 500 of them (dust is what makes these projectors run hot),
+ * - the free memory on the Control Center's Memory tile.
  */
 final class Heat {
     private Heat() {}
@@ -25,6 +27,7 @@ final class Heat {
         if (handler != null || !new java.io.File(SOC).canRead()) return;
         final Context app = c.getApplicationContext();
         handler = new Handler(Looper.getMainLooper());
+        Projector.updateMemory();
         handler.postDelayed(new Runnable() {
             @Override public void run() {
                 tick(app);
@@ -35,13 +38,22 @@ final class Heat {
 
     private static void tick(Context c) {
         NetStats.count(c);   // today's data, even while the screen is off
+        Projector.updateMemory();
         PowerManager pm = (PowerManager) c.getSystemService(Context.POWER_SERVICE);
         if (pm == null || !pm.isInteractive()) return;
         if (!Lamp.mode(c).equals("normal")) Lamp.enforce(c);
         endSleep(c);   // Wanbo rewrites the lamp when the temperature changes band
         if (lampOn()) {
             SharedPreferences p = prefs(c);
-            p.edit().putLong("lampMs", p.getLong("lampMs", 0) + EVERY).apply();
+            long lamp = p.getLong("lampMs", 0) + EVERY;
+            p.edit().putLong("lampMs", lamp).apply();
+            if (lamp - p.getLong("cleanedAt", 0) >= CLEAN_EVERY) {
+                p.edit().putLong("cleanedAt", lamp).apply();   // once: the next one in another 500 hours
+                Toast.makeText(c, String.format(java.util.Locale.ROOT, Ui.tr(
+                        "%d horas de lâmpada: limpe as saídas de ar e o filtro de pó (projetor desligado e frio).",
+                        "%d lamp hours: clean the vents and the dust filter (with the projector off and cool)."),
+                        lamp / 3600_000L), Toast.LENGTH_LONG).show();
+            }
         }
         int t = temperature();
         long now = System.currentTimeMillis();
@@ -54,6 +66,7 @@ final class Heat {
     }
 
     static final long END_IDLE = 3 * 60_000L;
+    private static final long CLEAN_EVERY = 500 * 3600_000L;
 
     /**
      * "When it ends" (Control Center): once something has played, three minutes with nothing playing put the projector

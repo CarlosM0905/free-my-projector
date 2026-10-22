@@ -195,7 +195,16 @@ final class Es {
         t("New on %s", "Nuevo el %s");
         t("The projector is running hot (%d °C). Make sure its vents aren't blocked.",
                 "El proyector está muy caliente (%d °C). Revisa que las rejillas de ventilación estén libres.");
-        t("Cinema mode", "Modo cine");
+        t("Scene", "Escena");
+        t("Cinema", "Cine");
+        t("Sports", "Deportes");
+        t("Music", "Música");
+        t("Memory", "Memoria");
+        t("%d MB free", "%d MB libres");
+        t("%d MB freed · %d MB free", "%d MB liberados · %d MB libres");
+        t("Couldn't free the memory.", "No se pudo liberar la memoria.");
+        t("%d lamp hours: clean the vents and the dust filter (with the projector off and cool).",
+                "%d horas de lámpara: limpia las rejillas y el filtro de polvo (con el proyector apagado y frío).");
         t("The lamp turns off and the music keeps playing. Any button brings the picture back.",
                 "La lámpara se apaga y la música sigue. Cualquier botón trae la imagen de vuelta.");
         t("Test pattern", "Patrón de prueba");

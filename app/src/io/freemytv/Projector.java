@@ -30,6 +30,9 @@ final class Projector {
         {"Só áudio", "Audio only", "music", "io.freemytv/.AudioOnly"},
     };
 
+    /** Free memory: closes the apps waiting in the background (not a switch; the tile shows the free memory). */
+    static final String RAM = "toggle:ram";
+
     /**
      * Control Center switches (like tvOS's Match Content, Enhance Dialogue and Reduce Loud Sounds): the frame rate
      * follows the video (AFR, from the Wanbo ROM's wanbo-tweaks), dialog clarity and the volume leveler (Amlogic's
@@ -39,11 +42,13 @@ final class Projector {
         {"Hz automático", "Match frame rate", "sync", "toggle:afr"},
         {"Diálogos", "Enhance dialogue", "voice", "toggle:dialogo"},
         {"Volume uniforme", "Reduce loud sounds", "leveler", "toggle:agc"},
-        {"Modo cinema", "Cinema mode", "movie", "toggle:cine"},
+        {"Cena", "Scene", "movie", "toggle:cine"},
         {"Lâmpada", "Lamp", "sunny", "toggle:lamp"},
         {"Ao terminar", "When it ends", "bedtime", "toggle:fin"},
+        {"Memória", "Memory", "memory", RAM},
     };
     private static final String SOUND = BRIDGE + ".SONIDO";
+    private static volatile long freeMb = -1;
     private static final String AFR_OFF = "/data/local/tmp/afr.off";
     private static volatile Boolean afrOn;   // read once through the TV's own ADB (the file isn't readable by apps)
     private static final java.util.Map<String, long[]> OPTIMISTIC = new java.util.HashMap<>();   // key → {on, until}
@@ -61,7 +66,7 @@ final class Projector {
         if (!hasStatus()) return out;   // the switches are the Wanbo ROM's (AFR) and its helper's (sound)
         boolean sound = !c.getPackageManager().queryBroadcastReceivers(new Intent(SOUND).setPackage(BRIDGE), 0).isEmpty();
         for (String[] d : TOGGLES) {
-            if (d[3].equals("toggle:fin")) {   // needs nothing from the ROM: only the media sessions
+            if (d[3].equals("toggle:fin") || d[3].equals(RAM)) {   // need nothing from the ROM
                 out.add(HomeApps.action(HomeApps.PROJECTOR, d[3], Ui.tr(d[0], d[1]), d[2]));
                 continue;
             }
@@ -93,10 +98,12 @@ final class Projector {
                 return afrOn == null || afrOn;
             case "toggle:fin":
                 return Heat.endSleepOn(c);
+            case RAM:
+                return false;
             case "toggle:lamp":
                 return !Lamp.mode(c).equals("normal");
             case "toggle:cine":
-                return prefs(c).getBoolean("cine", false);
+                return !scene(c).equals("off");
             case "toggle:dialogo":
                 return android.provider.Settings.Global.getInt(cr, "fmp_dialogo", 0) > 0;
             case "toggle:agc":
@@ -114,6 +121,10 @@ final class Projector {
             Lamp.next(app);
             return;
         }
+        if (key.equals(RAM)) {
+            freeMemory(app);
+            return;
+        }
         final boolean on = !isOn(app, key);
         synchronized (OPTIMISTIC) {
             OPTIMISTIC.put(key, new long[] {on ? 1 : 0, System.currentTimeMillis() + 5000});
@@ -121,7 +132,11 @@ final class Projector {
         if (key.equals("toggle:fin")) {
             Heat.setEndSleep(app, on);
         } else if (key.equals("toggle:cine")) {
-            cinema(app, on);
+            String next = SCENES[(java.util.Arrays.asList(SCENES).indexOf(scene(app)) + 1) % SCENES.length];
+            synchronized (OPTIMISTIC) {
+                OPTIMISTIC.put(key, new long[] {next.equals("off") ? 0 : 1, System.currentTimeMillis() + 5000});
+            }
+            scene(app, next);
         } else if (key.equals("toggle:afr")) {
             afrOn = on;
             new Thread(() -> {
@@ -139,22 +154,40 @@ final class Projector {
     }
 
     /**
-     * Cinema mode, one button for a movie (like a tvOS Focus): frame rate follows the video, clearer dialogue, and the
-     * loudness leveler off (it flattens the soundtrack). Turning it off puts back what was on before.
+     * Scenes, one button (like a tvOS Focus), pressed again for the next: Cinema (the frame rate follows the video,
+     * clearer dialogue, the loudness leveler off: it flattens the soundtrack), Sports (the frame rate follows the video,
+     * the leveler on for the crowd and the ads), Music (no dialogue boost, no leveler) and back to off, which puts back
+     * what was on before the first scene. {afr, dialogue, leveler}: 1 on, 0 off, -1 as it was.
      */
-    private static void cinema(Context app, boolean on) {
+    private static final String[] SCENES = {"off", "cine", "sport", "music"};
+    private static final int[][] SCENE_SET = {{-1, -1, -1}, {1, 1, 0}, {1, 0, 1}, {-1, 0, 0}};
+    private static final String[] SCENE_KEYS = {"toggle:afr", "toggle:dialogo", "toggle:agc"};
+
+    static String scene(Context c) {
+        android.content.SharedPreferences p = prefs(c);
+        return p.getString("scene", p.getBoolean("cine", false) ? "cine" : "off");   // "cine": before scenes
+    }
+
+    private static void scene(Context app, String next) {
         android.content.SharedPreferences p = prefs(app);
-        String[] keys = {"toggle:afr", "toggle:dialogo", "toggle:agc"};
-        boolean[] want = {true, true, false};
-        if (on) {
-            android.content.SharedPreferences.Editor e = p.edit().putBoolean("cine", true);
-            for (String k : keys) e.putBoolean("before:" + k, isOn(app, k));
-            e.apply();
-        } else {
-            p.edit().putBoolean("cine", false).apply();
-            for (int i = 0; i < keys.length; i++) want[i] = p.getBoolean("before:" + keys[i], want[i]);
+        android.content.SharedPreferences.Editor e = p.edit().putString("scene", next).remove("cine");
+        if (scene(app).equals("off")) for (String k : SCENE_KEYS) e.putBoolean("before:" + k, isOn(app, k));
+        e.apply();
+        int[] set = SCENE_SET[Math.max(0, java.util.Arrays.asList(SCENES).indexOf(next))];
+        for (int i = 0; i < SCENE_KEYS.length; i++) {
+            boolean want = next.equals("off") ? p.getBoolean("before:" + SCENE_KEYS[i], isOn(app, SCENE_KEYS[i]))
+                    : set[i] < 0 ? isOn(app, SCENE_KEYS[i]) : set[i] == 1;
+            if (isOn(app, SCENE_KEYS[i]) != want) toggle(app, SCENE_KEYS[i]);
         }
-        for (int i = 0; i < keys.length; i++) if (isOn(app, keys[i]) != want[i]) toggle(app, keys[i]);
+    }
+
+    static String sceneLabel(Context c, String fallback) {
+        switch (scene(c)) {
+            case "cine": return Ui.tr("Cinema", "Cinema");
+            case "sport": return Ui.tr("Esportes", "Sports");
+            case "music": return Ui.tr("Música", "Music");
+            default: return fallback;
+        }
     }
 
     private static android.content.SharedPreferences prefs(Context c) {
@@ -176,6 +209,11 @@ final class Projector {
     /** The sleep timer's tile shows how long is left ("42 min") while it runs (Puente publishes the time). */
     static String label(Context c, HomeApps.Item it) {
         if (it.key.equals("toggle:lamp")) return Lamp.label(c);   // "Eco" / "Noche" while dimmed
+        if (it.key.equals("toggle:cine")) return sceneLabel(c, it.label);   // the scene that's on
+        if (it.key.equals(RAM)) {
+            long mb = freeMb;
+            return mb > 0 ? Ui.tr(mb + " MB livres", mb + " MB free") : it.label;
+        }
         if (!it.key.equals(TIMER)) return it.label;
         long at = android.provider.Settings.Global.getLong(c.getContentResolver(), "fmp_apagado", 0);
         long left = at - System.currentTimeMillis();
@@ -204,6 +242,51 @@ final class Projector {
 
     private static ComponentName component(String flat) {
         return ComponentName.unflattenFromString(flat);
+    }
+
+    // MARK: - Memory
+
+    /** MemAvailable in MB (what apps can still get without the system closing others), or -1. */
+    static long availableMb() {
+        try (java.io.BufferedReader r = new java.io.BufferedReader(new java.io.FileReader("/proc/meminfo"))) {
+            for (String line; (line = r.readLine()) != null; ) {
+                if (line.startsWith("MemAvailable:")) return Long.parseLong(line.replaceAll("[^0-9]", "")) / 1024;
+            }
+        } catch (Exception ignored) {
+        }
+        return -1;
+    }
+
+    /** Once a minute (Heat): the Memory tile's number. */
+    static void updateMemory() {
+        freeMb = availableMb();
+    }
+
+    /**
+     * Closes the apps the system keeps cached in the background (am kill-all: only processes that are safe to close;
+     * the app in front, the music playing and the system stay). Nothing is uninstalled or cleared: they open again
+     * from scratch. A notice says how much was freed.
+     */
+    private static void freeMemory(Context app) {
+        final android.os.Handler main = new android.os.Handler(android.os.Looper.getMainLooper());
+        new Thread(() -> {
+            long before = availableMb();
+            String text;
+            try (Adb adb = Adb.connect(app, 5000, null)) {
+                adb.shell("am kill-all");
+                Thread.sleep(1500);   // the memory comes back as the processes exit
+                long after = availableMb();
+                freeMb = after;
+                long gained = Math.max(0, after - before);
+                text = String.format(java.util.Locale.ROOT, Ui.tr("%d MB liberados · %d MB livres", "%d MB freed · %d MB free"),
+                        gained, after);
+            } catch (Exception e) {
+                AppLog.w("free memory: " + e.getMessage());
+                text = Ui.tr("Não foi possível liberar a memória.", "Couldn't free the memory.");
+            }
+            final String shown = text;
+            main.post(() -> android.widget.Toast.makeText(app, shown, android.widget.Toast.LENGTH_LONG).show());
+        }, "free-memory").start();
     }
 
     // MARK: - Status card (drawer): processor temperature, fan, lamp and panel refresh rate

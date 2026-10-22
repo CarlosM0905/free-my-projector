@@ -19,7 +19,7 @@ MAP = {
     "chevron_down": ("keyboard_arrow_down", 0), "sunrise": ("wb_twilight", 1), "sunset": ("wb_twilight", 1),
     "live_tv": ("live_tv", 1), "bitcoin": ("currency_bitcoin", 0),
     "voice": ("record_voice_over", 1), "leveler": ("graphic_eq", 0),
-    "wifi": ("wifi", 0),
+    "wifi": ("wifi", 0), "memory": ("memory", 1),
 }
 
 
