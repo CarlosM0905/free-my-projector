@@ -196,10 +196,11 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
     private final RectF weatherCard = new RectF(), quotesCard = new RectF(), projectorCard = new RectF();
     // Free My Projector: the Control Center's widgets, a row that scrolls with ← → like tvOS's (the first three fill
     // the width, as the cards did); a focused widget grows a little and gets a rim.
-    private static final int W_WEATHER = 0, W_WIFI = 1, W_PROJECTOR = 2, W_AIR = 3, W_SKY = 4, W_CALENDAR = 5, W_TIMER = 6;
+    private static final int W_WEATHER = 0, W_WIFI = 1, W_PROJECTOR = 2, W_AIR = 3, W_SKY = 4, W_CALENDAR = 5, W_TIMER = 6,
+            W_USAGE = 7;
     private int[] widgets = {};
-    private final RectF[] widgetRects = new RectF[7];
-    private final Spring[] widgetFocus = new Spring[7];
+    private final RectF[] widgetRects = new RectF[8];
+    private final Spring[] widgetFocus = new Spring[8];
     private final Spring widgetScroll = new Spring(0.32f, 0.9f, 0);
     private int widgetIndex;
     private float widgetsLeft, widgetsRight;
@@ -1408,8 +1409,8 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
             x += tw + gap;
         }
         drawerClipR = right;
-        widgets = projectorStatus ? new int[] {W_WEATHER, W_WIFI, W_PROJECTOR, W_AIR, W_SKY, W_CALENDAR, W_TIMER}
-                : new int[] {W_WEATHER, W_WIFI, W_AIR, W_SKY, W_CALENDAR, W_TIMER};
+        widgets = projectorStatus ? new int[] {W_WEATHER, W_WIFI, W_PROJECTOR, W_USAGE, W_AIR, W_SKY, W_CALENDAR, W_TIMER}
+                : new int[] {W_WEATHER, W_WIFI, W_USAGE, W_AIR, W_SKY, W_CALENDAR, W_TIMER};
         widgetIndex = Math.min(widgetIndex, widgets.length - 1);
         widgetsLeft = left;
         widgetsRight = right;
@@ -1507,6 +1508,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         Network.refresh(getContext(), () -> post(() -> drawerDirty = true));
         NetStats.testIfOld(getContext(), () -> post(() -> drawerDirty = true));
         Widgets.refresh(getContext(), () -> post(() -> drawerDirty = true));
+        Usage.refresh(getContext(), () -> post(() -> drawerDirty = true));
         if (drawerItems.isEmpty()) return;
         drawerOpen = true;
         drawer.target = 1;
@@ -1608,6 +1610,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
             case W_AIR: drawAirCard(c, r); break;
             case W_SKY: drawSkyCard(c, r); break;
             case W_CALENDAR: drawCalendarCard(c, r); break;
+            case W_USAGE: drawUsageCard(c, r); break;
             default: drawTimerCard(c, r); break;
         }
     }
@@ -1762,6 +1765,41 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         c.drawRoundRect(x, by, x + (right - x) * Ui.clamp(1 - done), by + bh, bh / 2, bh / 2, fill);
         c.drawText(Ui.tr("Termina às ", "Ends at ") + Ui.time(end), x, r.top + 240 * k, cardText);
         c.drawText(Ui.tr("OK: mais tempo ou parar", "OK: more time or stop"), x, r.top + 272 * k, cardDim);
+    }
+
+    /** Free My Projector: Screen Time, the three apps used most this week (with bars) and today's total. */
+    private void drawUsageCard(Canvas c, RectF r) {
+        drawerCard(c, r);
+        float x = r.left + 34 * k, right = r.right - 34 * k;
+        c.drawText(Ui.tr("Tempo de uso", "Screen Time"), x, r.top + 54 * k, cardTitle);
+        long today = Usage.todayMs;
+        List<Usage.App> week = Usage.week;
+        if (today < 0) {
+            c.drawText(Ui.tr("Preparando…", "Getting ready…"), x, r.top + 120 * k, cardDim);
+            return;
+        }
+        c.drawText(Ui.tr("Hoje ", "Today ") + Usage.duration(today), right, r.top + 54 * k, cardDimRight);
+        if (week.isEmpty()) {
+            c.drawText(Ui.tr("Nada esta semana.", "Nothing this week."), x, r.top + 120 * k, cardDim);
+            return;
+        }
+        long most = Math.max(1, week.get(0).ms);
+        fill.setShader(null);
+        for (int i = 0; i < week.size() && i < 3; i++) {
+            Usage.App a = week.get(i);
+            float base = r.top + (104 + 48 * i) * k;
+            String time = Usage.duration(a.ms);
+            float tw = pricePaint.measureText(time);
+            c.drawText(TextUtils.ellipsize(a.label, new TextPaint(cardText), right - x - tw - 16 * k, TextUtils.TruncateAt.END)
+                    .toString(), x, base, cardText);
+            c.drawText(time, right, base, pricePaint);
+            float by = base + 10 * k, bh = 6 * k;
+            fill.setColor(drawerInk(0.12f));
+            c.drawRoundRect(x, by, right, by + bh, bh / 2, bh / 2, fill);
+            fill.setColor(ACCENT);
+            c.drawRoundRect(x, by, x + (right - x) * a.ms / most, by + bh, bh / 2, bh / 2, fill);
+        }
+        c.drawText(Ui.tr("Últimos 7 dias", "Last 7 days"), x, r.top + 268 * k, cardDim);
     }
 
     /** Free My Projector: processor temperature, fan, lamp and the panel's refresh rate (it follows AFR). */

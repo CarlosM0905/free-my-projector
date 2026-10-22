@@ -212,6 +212,10 @@ final class Es {
         t("Never", "Nunca");
         t("After %d h", "Tras %d h");
         t("Bedtime", "Hora de dormir");
+        t("Screen Time", "Tiempo de uso");
+        t("Getting ready…", "Preparando…");
+        t("Nothing this week.", "Nada esta semana.");
+        t("Last 7 days", "Últimos 7 días");
         t("It's %s", "Son las %s");
         t("Time for bed", "Hora de dormir");
         t("OK: sleep in 30 min", "OK: dormir en 30 min");
