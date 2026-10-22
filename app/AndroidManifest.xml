@@ -108,6 +108,15 @@
             android:screenOrientation="landscape"
             android:theme="@style/FreeMyTV.Overlay" />
 
+        <!-- Free My Projector: the lyrics of the song playing, in time with it. -->
+        <activity
+            android:name=".Lyrics"
+            android:process=":home"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:screenOrientation="landscape"
+            android:theme="@style/FreeMyTV.Home" />
+
         <!-- Free My Projector: bedtime, shown over whatever is playing at the time chosen in Preferences. -->
         <activity
             android:name=".Bedtime"

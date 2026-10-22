@@ -20,6 +20,7 @@ MAP = {
     "live_tv": ("live_tv", 1), "bitcoin": ("currency_bitcoin", 0),
     "voice": ("record_voice_over", 1), "leveler": ("graphic_eq", 0),
     "wifi": ("wifi", 0), "memory": ("memory", 1),
+    "storage": ("hard_drive", 1), "bluetooth": ("bluetooth", 0), "lyrics": ("lyrics", 1),
 }
 
 

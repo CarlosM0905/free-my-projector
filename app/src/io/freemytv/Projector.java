@@ -28,6 +28,7 @@ final class Projector {
         {"Efeitos de som", "Sound effects", "speaker", "bridge:com.droidlogic.tv.settings/.tvoption.TvOptionActivity"},
         {"Timer para desligar", "Sleep timer", "bedtime", TIMER},
         {"Só áudio", "Audio only", "music", "io.freemytv/.AudioOnly"},
+        {"Letra", "Lyrics", "lyrics", "io.freemytv/.Lyrics"},
     };
 
     /** Free memory: closes the apps waiting in the background (not a switch; the tile shows the free memory). */

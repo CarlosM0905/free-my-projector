@@ -216,6 +216,11 @@ final class Es {
         t("Getting ready…", "Preparando…");
         t("Nothing this week.", "Nada esta semana.");
         t("Last 7 days", "Últimos 7 días");
+        t("Lyrics", "Letra");
+        t("Nothing playing right now.", "No suena nada ahora.");
+        t("Looking for the lyrics…", "Buscando la letra…");
+        t("No lyrics for this song.", "Sin letra para esta canción.");
+        t("Couldn't get the lyrics.", "No se pudo traer la letra.");
         t("It's %s", "Son las %s");
         t("Time for bed", "Hora de dormir");
         t("OK: sleep in 30 min", "OK: dormir en 30 min");

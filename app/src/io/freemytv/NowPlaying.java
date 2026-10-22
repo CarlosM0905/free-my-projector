@@ -30,6 +30,16 @@ final class NowPlaying {
 
     static final class Track {
         String title, artist;
+        long duration = -1;          // ms, or -1
+        long position = -1;          // ms at `updatedAt` (SystemClock.elapsedRealtime), or -1
+        long updatedAt;
+        float speed = 1;
+
+        /** Where the song is now (it moves on between the app's reports), or -1. */
+        long positionNow() {
+            if (position < 0) return -1;
+            return position + (long) ((android.os.SystemClock.elapsedRealtime() - updatedAt) * speed);
+        }
     }
 
     private static volatile boolean enabling;
@@ -44,6 +54,10 @@ final class NowPlaying {
             t.title = meta.getString(MediaMetadata.METADATA_KEY_TITLE);
             t.artist = meta.getString(MediaMetadata.METADATA_KEY_ARTIST);
             if (t.artist == null) t.artist = meta.getString(MediaMetadata.METADATA_KEY_ALBUM_ARTIST);
+            t.duration = meta.containsKey(MediaMetadata.METADATA_KEY_DURATION) ? meta.getLong(MediaMetadata.METADATA_KEY_DURATION) : -1;
+            t.position = state.getPosition() == PlaybackState.PLAYBACK_POSITION_UNKNOWN ? -1 : state.getPosition();
+            t.updatedAt = state.getLastPositionUpdateTime();
+            t.speed = state.getPlaybackSpeed() > 0 ? state.getPlaybackSpeed() : 1;
             if (t.title != null && !t.title.trim().isEmpty()) return t;
         }
         return null;
