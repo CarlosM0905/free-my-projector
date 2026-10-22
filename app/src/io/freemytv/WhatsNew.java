@@ -30,17 +30,22 @@ import java.util.List;
 public final class WhatsNew extends Activity {
     private static final String REPO = "CarlosM0905/free-my-projector";
 
-    /** Called when the home screen shows: opens the sheet once per new release (never on the first install or a dev build). */
+    /**
+     * Called when the home screen shows: opens the sheet once per new version name ("1.2.0", from the latest tag), never
+     * on the first install. Builds between releases keep the same name, so they don't show it again.
+     */
     static void maybeShow(Activity home) {
         try {
             android.content.pm.PackageInfo p = home.getPackageManager().getPackageInfo(home.getPackageName(), 0);
+            String name = p.versionName;
+            if (name == null || !name.matches("v?\\d+(\\.\\d+)+")) return;
             SharedPreferences prefs = home.getSharedPreferences("updates", Context.MODE_PRIVATE);
-            int seen = prefs.getInt("seenVersion", 0);
-            if (seen == p.versionCode) return;
-            prefs.edit().putInt("seenVersion", p.versionCode).apply();
-            // Only releases: a tag like "v1.2.0" (a local build is named "v1.2.0-3-gabc123").
-            if (seen == 0 || p.versionCode < seen || p.versionName == null || !p.versionName.matches("v?\\d+(\\.\\d+)+")) return;
-            home.startActivity(new Intent(home, WhatsNew.class).putExtra("tag", p.versionName));
+            String seen = prefs.getString("seenName", null);
+            if (name.equals(seen)) return;
+            boolean firstInstall = seen == null && prefs.getInt("seenVersion", 0) == 0;   // seenVersion: before 1.2.1
+            prefs.edit().putString("seenName", name).apply();
+            if (firstInstall) return;
+            home.startActivity(new Intent(home, WhatsNew.class).putExtra("tag", name.startsWith("v") ? name : "v" + name));
         } catch (Exception e) {
             AppLog.w("what's new: " + e.getMessage());
         }
