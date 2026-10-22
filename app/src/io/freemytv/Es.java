@@ -227,6 +227,7 @@ final class Es {
         t("Reduced", "Reducido");
         t("Full", "Completo");
         t("Movie or show", "Película o serie");
+        t("Movie, show or app", "Película, serie o app");
         t("Searching…", "Buscando…");
         t("Nothing on your apps.", "Nada en tus apps.");
         t("Enhance dialogue", "Diálogos");

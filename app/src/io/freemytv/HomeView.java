@@ -93,12 +93,14 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
     private static final int NT = 5, UP_NEXT = 3, SEARCH = 4;
     /** Round buttons at the top right: what to watch tonight, keystone (or live TV), network, HDMI inputs, settings. */
     private static final int NB = 5;
-    /** Search: a one-row keyboard (tvOS), the typed text and up to 4 results. */
+    /** Search: a one-row keyboard (tvOS), the typed text, the matching apps and controls, then up to 4 titles. */
     private static final int Z_KEYS = 6, Z_RESULTS = 7;
     private static final String KEYS = "abcdefghijklmnñopqrstuvwxyz0123456789 \u232B";
     private int keyIndex, resultIndex;
     private String query = "";
     private List<Recs.Pick> results = new ArrayList<>();
+    private List<HomeApps.Item> actions = new ArrayList<>();   // apps and projector controls, listed before the titles
+    private static final int SEARCH_ROWS = 5, SEARCH_ACTIONS = 2;
     private boolean searching;
     private int searchSerial;
     private static final int Z_TOP = 4, Z_CARDS = 5;
@@ -2445,7 +2447,24 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
             type(KEYS.charAt(keyIndex));
             return;
         } else if (zone == Z_RESULTS) {
-            Recs.Pick p = resultIndex < results.size() ? results.get(resultIndex) : null;
+            if (resultIndex < actions.size()) {
+                HomeApps.Item act = actions.get(resultIndex);
+                if (act.kind == HomeApps.PROJECTOR && Projector.isToggle(act.key)) {   // a switch: flipped here
+                    click.move();
+                    Projector.toggle(getContext(), act.key);
+                    heroDirty = drawerDirty = true;
+                    handler.postDelayed(() -> heroDirty = true, 1800);   // Memory's number, after it frees
+                    return;
+                }
+                click.open();
+                if (!HomeApps.open(activity, act, this, Math.round(resultRect.left), Math.round(resultRect.top),
+                        Math.round(resultRect.width()), Math.round(resultRect.height()))) {
+                    showToast(Ui.tr("Não deu para abrir ", "Couldn't open ") + act.label + ".");
+                }
+                return;
+            }
+            int at = resultIndex - actions.size();
+            Recs.Pick p = at < results.size() ? results.get(at) : null;
             if (p == null) return;
             click.open();
             TitleActivity.open(getContext(), p);   // its page first, like the Apple TV app
@@ -2645,12 +2664,21 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         searching = !q.trim().isEmpty();
         if (!searching) {
             results = new ArrayList<>();
+            actions = new ArrayList<>();
             return;
         }
         // Waits until typing pauses, then asks TMDB (the newest text wins).
         handler.postDelayed(() -> {
             if (serial != searchSerial) return;
             new Thread(() -> {
+                // The apps and controls first: they're on this projector, so they show right away (also with no key).
+                final List<HomeApps.Item> acts = HomeApps.find(getContext(), q, SEARCH_ACTIONS);
+                post(() -> {
+                    if (serial != searchSerial) return;
+                    actions = acts;
+                    resultIndex = Math.min(resultIndex, Math.max(0, searchRows() - 1));
+                    heroDirty = true;
+                });
                 List<Recs.Pick> found;
                 try {
                     found = recs.search(q);
@@ -2663,8 +2691,8 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
                     if (serial != searchSerial) return;
                     results = f;
                     searching = false;
-                    resultIndex = Math.min(resultIndex, Math.max(0, f.size() - 1));
-                    if (zone == Z_RESULTS && f.isEmpty()) zone = Z_KEYS;
+                    resultIndex = Math.min(resultIndex, Math.max(0, searchRows() - 1));
+                    if (zone == Z_RESULTS && searchRows() == 0) zone = Z_KEYS;
                     heroDirty = true;
                 });
             }, "search").start();
@@ -2677,7 +2705,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         // The text (or what to type), big, with a cursor while the keyboard has focus.
         Paint big = lSearch;
         big.setColor(query.isEmpty() ? tone(0xFF8E8E93, 0x80FFFFFF) : tone(L_INK, 0xF2FFFFFF));
-        String shown = query.isEmpty() ? Ui.tr("Filme ou série", "Movie or show") : query;
+        String shown = query.isEmpty() ? Ui.tr("Filme, série ou app", "Movie, show or app") : query;
         c.drawText(shown, left, top + 50 * k, big);
         if (keys && !query.isEmpty()) {
             float x = left + big.measureText(query) + 6 * k;
@@ -2703,16 +2731,18 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         }
         // Results: title on the left, year and app on the right; the focused row gets the white pill.
         float ry = top + 196 * k, rh = 62 * k;
-        if (results.isEmpty()) {
+        if (searchRows() == 0) {
             String note = searching ? Ui.tr("Buscando…", "Searching…")
                     : query.trim().isEmpty() ? "" : Ui.tr("Nada nos seus apps.", "Nothing on your apps.");
             lCardMeta.setTextAlign(Paint.Align.LEFT);
             c.drawText(note, left, ry + rh / 2 + Ui.halfCap(lCardMeta), lCardMeta);
             return;
         }
-        for (int i = 0; i < results.size(); i++) {
-            Recs.Pick p = results.get(i);
+        for (int i = 0; i < searchRows(); i++) {
             boolean f = rows && i == resultIndex;
+            HomeApps.Item act = i < actions.size() ? actions.get(i) : null;
+            Recs.Pick p = act != null ? null : results.get(i - actions.size());
+            String title = act != null ? (act.kind == HomeApps.PROJECTOR ? Projector.label(getContext(), act) : act.label) : p.title;
             cell.set(left - 24 * k, ry + i * rh, right + 24 * k, ry + i * rh + rh - 8 * k);
             if (f) {
                 resultRect.set(cell);
@@ -2722,15 +2752,21 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
             }
             float base = cell.centerY() + Ui.halfCap(lCardTitle);
             lCardTitle.setColor(f ? L_INK : tone(L_INK, 0xF2FFFFFF));
-            String meta = p.meta == null ? "" : p.meta;
+            String meta = act != null ? (act.kind == HomeApps.PROJECTOR ? Ui.tr("Projetor", "Projector") : "App")
+                    : p.meta == null ? "" : p.meta;
             float mw = lCardMeta.measureText(meta);
-            c.drawText(ellipsized(p.title, lCardTitle, right - left - mw - 40 * k), left, base, lCardTitle);
+            c.drawText(ellipsized(title, lCardTitle, right - left - mw - 40 * k), left, base, lCardTitle);
             int metaColor = lCardMeta.getColor();
             if (f) lCardMeta.setColor(0xFF6E6E73);
             c.drawText(meta, right - mw, base, lCardMeta);
             lCardMeta.setColor(metaColor);
         }
         lCardTitle.setColor(L_INK);
+    }
+
+    /** The rows under the keyboard: the matching apps and controls, then the titles (as many as fit). */
+    private int searchRows() {
+        return Math.min(SEARCH_ROWS, actions.size() + results.size());
     }
 
     private void selectTab(int index) {
@@ -3086,7 +3122,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
                     zone = Z_TOP;
                     topIndex = tab;
                 } else {
-                    zone = results.isEmpty() ? Z_SHELF : Z_RESULTS;
+                    zone = searchRows() == 0 ? Z_SHELF : Z_RESULTS;
                     resultIndex = 0;
                 }
                 break;
@@ -3094,7 +3130,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
                 if (dx != 0) return true;
                 if (dy < 0 && resultIndex == 0) {
                     zone = Z_KEYS;
-                } else if (dy > 0 && resultIndex >= results.size() - 1) {
+                } else if (dy > 0 && resultIndex >= searchRows() - 1) {
                     zone = Z_SHELF;
                 } else {
                     resultIndex += dy;
@@ -3103,8 +3139,8 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
             case Z_SHELF:
                 if (dy >= 0 || shelf.isEmpty()) return false;
                 if (tab == SEARCH) {
-                    zone = results.isEmpty() ? Z_KEYS : Z_RESULTS;
-                    resultIndex = results.size() - 1;
+                    zone = searchRows() == 0 ? Z_KEYS : Z_RESULTS;
+                    resultIndex = searchRows() - 1;
                     heroDirty = true;
                 } else if (cards.isEmpty()) {
                     zone = Z_TOP;

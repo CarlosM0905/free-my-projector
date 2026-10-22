@@ -397,6 +397,38 @@ final class HomeApps {
         return items;
     }
 
+    /**
+     * Search (like Spotlight's actions on the Mac): the installed apps and the projector's controls whose name matches
+     * the text, those whose name starts with it first. Up to `max`, without tiles (they're listed as text). Blocking.
+     */
+    static List<Item> find(Context c, String query, int max) {
+        String q = plain(query.trim());
+        List<Item> starts = new ArrayList<>(), contains = new ArrayList<>();
+        if (q.length() < 2) return starts;
+        List<Item> all = new ArrayList<>(Projector.items(c));
+        Set<String> skip = new HashSet<>(HIDDEN);
+        skip.add(c.getPackageName());
+        PackageManager pm = c.getPackageManager();
+        Intent launcher = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER);
+        for (ResolveInfo ri : pm.queryIntentActivities(launcher, 0)) {
+            String pkg = ri.activityInfo.packageName;
+            if (skip.add(pkg)) all.add(app(pkg, String.valueOf(ri.loadLabel(pm))));
+        }
+        for (Item it : all) {
+            String name = plain(it.label);
+            if (name.startsWith(q) || name.contains(" " + q)) starts.add(it);
+            else if (name.contains(q)) contains.add(it);
+        }
+        starts.addAll(contains);
+        return new ArrayList<>(starts.subList(0, Math.min(max, starts.size())));
+    }
+
+    /** Lower case without accents ("Película" → "pelicula"), to match what's typed on the one-row keyboard. */
+    private static String plain(String s) {
+        return java.text.Normalizer.normalize(s == null ? "" : s, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "").toLowerCase(Locale.ROOT);
+    }
+
     private static Item special(Context c, int kind, String key, String label, String symbol) {
         Item it = shortcut(kind, key, label, symbol);
         it.tile = symbolTile(c, key, symbol);
