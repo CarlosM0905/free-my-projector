@@ -48,6 +48,7 @@ final class Heat {
         if (!Lamp.mode(c).equals("normal")) Lamp.enforce(c);
         endSleep(c);   // Wanbo rewrites the lamp when the temperature changes band
         idleSleep(c);
+        bedtimeSleep(c);
         if (lampOn()) {
             SharedPreferences p = prefs(c);
             long lamp = p.getLong("lampMs", 0) + EVERY;
@@ -91,15 +92,32 @@ final class Heat {
             p.edit().putLong("endIdle", now).apply();
         } else if (now - idle >= END_IDLE) {
             p.edit().putBoolean("endSleep", false).remove("endSeen").remove("endIdle").apply();
-            final Context app = c.getApplicationContext();
-            new Thread(() -> {
-                try (Adb adb = Adb.connect(app, 5000, null)) {
-                    adb.shell("input keyevent KEYCODE_SLEEP");
-                } catch (Exception e) {
-                    AppLog.w("end sleep: " + e.getMessage());
-                }
-            }, "end-sleep").start();
+            sleepNow(c, "end sleep");
         }
+    }
+
+    /** Bedtime's "sleep in 30 min" (Bedtime): the time it was asked for. */
+    static void sleepAt(Context c, long at) {
+        prefs(c).edit().putLong("sleepAt", at).apply();
+    }
+
+    private static void bedtimeSleep(Context c) {
+        SharedPreferences p = prefs(c);
+        long at = p.getLong("sleepAt", 0);
+        if (at == 0 || System.currentTimeMillis() < at) return;
+        p.edit().remove("sleepAt").apply();
+        sleepNow(c, "bedtime");
+    }
+
+    private static void sleepNow(Context c, final String why) {
+        final Context app = c.getApplicationContext();
+        new Thread(() -> {
+            try (Adb adb = Adb.connect(app, 5000, null)) {
+                adb.shell("input keyevent KEYCODE_SLEEP");
+            } catch (Exception e) {
+                AppLog.w(why + ": " + e.getMessage());
+            }
+        }, "sleep").start();
     }
 
     static final int[] IDLE_HOURS = {0, 2, 3, 4};   // 0: never

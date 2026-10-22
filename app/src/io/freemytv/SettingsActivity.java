@@ -106,7 +106,7 @@ public class SettingsActivity extends Activity {
         private final SettingsActivity activity;
         private final Scene scene = new Scene();
         private final Handler handler = new Handler(Looper.getMainLooper());
-        private final Spring[] pop = new Spring[9];
+        private final Spring[] pop = new Spring[11];   // the longest list: Preferences
         private final RectF tmp = new RectF(), rowRect = new RectF();
         private JSONObject state = new JSONObject(), recs = new JSONObject();
         private boolean hasKey;
@@ -205,7 +205,7 @@ public class SettingsActivity extends Activity {
         }
 
         private int rowCount() {
-            return screen == MAIN ? 6 : screen == PREFS ? 10 : 2;
+            return screen == MAIN ? 6 : screen == PREFS ? 11 : 2;
         }
 
         @Override protected void onDraw(Canvas c) {
@@ -376,7 +376,7 @@ public class SettingsActivity extends Activity {
             String lang = Prefs.language(), temp = Prefs.temperature(), theme = Prefs.theme(), team = Prefs.footballTeam();
             String[] labels = {Ui.tr("Idioma", "Language"), Ui.tr("Cidade", "City"), Ui.tr("Temperatura", "Temperature"),
                     Ui.tr("Tema", "Theme"), Ui.tr("Movimento", "Motion"), Ui.tr("Criptomoedas", "Crypto prices"), Ui.tr("Time de futebol", "Football team"), Ui.tr("Chave do TMDB", "TMDB key"), Ui.tr("Fundos", "Backgrounds"),
-                    Ui.tr("Dormir sem uso", "Sleep when unused")};
+                    Ui.tr("Dormir sem uso", "Sleep when unused"), Ui.tr("Hora de dormir", "Bedtime")};
             int idle = Heat.idleHours(ctx);
             String[] values = {
                     "‹  " + (lang.equals("es") ? "Español" : lang.equals("en") ? "English" : lang.equals("pt") ? "Português" : Ui.tr("Automático", "Automatic")) + "  ›",
@@ -390,10 +390,13 @@ public class SettingsActivity extends Activity {
                     masked(Prefs.tmdbKey()),
                     Backgrounds.mine(ctx).isEmpty() ? Ui.tr("Paisagens do dia", "Landscapes of the day")
                             : String.format(Ui.tr("%d seus", "%d of yours"), Backgrounds.mine(ctx).size()),
-                    "‹  " + (idle <= 0 ? Ui.tr("Nunca", "Never") : String.format(Ui.tr("Após %d h", "After %d h"), idle)) + "  ›"};
+                    "‹  " + (idle <= 0 ? Ui.tr("Nunca", "Never") : String.format(Ui.tr("Após %d h", "After %d h"), idle)) + "  ›",
+                    "‹  " + Bedtime.label(ctx) + "  ›"};
+            // Eleven rows: a little tighter than the other lists so the hint still fits on the screen.
+            final float rowH = 64, rowGap = 6;
             for (int i = 0; i < labels.length; i++) {
-                float y = (LIST_TOP + i * (ROW_H + ROW_GAP)) * k;
-                rowRect.set(LIST_X * k, y, LIST_R * k, y + ROW_H * k);
+                float y = (LIST_TOP + i * (rowH + rowGap)) * k;
+                rowRect.set(LIST_X * k, y, LIST_R * k, y + rowH * k);
                 float f = drawRowBackground(c, i);
                 rowLabel.setColor(blend(0xF2FFFFFF, INK, f));
                 float base = rowRect.centerY() + Ui.halfCap(rowLabel);
@@ -405,7 +408,7 @@ public class SettingsActivity extends Activity {
             Paint hint = Ui.text(Ui.regular, 23 * k, 0x8CFFFFFF);
             c.drawText(Ui.tr("← → muda o valor  ·  OK em Cidade, Time e Chave abre o teclado",
                     "← → changes the value  ·  OK on City, Team and Key opens the keyboard"), LIST_X * k + 30 * k,
-                    (LIST_TOP + 10 * (ROW_H + ROW_GAP) + 40) * k, hint);
+                    (LIST_TOP + labels.length * (rowH + rowGap) + 40) * k, hint);
         }
 
         /** "••••3f9a": enough to tell keys apart, never the whole secret on screen. */
@@ -448,6 +451,9 @@ public class SettingsActivity extends Activity {
                     break;
                 case 9:
                     Heat.nextIdleHours(c, dir);
+                    break;
+                case 10:
+                    Bedtime.next(c, dir);
                     break;
                 default:
                     return;

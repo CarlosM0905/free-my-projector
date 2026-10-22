@@ -211,6 +211,12 @@ final class Es {
         t("Sleep when unused", "Dormir sin uso");
         t("Never", "Nunca");
         t("After %d h", "Tras %d h");
+        t("Bedtime", "Hora de dormir");
+        t("It's %s", "Son las %s");
+        t("Time for bed", "Hora de dormir");
+        t("OK: sleep in 30 min", "OK: dormir en 30 min");
+        t("Back: not now", "Atrás: ahora no");
+        t("The projector will sleep at %s", "El proyector se dormirá a las %s");
         t("%d lamp hours: clean the vents and the dust filter (with the projector off and cool).",
                 "%d horas de lámpara: limpia las rejillas y el filtro de polvo (con el proyector apagado y frío).");
         t("The lamp turns off and the music keeps playing. Any button brings the picture back.",

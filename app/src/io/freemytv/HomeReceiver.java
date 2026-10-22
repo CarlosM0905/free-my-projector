@@ -10,8 +10,10 @@ public class HomeReceiver extends BroadcastReceiver {
         String action = intent.getAction();
         if (Intent.ACTION_BOOT_COMPLETED.equals(action)) {
             HomeMode.bootCheck(context);
+            Bedtime.schedule(context);   // alarms don't survive a reboot
         } else if (Intent.ACTION_MY_PACKAGE_REPLACED.equals(action)) {
             HomeMode.verify(context);   // app updated: complete Free My TV mode if something is missing
+            Bedtime.schedule(context);
         }
     }
 }

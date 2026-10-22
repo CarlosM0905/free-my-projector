@@ -106,6 +106,17 @@
             android:screenOrientation="landscape"
             android:theme="@style/FreeMyTV.Overlay" />
 
+        <!-- Free My Projector: bedtime, shown over whatever is playing at the time chosen in Preferences. -->
+        <activity
+            android:name=".Bedtime"
+            android:process=":home"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:launchMode="singleInstance"
+            android:screenOrientation="landscape"
+            android:theme="@style/FreeMyTV.Overlay" />
+
         <!-- Free My Projector: "What's new" after an update (the release's notes). -->
         <activity
             android:name=".WhatsNew"
