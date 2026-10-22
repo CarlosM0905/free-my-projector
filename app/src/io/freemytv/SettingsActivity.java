@@ -516,7 +516,7 @@ public class SettingsActivity extends Activity {
                     if (e.getRepeatCount() > 0) break;
                     if (resultIndex >= 0) {   // a place picked
                         String[] place = places.get(resultIndex);
-                        Prefs.setCity(place[1], place[2], place[3]);
+                        Prefs.setCity(place[1], place[2], place[3], place[4]);
                         HomeData.get(getContext()).refreshWeather();
                         screen = PREFS;
                         focus = typeFor;

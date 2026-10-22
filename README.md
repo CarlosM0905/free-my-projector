@@ -134,7 +134,7 @@ Everything is in `config.properties` (not committed to git):
 | Key | What for | Example |
 |---|---|---|
 | `tmdb_key` | Your free TMDB key, for the recommendations | — |
-| `tmdb_region` | Your country (two letters): which title is on which app | `ES` |
+| `tmdb_region` | Your country (two letters): which title is on which app. Picking a city in Preferences sets it too | `ES` |
 | `latitude`, `longitude` | Your city, for the weather and sunset | `40.4168`, `-3.7038` |
 | `city` | The name on the weather card | `Madrid` |
 | `language` | `auto` (follows the projector), `es`, `en` or `pt` | `en` |

@@ -58,10 +58,17 @@ final class Prefs {
     static String latitude() { return get("latitude", Config.LATITUDE); }
     static String longitude() { return get("longitude", Config.LONGITUDE); }
 
-    static void setCity(String name, String latitude, String longitude) {
+    /** The city and, with it, TMDB's region: the country decides which app has which title. */
+    static void setCity(String name, String latitude, String longitude, String country) {
         SharedPreferences p = sp();
-        if (p != null) p.edit().putString("city", name).putString("latitude", latitude).putString("longitude", longitude).apply();
+        if (p == null) return;
+        SharedPreferences.Editor e = p.edit().putString("city", name).putString("latitude", latitude).putString("longitude", longitude);
+        if (country != null && country.length() == 2) e.putString("region", country.toUpperCase(Locale.ROOT));
+        e.apply();
     }
+
+    /** Country for "what streams where": the chosen city's, else config.properties "tmdb_region" (US, GB, BR…). */
+    static String region() { return get("region", Config.TMDB_REGION).trim().toUpperCase(Locale.ROOT); }
 
     /** The crypto prices on the home screen. */
     static boolean quotes() {

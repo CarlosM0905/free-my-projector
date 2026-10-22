@@ -134,7 +134,7 @@ Todo está en `config.properties` (no se sube a git):
 | Clave | Para qué | Ejemplo |
 |---|---|---|
 | `tmdb_key` | Tu clave gratis de TMDB, para las recomendaciones | — |
-| `tmdb_region` | Tu país (dos letras): qué título está en qué app | `ES` |
+| `tmdb_region` | Tu país (dos letras): qué título está en qué app. Elegir la ciudad en Preferencias también lo fija | `ES` |
 | `latitude`, `longitude` | Tu ciudad, para el clima y el atardecer | `40.4168`, `-3.7038` |
 | `city` | El nombre en la tarjeta del clima | `Madrid` |
 | `language` | `auto` (sigue al proyector), `es`, `en` o `pt` | `es` |

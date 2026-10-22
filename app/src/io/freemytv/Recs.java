@@ -91,8 +91,6 @@ final class Recs {
         SERVICE_NAME.put("max", "Max");
         SERVICE_NAME.put("appletv", "Apple TV");
     }
-    /** Country for "what streams where" (config.properties "tmdb_region", e.g. US, GB, BR). */
-    private static final String REGION = Config.TMDB_REGION.trim().toUpperCase(Locale.ROOT);
 
     private static Recs instance;
 
@@ -255,7 +253,7 @@ final class Recs {
             p.backdrop = o.optString("backdrop_path", "");
             if (p.backdrop.isEmpty() || p.backdrop.equals("null")) p.backdrop = null;
             p.poster = path(o.optString("poster_path", ""));
-            JSONObject br = get("/" + kind + "/" + p.id + "/watch/providers").getJSONObject("results").optJSONObject(REGION);
+            JSONObject br = get("/" + kind + "/" + p.id + "/watch/providers").getJSONObject("results").optJSONObject(Prefs.region());
             JSONArray flat = br == null ? null : br.optJSONArray("flatrate");
             for (int j = 0; flat != null && j < flat.length() && p.app == null; j++) {
                 String[] sv = service(flat.getJSONObject(j).optString("provider_name"));
@@ -299,7 +297,7 @@ final class Recs {
             p.backdrop = path(o.optString("backdrop_path", ""));
             p.poster = path(o.optString("poster_path", ""));
             if (p.poster == null || p.backdrop == null) continue;
-            JSONObject br = get("/" + p.kind + "/" + p.id + "/watch/providers").getJSONObject("results").optJSONObject(REGION);
+            JSONObject br = get("/" + p.kind + "/" + p.id + "/watch/providers").getJSONObject("results").optJSONObject(Prefs.region());
             JSONArray flat = br == null ? null : br.optJSONArray("flatrate");
             for (int j = 0; flat != null && j < flat.length() && p.app == null; j++) {
                 String[] sv = service(flat.getJSONObject(j).optString("provider_name"));
@@ -704,7 +702,7 @@ final class Recs {
     private void fetchList(int p) throws Exception {
         // The services the TV has, by their TMDB ids in your region.
         Map<Integer, String[]> services = new HashMap<>();
-        JSONArray providers = get("/watch/providers/movie?language=" + lang() + "&watch_region=" + REGION).getJSONArray("results");
+        JSONArray providers = get("/watch/providers/movie?language=" + lang() + "&watch_region=" + Prefs.region()).getJSONArray("results");
         for (int i = 0; i < providers.length(); i++) {
             JSONObject o = providers.getJSONObject(i);
             String[] s = service(o.optString("provider_name"));
@@ -713,7 +711,7 @@ final class Recs {
         if (services.isEmpty()) throw new IOException("none of the TV's streaming services are on TMDB");
         StringBuilder ids = new StringBuilder();
         for (int id : services.keySet()) ids.append(ids.length() == 0 ? "" : "|").append(id);
-        String common = "&language=" + lang() + "&watch_region=" + REGION + "&with_watch_monetization_types=flatrate&include_adult=false"
+        String common = "&language=" + lang() + "&watch_region=" + Prefs.region() + "&with_watch_monetization_types=flatrate&include_adult=false"
                 + "&sort_by=popularity.desc&with_watch_providers=" + URLEncoder.encode(ids.toString(), "UTF-8");
         // 1. Trending this week (TMDB goes by what people are watching and searching for right now), only what is
         //    on one of the TV's services: the details say where (and are then ready).
@@ -843,7 +841,7 @@ final class Recs {
             else if (seasons > 0) parts.add(seasons == 1 ? "1 temporada" : seasons + " temporadas");
         }
         JSONObject wp = o.optJSONObject("watch/providers");
-        JSONObject br = wp == null ? null : wp.optJSONObject("results") == null ? null : wp.optJSONObject("results").optJSONObject(REGION);
+        JSONObject br = wp == null ? null : wp.optJSONObject("results") == null ? null : wp.optJSONObject("results").optJSONObject(Prefs.region());
         JSONArray flat = br == null ? null : br.optJSONArray("flatrate");
         for (int i = 0; flat != null && i < flat.length() && p.app == null; i++) {
             String[] s = service(flat.getJSONObject(i).optString("provider_name"));
@@ -977,7 +975,7 @@ final class Recs {
     }
 
     private long sourceStamp() {
-        long stamp = Prefs.tmdbKey().hashCode() * 31L + REGION.hashCode();
+        long stamp = Prefs.tmdbKey().hashCode() * 31L + Prefs.region().hashCode();
         for (String[] service : SERVICES) stamp = stamp * 31L + (installed(service[2]) ? service[2].hashCode() : 0);
         return stamp;
     }

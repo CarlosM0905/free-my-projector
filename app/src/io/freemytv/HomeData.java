@@ -113,7 +113,7 @@ final class HomeData {
         refreshIfStale();
     }
 
-    /** City search for Preferences (Open-Meteo geocoding, like upstream): {label, name, latitude, longitude}. */
+    /** City search for Preferences (Open-Meteo geocoding, like upstream): {label, name, latitude, longitude, country}. */
     static List<String[]> findCity(String name) throws Exception {
         String lang = Ui.en ? "en" : Ui.es ? "es" : "pt";
         JSONObject o = new JSONObject(get("https://geocoding-api.open-meteo.com/v1/search?count=10&format=json&language=" + lang
@@ -131,7 +131,8 @@ final class HomeData {
             }
             if (!seen.add(label.toString())) continue;
             out.add(new String[] {label.toString(), city,
-                    String.format(Locale.US, "%.4f", r.getDouble("latitude")), String.format(Locale.US, "%.4f", r.getDouble("longitude"))});
+                    String.format(Locale.US, "%.4f", r.getDouble("latitude")), String.format(Locale.US, "%.4f", r.getDouble("longitude")),
+                    r.optString("country_code", "")});
         }
         return out;
     }

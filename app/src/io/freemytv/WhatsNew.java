@@ -42,13 +42,22 @@ public final class WhatsNew extends Activity {
             SharedPreferences prefs = home.getSharedPreferences("updates", Context.MODE_PRIVATE);
             String seen = prefs.getString("seenName", null);
             if (name.equals(seen)) return;
-            boolean firstInstall = seen == null && prefs.getInt("seenVersion", 0) == 0;   // seenVersion: before 1.2.1
-            prefs.edit().putString("seenName", name).apply();
-            if (firstInstall) return;
+            if (seen == null && prefs.getInt("seenVersion", 0) == 0) {   // first install (seenVersion: before 1.2.1)
+                markSeen(home, name);
+                return;
+            }
+            if (asked) return;   // once per process: offline, it tries again next time the projector starts
+            asked = true;
             home.startActivity(new Intent(home, WhatsNew.class).putExtra("tag", name.startsWith("v") ? name : "v" + name));
         } catch (Exception e) {
             AppLog.w("what's new: " + e.getMessage());
         }
+    }
+
+    private static boolean asked;
+
+    static void markSeen(Context c, String name) {
+        c.getSharedPreferences("updates", Context.MODE_PRIVATE).edit().putString("seenName", name).apply();
     }
 
     /** A section title ("New") or an item under it. */
@@ -87,7 +96,12 @@ public final class WhatsNew extends Activity {
             }
             final List<Line> got = lines;
             main.post(() -> {
-                if (got == null || got.isEmpty()) finish();   // no notes: nothing to show
+                if (got == null) {   // couldn't ask GitHub: maybe next time
+                    finish();
+                    return;
+                }
+                markSeen(this, version);
+                if (got.isEmpty()) finish();   // a release without notes: nothing to show
                 else sheet.show(got);
             });
         }, "whats-new").start();
