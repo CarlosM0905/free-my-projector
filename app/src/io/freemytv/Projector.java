@@ -32,6 +32,8 @@ final class Projector {
 
     /** Free memory: closes the apps waiting in the background (not a switch; the tile shows the free memory). */
     static final String RAM = "toggle:ram";
+    /** Free storage: clears the apps' caches only (the tile shows the free space). */
+    static final String STORAGE = "toggle:storage";
 
     /**
      * Control Center switches (like tvOS's Match Content, Enhance Dialogue and Reduce Loud Sounds): the frame rate
@@ -46,9 +48,10 @@ final class Projector {
         {"Lâmpada", "Lamp", "sunny", "toggle:lamp"},
         {"Ao terminar", "When it ends", "bedtime", "toggle:fin"},
         {"Memória", "Memory", "memory", RAM},
+        {"Armazenamento", "Storage", "storage", STORAGE},
     };
     private static final String SOUND = BRIDGE + ".SONIDO";
-    private static volatile long freeMb = -1;
+    private static volatile long freeMb = -1, freeDiskMb = -1;
     private static final String AFR_OFF = "/data/local/tmp/afr.off";
     private static volatile Boolean afrOn;   // read once through the TV's own ADB (the file isn't readable by apps)
     private static final java.util.Map<String, long[]> OPTIMISTIC = new java.util.HashMap<>();   // key → {on, until}
@@ -66,7 +69,7 @@ final class Projector {
         if (!hasStatus()) return ordered(c, out);   // the switches are the Wanbo ROM's (AFR) and its helper's (sound)
         boolean sound = !c.getPackageManager().queryBroadcastReceivers(new Intent(SOUND).setPackage(BRIDGE), 0).isEmpty();
         for (String[] d : TOGGLES) {
-            if (d[3].equals("toggle:fin") || d[3].equals(RAM)) {   // need nothing from the ROM
+            if (d[3].equals("toggle:fin") || d[3].equals(RAM) || d[3].equals(STORAGE)) {   // need nothing from the ROM
                 out.add(HomeApps.action(HomeApps.PROJECTOR, d[3], Ui.tr(d[0], d[1]), d[2]));
                 continue;
             }
@@ -118,6 +121,7 @@ final class Projector {
             case "toggle:fin":
                 return Heat.endSleepOn(c);
             case RAM:
+            case STORAGE:
                 return false;
             case "toggle:lamp":
                 return !Lamp.mode(c).equals("normal");
@@ -142,6 +146,10 @@ final class Projector {
         }
         if (key.equals(RAM)) {
             freeMemory(app);
+            return;
+        }
+        if (key.equals(STORAGE)) {
+            freeStorage(app);
             return;
         }
         final boolean on = !isOn(app, key);
@@ -233,6 +241,10 @@ final class Projector {
             long mb = freeMb;
             return mb > 0 ? Ui.tr(mb + " MB livres", mb + " MB free") : it.label;
         }
+        if (it.key.equals(STORAGE)) {
+            long mb = freeDiskMb;
+            return mb > 0 ? String.format(Ui.tr("%s livres", "%s free"), size(mb)) : it.label;
+        }
         if (!it.key.equals(TIMER)) return it.label;
         long at = android.provider.Settings.Global.getLong(c.getContentResolver(), "fmp_apagado", 0);
         long left = at - System.currentTimeMillis();
@@ -276,9 +288,50 @@ final class Projector {
         return -1;
     }
 
-    /** Once a minute (Heat): the Memory tile's number. */
+    /** Once a minute (Heat): the Memory and Storage tiles' numbers. */
     static void updateMemory() {
         freeMb = availableMb();
+        freeDiskMb = diskFreeMb();
+    }
+
+    /** Free space where the apps keep their data, in MB, or -1. */
+    static long diskFreeMb() {
+        try {
+            return new android.os.StatFs(android.os.Environment.getDataDirectory().getPath()).getAvailableBytes() >> 20;
+        } catch (RuntimeException e) {
+            return -1;
+        }
+    }
+
+    /** "850 MB", "4,2 GB" (with the language's decimal mark). */
+    static String size(long mb) {
+        if (mb < 1024) return mb + " MB";
+        String gb = String.format(java.util.Locale.ROOT, "%.1f", mb / 1024f);
+        return (Ui.en ? gb : gb.replace('.', ',')) + " GB";
+    }
+
+    /**
+     * Clears every app's cache (pm trim-caches: the system deletes cached files only, never data, accounts or apps;
+     * they rebuild what they need). A notice says how much was freed.
+     */
+    private static void freeStorage(Context app) {
+        final android.os.Handler main = new android.os.Handler(android.os.Looper.getMainLooper());
+        new Thread(() -> {
+            long before = diskFreeMb();
+            String text;
+            try (Adb adb = Adb.connect(app, 5000, null)) {
+                adb.shell("pm trim-caches 999G");
+                long after = diskFreeMb();
+                freeDiskMb = after;
+                text = String.format(Ui.tr("%s liberados · %s livres", "%s freed · %s free"),
+                        size(Math.max(0, after - before)), size(after));
+            } catch (Exception e) {
+                AppLog.w("free storage: " + e.getMessage());
+                text = Ui.tr("Não foi possível liberar espaço.", "Couldn't free any space.");
+            }
+            final String shown = text;
+            main.post(() -> android.widget.Toast.makeText(app, shown, android.widget.Toast.LENGTH_LONG).show());
+        }, "free-storage").start();
     }
 
     /**

@@ -204,6 +204,10 @@ final class Es {
         t("%d MB free", "%d MB libres");
         t("%d MB freed · %d MB free", "%d MB liberados · %d MB libres");
         t("Couldn't free the memory.", "No se pudo liberar la memoria.");
+        t("Storage", "Almacenamiento");
+        t("%s free", "%s libres");
+        t("%s freed · %s free", "%s liberados · %s libres");
+        t("Couldn't free any space.", "No se pudo liberar espacio.");
         t("Sleep when unused", "Dormir sin uso");
         t("Never", "Nunca");
         t("After %d h", "Tras %d h");
