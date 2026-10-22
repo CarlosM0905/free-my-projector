@@ -37,8 +37,9 @@ final class Drift extends FrameLayout {
     Drift(Context c) {
         super(c);
         for (int i = 0; i < 2; i++) {
+            // No hardware layer: the photo is one bitmap, so the fade and the drift move it as it is, and the projector
+            // doesn't keep two full-screen 8 MB textures for it.
             Layer v = new Layer(c);
-            v.setLayerType(LAYER_TYPE_HARDWARE, null);
             v.setAlpha(0);
             addView(v, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
             layers[i] = v;
@@ -63,6 +64,15 @@ final class Drift extends FrameLayout {
         stop();
         setVisibility(GONE);
         for (Layer v : layers) v.set(null);
+    }
+
+    /** Let go of the photos while the home screen isn't showing (start() fades the next one in). */
+    void release() {
+        if (running) return;
+        for (Layer v : layers) {
+            v.setAlpha(0);
+            v.set(null);
+        }
     }
 
     /** Decodes photo `i` in the background, then fades it in over the current one while it starts drifting. */
@@ -97,13 +107,13 @@ final class Drift extends FrameLayout {
                     in.animate().scaleX(1.14f).scaleY(1.14f).translationX(right ? 30 : -30)
                             .setDuration(EACH + FADE * 2).setInterpolator(new LinearInterpolator()).start();
                 }
-                out.animate().alpha(0).setDuration(FADE).start();
+                out.animate().alpha(0).setDuration(FADE).withEndAction(() -> out.set(null)).start();   // the old photo goes
                 front = back;
             });
         }, "drift").start();
     }
 
-    /** One photo, cropped to fill the screen (drawn once into its GPU layer; moving it redraws nothing). */
+    /** One photo, cropped to fill the screen (recorded once; moving and fading it redraws nothing). */
     private static final class Layer extends View {
         private Bitmap bitmap;
         private final Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG);
@@ -116,6 +126,11 @@ final class Drift extends FrameLayout {
         void set(Bitmap b) {
             bitmap = b;
             invalidate();
+        }
+
+        /** A single bitmap: the alpha applies to it directly, with no offscreen buffer during the fade. */
+        @Override public boolean hasOverlappingRendering() {
+            return false;
         }
 
         @Override

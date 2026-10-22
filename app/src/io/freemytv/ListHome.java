@@ -43,7 +43,7 @@ final class ListHome extends View implements Home, Choreographer.FrameCallback, 
     }
 
     private final Activity activity;
-    /** The animated background (a separate GPU layer behind this view); used when the style is "animated". */
+    /** The animated background (a view of its own behind this one); used when the style is "animated". */
     final Drift drift;
     /** Rain, storm, snow or fog over the background, following the weather (a layer between it and the list). */
     final WeatherFx weatherFx;
@@ -201,6 +201,7 @@ final class ListHome extends View implements Home, Choreographer.FrameCallback, 
 
     @Override public void trimMemory() {
         recs.keepOnly(new ArrayList<>());
+        drift.release();
     }
 
     @Override public void onRecs() {

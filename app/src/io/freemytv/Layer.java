@@ -27,6 +27,12 @@ abstract class Layer {
     abstract void setUseCompositingLayer(boolean use);
     abstract void draw(Canvas canvas);
 
+    /**
+     * The part of the layer that has ink, in the layer's own coordinates. On Android 9 the Bitmap covers only that
+     * part (a full-screen layer is 8 MB); a RenderNode keeps no pixels, so there it changes nothing.
+     */
+    void setArea(int left, int top, int right, int bottom) {}
+
     /** Android 10+: the original RenderNode. */
     private static final class Node extends Layer {
         private final RenderNode node;
@@ -47,10 +53,22 @@ abstract class Layer {
     private static final class Picture extends Layer {
         private final Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG);
         private Bitmap bitmap;
-        private int left, top;
+        private int left, top, areaX, areaY;
         private float tx, ty, alpha = 1;
+        private android.graphics.Rect area;
+
+        @Override void setArea(int l, int t, int r, int b) {
+            area = new android.graphics.Rect(l, t, r, b);
+        }
 
         @Override Canvas beginRecording(int width, int height) {
+            int ax = 0, ay = 0;
+            if (area != null) {
+                ax = Math.max(0, area.left);
+                ay = Math.max(0, area.top);
+                width = Math.min(width, area.right) - ax;
+                height = Math.min(height, area.bottom) - ay;
+            }
             width = Math.max(1, width);
             height = Math.max(1, height);
             if (bitmap == null || bitmap.getWidth() != width || bitmap.getHeight() != height) {
@@ -59,7 +77,11 @@ abstract class Layer {
             } else {
                 bitmap.eraseColor(Color.TRANSPARENT);
             }
-            return new Canvas(bitmap);
+            areaX = ax;
+            areaY = ay;
+            Canvas c = new Canvas(bitmap);
+            c.translate(-ax, -ay);
+            return c;
         }
 
         @Override void endRecording() {}
@@ -72,7 +94,7 @@ abstract class Layer {
         @Override void draw(Canvas canvas) {
             if (bitmap == null || alpha <= 0.004f) return;
             paint.setAlpha(Math.round(255 * alpha));
-            canvas.drawBitmap(bitmap, left + tx, top + ty, paint);
+            canvas.drawBitmap(bitmap, left + areaX + tx, top + areaY + ty, paint);
         }
     }
 }

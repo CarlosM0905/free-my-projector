@@ -221,6 +221,8 @@ final class DreamView extends View implements Screensaver.Dream, Choreographer.F
         scene.setSize(w, h);
         content.setPosition(0, 0, w, h);
         chrome.setPosition(0, 0, w, h);
+        // Android 9: the corner's layer covers only its top right (date, clock, prices), not the whole screen.
+        chrome.setArea(w / 4, 0, w, h / 2);
         // Without photos (the clock over the aurora).
         datePaint = Ui.text(Ui.semibold, 36 * k, 0xD9FFFFFF);
         datePaint.setTextAlign(Paint.Align.CENTER);
@@ -670,6 +672,7 @@ final class DreamView extends View implements Screensaver.Dream, Choreographer.F
     // MARK: - Photo caption (bottom left)
 
     private void recordCaption(Slide s) {
+        s.caption.setArea(0, h / 2, w, h);   // Android 9: only the bottom half has the caption
         Canvas c = s.caption.beginRecording(w, h);
         try {
             float x = MARGIN * k, metaBase = META_BASE * k, titleBase = metaBase - 58 * k;
