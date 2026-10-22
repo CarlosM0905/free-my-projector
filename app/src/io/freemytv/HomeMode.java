@@ -139,6 +139,7 @@ final class HomeMode {
             check(adb.shell("cmd package set-home-activity " + HOME_ACTIVITY), "Success",
                     Ui.tr("o Android não aceitou o novo Início", "Android didn't accept the new home screen"));
             adb.shell("settings put secure screensaver_components " + DREAM);
+            if (RemoteKeys.needed()) RemoteKeys.set(c, adb, true);   // Wanbo: the remote's Home button opens ours
             List<String> targets = targets(home, dream);
             Set<String> disabled = new HashSet<>(stringList(state(c), "disabled"));
             Set<String> present = packages(adb, "");
@@ -199,6 +200,7 @@ final class HomeMode {
                 if (!out.contains("new state: enabled")) failed.add(pkg);
             }
             busy(c, Ui.tr("Devolvendo o Início original…", "Restoring the original home screen…"));
+            RemoteKeys.set(c, adb, false);   // the remote as it came from the factory
             boolean homeOk = restoreHome(adb, home);
             String chosenDream = s.optString("originalDreamSetting", "");
             if (!chosenDream.isEmpty()) adb.shell("settings put secure screensaver_components " + chosenDream);
@@ -309,6 +311,7 @@ final class HomeMode {
                     adb.shell("cmd package set-home-activity " + HOME_ACTIVITY);
                     fixed.add(Ui.tr("o Início", "the home screen"));
                 }
+                if (!reverted) RemoteKeys.ensure(app, adb);   // updated from before 1.3.2: the Home button on Wanbo
                 if (!adb.shell("settings get secure screensaver_components").contains(DREAM)) {
                     adb.shell("settings put secure screensaver_components " + DREAM);
                     fixed.add(Ui.tr("a tela de descanso", "the screensaver"));

@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Free My Projector</string>
+    <string name="remote_key_service">Lets the Home button of the remote open Free My Projector from any app, on projectors whose system opens another home screen. It only reads that button.</string>
 </resources>

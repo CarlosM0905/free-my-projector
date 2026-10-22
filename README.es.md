@@ -145,6 +145,10 @@ Todo está en `config.properties` (no se sube a git):
 
 **La clave de TMDB:** crea una cuenta gratis en [themoviedb.org](https://www.themoviedb.org/signup), entra a [Settings → API](https://www.themoviedb.org/settings/api) y pide una clave de desarrollador. Pega la *API Key* después de `tmdb_key=`.
 
+## El botón Inicio en los proyectores Wanbo
+
+El sistema de Wanbo no abre "el inicio" al presionar Inicio: abre el de Google por su nombre, y el modo Free My Projector lo desactiva. Por eso, en los Wanbo, el modo Free My Projector también activa un servicio de accesibilidad mínimo (*Free My Projector*, en su propio proceso) que solo lee el botón Inicio y abre Free My Projector desde cualquier app. El modo Original lo vuelve a desactivar y el control queda como vino de fábrica. Las demás marcas abren el inicio predeterminado por sí solas, así que ahí el servicio nunca se activa.
+
 ## Volver atrás
 
 En el proyector: *Free My Projector* → *Inicio* → *Original*. Vuelve tu inicio anterior, tu protector de pantalla y las apps como estaban. Si el nuevo inicio se cierra tres veces en cinco minutos, vuelve solo.

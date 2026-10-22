@@ -145,6 +145,10 @@ Everything is in `config.properties` (not committed to git):
 
 **The TMDB key:** create a free account at [themoviedb.org](https://www.themoviedb.org/signup), go to [Settings → API](https://www.themoviedb.org/settings/api) and request a developer key. Paste the *API Key* after `tmdb_key=`.
 
+## The Home button on Wanbo projectors
+
+Wanbo's system doesn't open "the home screen" when you press Home: it opens Google's by name, and Free mode turns that one off. So on Wanbo projectors, Free mode also turns on a tiny accessibility service (*Free My Projector*, in its own process) that only reads the Home button and opens Free My Projector from any app. Original mode turns it off again, and the remote works as it came from the factory. Other brands open the default home screen themselves, so the service is never turned on there.
+
 ## Going back
 
 On the projector: *Free My Projector* → *Home Screen* → *Original*. Your previous home screen, screensaver and apps come back as they were. If the new home screen crashes three times in five minutes, it goes back by itself.
