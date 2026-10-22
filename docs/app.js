@@ -93,6 +93,21 @@
       if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); }
     }), { rootMargin: "0px 0px -8% 0px" });
     items.forEach((el) => io.observe(el));
+    // Opening the page at a section (#install) can skip the observer's first report: whatever is on screen shows anyway.
+    let pending = false;
+    const sweep = () => {
+      pending = false;
+      items.forEach((el) => {
+        if (el.classList.contains("in")) return;
+        const r = el.getBoundingClientRect();
+        if (r.top < innerHeight && r.bottom > 0) { el.classList.add("in"); io.unobserve(el); }
+      });
+    };
+    const later = () => { if (!pending) { pending = true; requestAnimationFrame(sweep); } };
+    addEventListener("load", later);
+    addEventListener("hashchange", later);
+    addEventListener("scroll", later, { passive: true });
+    setTimeout(sweep, 400);
   }
 
   // The latest version, from GitHub (the page works without it)
