@@ -251,7 +251,7 @@ final class Projector {
         if (it.key.equals("toggle:cine")) return sceneLabel(c, it.label);   // the scene that's on
         if (it.key.equals(RAM)) {
             long mb = freeMb;
-            return mb > 0 ? Ui.tr(mb + " MB livres", mb + " MB free") : it.label;
+            return mb > 0 ? String.format(java.util.Locale.ROOT, Ui.tr("%d MB livres", "%d MB free"), mb) : it.label;
         }
         if (it.key.equals(Bt.KEY)) return Bt.label(it.label);   // "JBL Go · 80 %"
         if (it.key.equals(STORAGE)) {

@@ -349,6 +349,8 @@ public final class Lyrics extends Activity {
             }
             float base = getHeight() * 0.36f - scroll.value;
             boolean timed = words.times != null;
+            c.save();
+            c.clipRect(0, 170 * k, getWidth(), getHeight());   // the lines go under the song's name, not over it
             for (int i = 0; i < layouts.length; i++) {
                 float top = base + tops[i];
                 if (top > getHeight() || top + layouts[i].getHeight() < 170 * k) continue;
@@ -359,6 +361,7 @@ public final class Lyrics extends Activity {
                 layouts[i].draw(c);
                 c.restore();
             }
+            c.restore();
             line.setAlpha(0xFF);
         }
 
