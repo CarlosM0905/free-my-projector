@@ -19,7 +19,7 @@
   <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icon-180.png">
   <link rel="preload" href="assets/fonts/InterVariable.ttf" as="font" type="font/ttf" crossorigin>
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body>
 
@@ -155,12 +155,14 @@
 
       <div class="feats">
         <div class="feat reveal" style="--c:#b49bff"><i style="--icon:url(assets/symbols/tv.png)"></i><h3>Keystone</h3><p>Straighten the picture from the couch.</p></div>
+        <div class="feat reveal" style="--c:#0a84ff"><i style="--icon:url(assets/symbols/voice.png)"></i><h3>Voice search</h3><p>Hold the mic: &ldquo;horror movies&rdquo;, &ldquo;open Netflix&rdquo;, &ldquo;turn off in 30 minutes&rdquo;. Questions go to Google.</p></div>
+        <div class="feat reveal" style="--c:#30d158"><i style="--icon:url(assets/symbols/play.png)"></i><h3>Home button</h3><p>On Wanbo, the remote&rsquo;s Home opens this home screen, from any app.</p></div>
         <div class="feat reveal" style="--c:#64d2ff"><i style="--icon:url(assets/symbols/focus.png)"></i><h3>Screen assistant</h3><p>Focus, shape and brightness in three steps.</p></div>
         <div class="feat reveal" style="--c:#ffc266"><i style="--icon:url(assets/symbols/sunny.png)"></i><h3>Lamp Eco and Night</h3><p>Dimmer, cooler and quieter for late movies.</p></div>
         <div class="feat reveal" style="--c:#ff7ab6"><i style="--icon:url(assets/symbols/music.png)"></i><h3>Audio only</h3><p>Lamp off, music on. Any button brings the picture back.</p></div>
         <div class="feat reveal" style="--c:#ff9f0a"><i style="--icon:url(assets/symbols/movie.png)"></i><h3>Scenes</h3><p>Cinema, Sports or Music: picture and sound in one press.</p></div>
         <div class="feat reveal" style="--c:#30d158"><i style="--icon:url(assets/symbols/sync.png)"></i><h3>Auto Hz</h3><p>The panel follows the video's frame rate. No judder.</p></div>
-        <div class="feat reveal" style="--c:#64d2ff"><i style="--icon:url(assets/symbols/voice.png)"></i><h3>Clear dialogue</h3><p>Voices up, explosions down, for quiet nights.</p></div>
+        <div class="feat reveal" style="--c:#64d2ff"><i style="--icon:url(assets/symbols/speaker.png)"></i><h3>Clear dialogue</h3><p>Voices up, explosions down, for quiet nights.</p></div>
         <div class="feat reveal" style="--c:#bf5af2"><i style="--icon:url(assets/symbols/bedtime.png)"></i><h3>Bedtime</h3><p>At your hour, a gentle panel offers to sleep in 30 minutes.</p></div>
         <div class="feat reveal" style="--c:#ff453a"><i style="--icon:url(assets/symbols/thermometer.png)"></i><h3>Heat watch</h3><p>A heads-up before it gets too hot, and lamp hours.</p></div>
         <div class="feat reveal" style="--c:#b49bff"><i style="--icon:url(assets/symbols/memory.png)"></i><h3>Memory</h3><p>Free memory at a glance; press to close what's idle.</p></div>
@@ -254,7 +256,7 @@ adb install -r FreeMyTV.apk</pre><button type="button" data-done="Copied">Copy</
       <h2 class="reveal">Good questions.</h2>
       <div class="faq reveal">
         <details><summary>Which projectors does it work on?</summary><p>Android 9 or newer, with network debugging. It's built and tested on a Wanbo T6 Max (Amlogic T972); the keystone, focus, lamp and fan controls use that hardware, and simply don't appear where they can't work. The home screen, Control Center, lyrics and screensaver work on any Android TV device.</p></details>
-        <details><summary>Do I need root?</summary><p>No. It uses the projector's own network debugging, the same way you installed it, to switch the home screen and reach a few settings.</p></details>
+        <details><summary>Do I need root?</summary><p>No. It uses the projector's own network debugging, the same way you installed it, to switch the home screen and reach a few settings. On a Wanbo as it came everything above works except a few extras that need the community ROM (Auto Hz, sleep timer, scenes with sound, moving the lens by hand); those simply don&rsquo;t appear.</p></details>
         <details><summary>How do I go back to the original home screen?</summary><p>Open Free My Projector → Home Screen → Original. Your previous home screen, screensaver and apps come back as they were. If the new home screen ever crashes three times in five minutes, it goes back by itself.</p></details>
         <details><summary>Why does it ask for a TMDB key?</summary><p>The recommendations, artwork and title pages come from The Movie Database. A personal key is free and takes two minutes; without it you still get the home screen, a large clock and everything else.</p></details>
         <details><summary>Does it collect anything?</summary><p>No account and no analytics. It talks to TMDB, Open-Meteo (weather and air), Wikimedia Commons (backgrounds), lrclib (lyrics) and GitHub (updates), and that's it.</p></details>
@@ -287,6 +289,6 @@ adb install -r FreeMyTV.apk</pre><button type="button" data-done="Copied">Copy</
   </div>
 </footer>
 
-<script src="app.js?v=3" defer></script>
+<script src="app.js?v=4" defer></script>
 </body>
 </html>

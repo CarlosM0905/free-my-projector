@@ -20,7 +20,7 @@
   <link rel="icon" href="../assets/logo.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="../assets/icon-180.png">
   <link rel="preload" href="../assets/fonts/InterVariable.ttf" as="font" type="font/ttf" crossorigin>
-  <link rel="stylesheet" href="../styles.css?v=3">
+  <link rel="stylesheet" href="../styles.css?v=4">
 </head>
 <body>
 
@@ -153,12 +153,14 @@
 
       <div class="feats">
         <div class="feat reveal" style="--c:#b49bff"><i style="--icon:url(assets/symbols/tv.png)"></i><h3>Keystone</h3><p>Endereza la imagen desde el sillón.</p></div>
+        <div class="feat reveal" style="--c:#0a84ff"><i style="--icon:url(assets/symbols/voice.png)"></i><h3>Búsqueda por voz</h3><p>Mantén el micrófono: «películas de terror», «abre Netflix», «apaga en 30 minutos». Las preguntas van a Google.</p></div>
+        <div class="feat reveal" style="--c:#30d158"><i style="--icon:url(assets/symbols/play.png)"></i><h3>Botón Inicio</h3><p>En Wanbo, el Inicio del control abre este inicio, desde cualquier app.</p></div>
         <div class="feat reveal" style="--c:#64d2ff"><i style="--icon:url(assets/symbols/focus.png)"></i><h3>Asistente de pantalla</h3><p>Enfoque, forma y brillo en tres pasos.</p></div>
         <div class="feat reveal" style="--c:#ffc266"><i style="--icon:url(assets/symbols/sunny.png)"></i><h3>Lámpara Eco y Noche</h3><p>Menos brillo, menos calor y menos ruido para las pelis tarde.</p></div>
         <div class="feat reveal" style="--c:#ff7ab6"><i style="--icon:url(assets/symbols/music.png)"></i><h3>Solo audio</h3><p>Lámpara apagada, música encendida. Cualquier botón trae la imagen.</p></div>
         <div class="feat reveal" style="--c:#ff9f0a"><i style="--icon:url(assets/symbols/movie.png)"></i><h3>Escenas</h3><p>Cine, Deportes o Música: imagen y sonido de una vez.</p></div>
         <div class="feat reveal" style="--c:#30d158"><i style="--icon:url(assets/symbols/sync.png)"></i><h3>Hz automático</h3><p>El panel sigue los cuadros por segundo del video. Sin tirones.</p></div>
-        <div class="feat reveal" style="--c:#64d2ff"><i style="--icon:url(assets/symbols/voice.png)"></i><h3>Diálogos claros</h3><p>Voces arriba, explosiones abajo, para las noches tranquilas.</p></div>
+        <div class="feat reveal" style="--c:#64d2ff"><i style="--icon:url(assets/symbols/speaker.png)"></i><h3>Diálogos claros</h3><p>Voces arriba, explosiones abajo, para las noches tranquilas.</p></div>
         <div class="feat reveal" style="--c:#bf5af2"><i style="--icon:url(assets/symbols/bedtime.png)"></i><h3>Hora de dormir</h3><p>A tu hora, un panel discreto ofrece apagar en 30 minutos.</p></div>
         <div class="feat reveal" style="--c:#ff453a"><i style="--icon:url(assets/symbols/thermometer.png)"></i><h3>Vigila el calor</h3><p>Avisa antes de que se caliente demasiado, y cuenta las horas de lámpara.</p></div>
         <div class="feat reveal" style="--c:#b49bff"><i style="--icon:url(assets/symbols/memory.png)"></i><h3>Memoria</h3><p>La memoria libre de un vistazo; púlsalo para cerrar lo inactivo.</p></div>
@@ -247,7 +249,7 @@ adb install -r FreeMyTV.apk</pre><button type="button" data-done="Copiado">Copia
       <h2 class="reveal">Buenas preguntas.</h2>
       <div class="faq reveal">
         <details><summary>¿En qué proyectores funciona?</summary><p>Android 9 o superior, con depuración por red. Está hecho y probado en un Wanbo T6 Max (Amlogic T972); el keystone, el enfoque, la lámpara y el ventilador usan ese hardware y simplemente no aparecen donde no pueden funcionar. El inicio, el Centro de control, las letras y el protector funcionan en cualquier equipo Android TV.</p></details>
-        <details><summary>¿Necesito root?</summary><p>No. Usa la propia depuración por red del proyector, la misma con la que lo instalaste, para cambiar el inicio y llegar a algunos ajustes.</p></details>
+        <details><summary>¿Necesito root?</summary><p>No. Usa la propia depuración por red del proyector, la misma con la que lo instalaste, para cambiar el inicio y llegar a algunos ajustes. En un Wanbo de fábrica funciona todo lo de arriba salvo unos extras que necesitan la ROM de la comunidad (Hz automático, temporizador de apagado, escenas con sonido, mover la lente a mano); esos simplemente no aparecen.</p></details>
         <details><summary>¿Cómo vuelvo al inicio original?</summary><p>Abre Free My Projector → Inicio → Original. Tu inicio, protector y apps vuelven como estaban. Si el nuevo inicio se cierra tres veces en cinco minutos, vuelve solo.</p></details>
         <details><summary>¿Por qué pide una clave de TMDB?</summary><p>Las recomendaciones, el arte y las fichas vienen de The Movie Database. Una clave personal es gratis y toma dos minutos; sin ella igual tienes el inicio, un reloj grande y todo lo demás.</p></details>
         <details><summary>¿Recoge algún dato?</summary><p>Sin cuenta y sin analíticas. Habla con TMDB, Open-Meteo (clima y aire), Wikimedia Commons (fondos), lrclib (letras) y GitHub (actualizaciones), y nada más.</p></details>
@@ -280,6 +282,6 @@ adb install -r FreeMyTV.apk</pre><button type="button" data-done="Copiado">Copia
   </div>
 </footer>
 
-<script src="../app.js?v=3" defer></script>
+<script src="../app.js?v=4" defer></script>
 </body>
 </html>
