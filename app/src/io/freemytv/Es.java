@@ -101,6 +101,7 @@ final class Es {
         t("Try: “Open Netflix”  ·  “Action movies”  ·  “Turn off in 30 minutes”", "Prueba: «Abre Netflix»  ·  «Películas de acción»  ·  «Apaga en 30 minutos»");
         t("Voice didn't answer. Try again.", "La voz no respondió. Inténtalo de nuevo.");
         t("Voice search", "Búsqueda por voz");
+        t("Navigation sounds", "Sonidos de navegación");
         t("Volume down", "Menos volumen");
         t("Volume up", "Más volumen");
         t("Air", "Aire");

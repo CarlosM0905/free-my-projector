@@ -332,7 +332,11 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         recs = Recs.get(a);
         click = new Click(a);
         ui = a.getSharedPreferences("home-ui", Context.MODE_PRIVATE);
+        ui.registerOnSharedPreferenceChangeListener(prefsChanged);   // the shelf editor, hidden apps…
+        a.getSharedPreferences("settings", Context.MODE_PRIVATE).registerOnSharedPreferenceChangeListener(prefsChanged);
         tvInputs = (TvInputManager) a.getSystemService(Context.TV_INPUT_SERVICE);
+        launcherApps = (android.content.pm.LauncherApps) a.getSystemService(Context.LAUNCHER_APPS_SERVICE);
+        if (launcherApps != null) launcherApps.registerCallback(packages, handler);
         setFocusable(true);
         sky = new Layer(a, SKY);
         heroLayer = new Layer(a, HERO);
@@ -389,7 +393,11 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         if (running) return;
         running = true;
         checkNight(false);
-        resumedAt = SystemClock.uptimeMillis();
+        long now = SystemClock.uptimeMillis();
+        // (upstream #173) Some remotes send one Home press as a burst, and each one pauses and resumes the home screen:
+        // those after the first change nothing, so the lists are read only once.
+        boolean again = resumedAt != 0 && now - resumedAt < BURST_MS;
+        resumedAt = now;
         lastNanos = 0;
         lastStep = 0;
         data.addListener(this);
@@ -409,7 +417,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
             track = NowPlaying.current(getContext());
             heroDirty = true;
         });
-        reload();
+        if (!again) reload();
         updatePalette();
         updatePicks();
         if (sheetOpen) closeSheet();
@@ -433,6 +441,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
     }
 
     @Override public void destroy() {
+        if (launcherApps != null) launcherApps.unregisterCallback(packages);
         pause();
         click.release();
     }
@@ -2163,18 +2172,57 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
 
     private void reload() {
         final Context c = getContext().getApplicationContext();
+        // (upstream #173) The shelf and All Apps (100 to 500 ms of package queries on a projector) only when they can
+        // have changed: an app installed, removed or updated, a shelf edit, the language, or every 15 minutes.
+        long up = SystemClock.uptimeMillis();
+        final boolean apps = appsStale || !Ui.LANG.equals(appsLang) || up - appsAt > APPS_MAX_AGE_MS;
+        if (apps) {
+            appsStale = false;
+            appsLang = Ui.LANG;
+            appsAt = up;
+        }
         LOADER.execute(() -> {
-            final List<HomeApps.Item> s = HomeApps.shelf(c, true);
+            final List<HomeApps.Item> s = apps ? HomeApps.shelf(c, true) : null;
             final List<HomeApps.Item> st = statusList(c);
             final List<HomeApps.Item> d = drawerList(c);
-            final List<HomeApps.Item> o = HomeApps.others(c);
+            final List<HomeApps.Item> o = apps ? HomeApps.others(c) : null;
             handler.post(() -> {
-                setShelf(s);
+                if (s != null) setShelf(s);
                 setStatusItems(st);
                 setDrawerItems(d);
-                if (!sheetOpen) setOthers(o);
+                if (o != null && !sheetOpen) setOthers(o);
+                else if (o != null) appsStale = true;   // All Apps is open: its list comes next time
             });
         });
+    }
+
+    /** After a change to the shelf here (an app added or hidden): read the lists again. */
+    private void reloadApps() {
+        appsStale = true;
+        reload();
+    }
+
+    private static final long APPS_MAX_AGE_MS = 15 * 60_000, BURST_MS = 1500;
+    private final android.content.pm.LauncherApps launcherApps;
+    private boolean appsStale = true;
+    private String appsLang = "";
+    private long appsAt;
+
+    /** Apps installed, removed or updated (also while another app is open): the next reload reads them again. */
+    private final android.content.pm.LauncherApps.Callback packages = new android.content.pm.LauncherApps.Callback() {
+        @Override public void onPackageAdded(String pkg, android.os.UserHandle user) { appsChanged(); }
+        @Override public void onPackageRemoved(String pkg, android.os.UserHandle user) { appsChanged(); }
+        @Override public void onPackageChanged(String pkg, android.os.UserHandle user) { appsChanged(); }
+        @Override public void onPackagesAvailable(String[] pkgs, android.os.UserHandle user, boolean replacing) { appsChanged(); }
+        @Override public void onPackagesUnavailable(String[] pkgs, android.os.UserHandle user, boolean replacing) { appsChanged(); }
+    };
+
+    /** Held here: SharedPreferences keeps its listeners weakly. */
+    private final SharedPreferences.OnSharedPreferenceChangeListener prefsChanged = (p, key) -> appsStale = true;
+
+    private void appsChanged() {
+        appsStale = true;
+        if (running) reload();
     }
 
     // MARK: - Keys: only the arrows, OK and Back (system keys pass through to the system)
@@ -2290,7 +2338,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
                 return true;
             }
             showToast(String.format(Ui.tr("%s está no Início", "%s is on the home screen"), app.label));
-            reload();
+            reloadApps();
             return true;
         }
         if (drawerOpen && zone == Z_DRAWER && drawerIndex < drawerItems.size()
@@ -2348,7 +2396,7 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
             HomeApps.setHidden(getContext(), it.key, true);
             editing = -1;
             showToast(String.format(Ui.tr("%s está em Todos os Apps", "%s is in All Apps now"), it.label));
-            reload();
+            reloadApps();
         }
     }
 
@@ -2889,8 +2937,8 @@ final class HomeView extends ViewGroup implements Home, Choreographer.FrameCallb
         // Drawer open: the background lightens (by day) or darkens (at night), as a filter on the drawing itself.
         android.graphics.ColorFilter v = veil(tone(0.32f, 0.42f) * Ui.clamp(drawer.value), blend(0xFFFFFFFF, 0xFF000000, night));
         if (bgTo == null || (fading && bgFrom == null)) {
-            if (lightGradient == null) lightGradient = new LinearGradient(0, 0, 0, h, 0xFFF5F5F7, 0xFFE2E2E7, Shader.TileMode.CLAMP);
-            if (nightGradient == null) nightGradient = new LinearGradient(0, 0, 0, h, 0xFF1C1C1E, 0xFF0B0B0D, Shader.TileMode.CLAMP);
+            if (lightGradient == null) lightGradient = Ui.gradient(h, 0xFFF5F5F7, 0xFFE2E2E7);
+            if (nightGradient == null) nightGradient = Ui.gradient(h, 0xFF1C1C1E, 0xFF0B0B0D);
             fill.setColorFilter(v);
             if (night < 0.999f) {
                 fill.setShader(lightGradient);

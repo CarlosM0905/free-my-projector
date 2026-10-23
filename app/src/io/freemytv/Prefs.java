@@ -72,6 +72,17 @@ final class Prefs {
     /** Country for "what streams where": the chosen city's, else config.properties "tmdb_region" (US, GB, BR…). */
     static String region() { return get("region", Config.TMDB_REGION).trim().toUpperCase(Locale.ROOT); }
 
+    /** (upstream) The home screen's soft clicks when moving, opening and going back. */
+    static boolean sounds() {
+        SharedPreferences p = sp();
+        return p == null || p.getBoolean("sounds", true);
+    }
+
+    static void setSounds(boolean on) {
+        SharedPreferences p = sp();
+        if (p != null) p.edit().putBoolean("sounds", on).apply();
+    }
+
     /** The crypto prices on the home screen. */
     static boolean quotes() {
         SharedPreferences p = sp();

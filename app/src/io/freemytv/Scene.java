@@ -80,7 +80,7 @@ final class Scene {
     /** Call after changing `palette`. Bright palettes are dimmed a little so white text stays readable. */
     void applyPalette() {
         push();
-        fallback.setShader(new LinearGradient(0, 0, 0, h, palette.color(1), palette.color(0), Shader.TileMode.CLAMP));
+        fallback.setShader(Ui.gradient(h, palette.color(1), palette.color(0)));
     }
 
     private void push() {
@@ -118,9 +118,9 @@ final class Scene {
     /** Photo transition: both photos in the glass, blended by setGlassMix (0 = the first one). */
     void setGlassImages(int[] from, int[] to) {
         imageGlass = true;
+        if (liquid == null) return;     // (upstream #173) no AGSL (Android 9 to 12): nothing reads the glass images
         glassA = fill(glassA, from);
         if (to != null) glassB = fill(glassB, to);
-        if (liquid == null) return;
         glassShaderA = linear(glassA);
         liquid.setInputShader("imageA", glassShaderA);
         liquid.setInputShader("imageB", to != null ? linear(glassB) : glassShaderA);

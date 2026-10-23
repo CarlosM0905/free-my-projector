@@ -145,6 +145,9 @@ final class HomeMode {
             Set<String> present = packages(adb, "");
             // Already off before us (e.g. a ROM that disabled the setup wizard): not ours, so "original" leaves it off.
             Set<String> wasOff = packages(adb, "-d");
+            // (upstream #142) …unless an earlier install turned it off: an uninstall erases our state file, so that list
+            // also lives in the TV's settings.
+            wasOff.removeAll(recorded(adb));
             // (upstream #14) Turning off an app makes Android delete the Wi-Fi networks it saved, and Original can't
             // bring them back: those apps stay on (usually the first setup's, or the stock home screen's).
             Set<String> owners = wifiOwners(adb);
@@ -159,6 +162,7 @@ final class HomeMode {
                 if (out.contains("disabled-user")) disabled.add(pkg);
                 else AppLog.w("could not turn off " + pkg + ": " + out.trim());
             }
+            record(adb, disabled);
             Watchdog.clear(c);
             s = state(c);
             s.put("mode", FREE).put("since", System.currentTimeMillis()).put("homeReverted", false)
@@ -199,6 +203,7 @@ final class HomeMode {
                 String out = adb.shell("pm enable " + pkg);
                 if (!out.contains("new state: enabled")) failed.add(pkg);
             }
+            record(adb, new HashSet<>(failed));
             busy(c, Ui.tr("Devolvendo o Início original…", "Restoring the original home screen…"));
             RemoteKeys.setHome(c, adb, false);   // the remote's Home as it came from the factory
             boolean homeOk = restoreHome(adb, home);
@@ -258,6 +263,9 @@ final class HomeMode {
                 for (String pkg : stringList(s, "disabled")) {
                     if (!pkg.equals(GOOGLE_SETUP) && !pkg.equals(homePkg)) kept.put(pkg);
                 }
+                Set<String> stillOff = new HashSet<>();
+                for (int i = 0; i < kept.length(); i++) stillOff.add(kept.optString(i));
+                record(adb, stillOff);
                 s.put("homeReverted", true).put("disabled", kept);
                 save(app, s);
                 notice(app, Ui.tr("O Início do Free My Projector caiu 3 vezes seguidas; voltei para o Início original.",
@@ -316,6 +324,7 @@ final class HomeMode {
                     adb.shell("settings put secure screensaver_components " + DREAM);
                     fixed.add(Ui.tr("a tela de descanso", "the screensaver"));
                 }
+                record(adb, disabled);
                 JSONObject latest = state(app);
                 latest.put("disabled", new JSONArray(sorted(disabled)));
                 save(app, latest);
@@ -586,5 +595,32 @@ final class HomeMode {
         Matcher m = Pattern.compile("cname=([\\w.]+)").matcher(adb.shell("dumpsys wifi | grep -o 'cname=[^ ]*'"));
         while (m.find()) owners.add(m.group(1));
         return owners;
+    }
+
+    /**
+     * (upstream #142) What we turned off, kept in the TV's own settings too: an uninstall or Clear data erases our state
+     * file, and a new install must still tell its own work from what the person had turned off. Same setting as Free My
+     * TV, so moving between the two keeps it.
+     */
+    private static final String RECORD = "free_my_tv_disabled";
+
+    private static Set<String> recorded(Adb adb) {
+        Set<String> out = new HashSet<>();
+        try {
+            String v = adb.shell("settings get global " + RECORD).trim();
+            if (!v.isEmpty() && !v.equals("null")) for (String pkg : v.split(",")) if (pkg.matches("[\\w.]+")) out.add(pkg);
+        } catch (IOException e) {
+            AppLog.w("could not read the record of what we turned off: " + e.getMessage());
+        }
+        return out;
+    }
+
+    private static void record(Adb adb, Set<String> disabled) {
+        try {
+            if (disabled.isEmpty()) adb.shell("settings delete global " + RECORD);
+            else adb.shell("settings put global " + RECORD + " " + String.join(",", sorted(disabled)));
+        } catch (IOException e) {
+            AppLog.w("could not record what we turned off: " + e.getMessage());
+        }
     }
 }

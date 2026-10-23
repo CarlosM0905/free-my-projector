@@ -167,6 +167,31 @@ final class Ui {
         return Math.max(0, Math.min(1, v));
     }
 
+    static final int[] BAYER = {0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5};
+
+    /**
+     * (upstream #164) A vertical gradient without bands: each 8-bit step is spread with a 4×4 Bayer pattern, so a dark
+     * background on a projector fades smoothly instead of in stripes.
+     */
+    static android.graphics.Shader gradient(int height, int top, int bottom) {
+        int n = Math.max(2, height);
+        int[] px = new int[4 * n];
+        for (int y = 0; y < n; y++) {
+            float t = y / (float) (n - 1);
+            for (int x = 0; x < 4; x++) {
+                float d = (BAYER[(y & 3) * 4 + x] + 0.5f) / 16f;
+                int c = 0;
+                for (int s = 0; s < 32; s += 8) {
+                    float a = (top >>> s) & 255, b = (bottom >>> s) & 255;
+                    c |= Math.min(255, (int) (a + (b - a) * t + d)) << s;
+                }
+                px[y * 4 + x] = c;
+            }
+        }
+        android.graphics.Bitmap b = android.graphics.Bitmap.createBitmap(px, 4, n, android.graphics.Bitmap.Config.ARGB_8888);
+        return new android.graphics.BitmapShader(b, android.graphics.Shader.TileMode.REPEAT, android.graphics.Shader.TileMode.CLAMP);
+    }
+
     static String tr(String pt, String english) {
         return en ? english : es ? Es.tr(english) : Ui.pt ? pt : fromCatalogue(english);
     }
