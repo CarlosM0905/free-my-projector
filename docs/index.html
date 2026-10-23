@@ -19,9 +19,10 @@
   <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icon-180.png">
   <link rel="preload" href="assets/fonts/InterVariable.ttf" as="font" type="font/ttf" crossorigin>
-  <link rel="stylesheet" href="styles.css?v=4">
+  <link rel="stylesheet" href="styles.css?v=5">
 </head>
 <body>
+<div class="progress" aria-hidden="true"></div>
 
 <header class="nav">
   <div class="wrap">
@@ -29,6 +30,7 @@
     <nav class="nav-links">
       <a href="#home">Home</a>
       <a href="#control-center">Control Center</a>
+      <a href="#voice">Voice</a>
       <a href="#projector">Projector</a>
       <a href="#install">Install</a>
       <a href="#faq">FAQ</a>
@@ -58,8 +60,11 @@
       <p class="fine reveal">Free and open source · No account · No ads · One button to go back</p>
 
       <div class="stage reveal">
+        <div class="ambient"></div>
+        <div class="lens"></div>
         <div class="beam"></div>
         <div class="screen">
+          <div class="power"></div>
           <img class="night" src="img/en/home-dark.webp" srcset="img/en/home-dark-800.webp 800w, img/en/home-dark.webp 1600w" sizes="(max-width: 1200px) 100vw, 1180px" alt="The home screen at night: a large movie card, two posters and the app dock" fetchpriority="high">
           <img class="day off" src="img/en/home-light.webp" srcset="img/en/home-light-800.webp 800w, img/en/home-light.webp 1600w" sizes="(max-width: 1200px) 100vw, 1180px" alt="The same home screen by day, in its light theme">
         </div>
@@ -123,6 +128,7 @@
       <p class="section-lede reveal">Press the remote's menu button anywhere on the home screen. Inputs, picture, sound, the lamp and the sleep timer are right there, and below them a row of widgets you scroll like tvOS.</p>
 
       <div class="cc reveal">
+        <div class="press" aria-hidden="true"><kbd>≡</kbd><span>Press menu</span></div>
         <div class="shot">
           <img src="img/en/control-center.webp" alt="Control Center: the app dock, a row of projector shortcuts and the weather, Wi-Fi and projector cards" loading="lazy">
           <img src="img/en/widgets.webp" alt="The widgets row: air quality, sun and moon, calendar with the next holiday, and a timer" loading="lazy" style="opacity:0">
@@ -172,6 +178,21 @@
     </div>
   </section>
 
+  <!-- Voice -->
+  <section class="section" id="voice">
+    <div class="wrap">
+      <p class="kicker c reveal">Voice</p>
+      <h2 class="reveal">Hold the mic. Ask like you would a friend.</h2>
+      <p class="section-lede reveal">Our own panel, like Siri on the Apple TV: your words appear live over whatever is playing, and it does what you said — open an app, a genre, a sleep timer. Anything a search engine knows goes to Google.</p>
+      <div class="voice reveal" data-voice>
+        <img src="img/en/home-dark.webp" alt="" loading="lazy">
+        <div class="v-scrim"></div>
+        <div class="v-capsule"><span class="v-orb"></span><span class="v-text"></span></div>
+        <p class="v-hint">Try: &ldquo;horror movies&rdquo; · &ldquo;open Netflix&rdquo; · &ldquo;turn off in 30 minutes&rdquo;</p>
+      </div>
+    </div>
+  </section>
+
   <!-- Lyrics -->
   <section class="section lyrics-sec">
     <div class="wrap">
@@ -181,7 +202,23 @@
           <h2 class="reveal">Sing along with whatever is playing.</h2>
           <p class="section-lede reveal">Spotify, YouTube Music or any player: the lyrics appear line by line in time with the song, big enough for the whole room. Free, no account, cached for next time.</p>
         </div>
-        <div class="shot reveal"><img src="img/en/lyrics-800.webp" srcset="img/en/lyrics-800.webp 800w, img/en/lyrics.webp 1600w" sizes="(max-width: 900px) 100vw, 640px" alt="Lyrics of a traditional song in large white lines on black" loading="lazy"></div>
+        <div class="karaoke reveal" aria-hidden="true" data-karaoke>
+          <div class="k-head">
+            <span class="k-art"></span>
+            <span><b>Now playing</b>in time with the song</span>
+            <span class="k-eq"><i></i><i></i><i></i><i></i></span>
+          </div>
+          <div class="k-view"><ul class="k-lines">
+            <li data-dur="2.4">Under the wide and starry sky</li>
+            <li data-dur="2.6">Dig the grave and let me lie</li>
+            <li data-dur="2.8">Glad did I live and gladly die</li>
+            <li data-dur="2.4">And I laid me down with a will</li>
+            <li data-dur="2.6">This be the verse you grave for me</li>
+            <li data-dur="2.6">Here he lies where he longed to be</li>
+            <li data-dur="2.8">Home is the sailor, home from sea</li>
+            <li data-dur="2.4">And the hunter home from the hill</li>
+          </ul></div>
+        </div>
       </div>
     </div>
   </section>
@@ -289,6 +326,6 @@ adb install -r FreeMyTV.apk</pre><button type="button" data-done="Copied">Copy</
   </div>
 </footer>
 
-<script src="app.js?v=4" defer></script>
+<script src="app.js?v=5" defer></script>
 </body>
 </html>

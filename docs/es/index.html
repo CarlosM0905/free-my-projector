@@ -20,9 +20,10 @@
   <link rel="icon" href="../assets/logo.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="../assets/icon-180.png">
   <link rel="preload" href="../assets/fonts/InterVariable.ttf" as="font" type="font/ttf" crossorigin>
-  <link rel="stylesheet" href="../styles.css?v=4">
+  <link rel="stylesheet" href="../styles.css?v=5">
 </head>
 <body>
+<div class="progress" aria-hidden="true"></div>
 
 <header class="nav">
   <div class="wrap">
@@ -30,6 +31,7 @@
     <nav class="nav-links">
       <a href="#inicio">Inicio</a>
       <a href="#centro-de-control">Centro de control</a>
+      <a href="#voz">Voz</a>
       <a href="#proyector">Proyector</a>
       <a href="#instalar">Instalar</a>
       <a href="#preguntas">Preguntas</a>
@@ -59,8 +61,11 @@
       <p class="fine reveal">Gratis y de código abierto · Sin cuenta · Sin anuncios · Un botón para volver atrás</p>
 
       <div class="stage reveal">
+        <div class="ambient"></div>
+        <div class="lens"></div>
         <div class="beam"></div>
         <div class="screen">
+          <div class="power"></div>
           <img class="night" src="../img/home-dark.webp" srcset="../img/home-dark-800.webp 800w, ../img/home-dark.webp 1600w" sizes="(max-width: 1200px) 100vw, 1180px" alt="El inicio de noche: una tarjeta grande de película, dos pósters y el dock de apps" fetchpriority="high">
           <img class="day off" src="../img/home-light.webp" srcset="../img/home-light-800.webp 800w, ../img/home-light.webp 1600w" sizes="(max-width: 1200px) 100vw, 1180px" alt="El mismo inicio de día, con el tema claro">
         </div>
@@ -122,6 +127,7 @@
       <p class="section-lede reveal">Pulsa el botón de menú del control en cualquier parte del inicio. Entradas, imagen, sonido, la lámpara y el apagado están ahí, y debajo una fila de widgets que se recorre como en tvOS.</p>
 
       <div class="cc reveal">
+        <div class="press" aria-hidden="true"><kbd>≡</kbd><span>Pulsa menú</span></div>
         <div class="shot">
           <img src="../img/control-center.webp" alt="El Centro de control: el dock de apps, una fila de atajos del proyector y las tarjetas de clima, Wi-Fi y proyector" loading="lazy">
           <img src="../img/widgets.webp" alt="La fila de widgets: calidad del aire, sol y luna, calendario con el próximo feriado y un temporizador" loading="lazy" style="opacity:0">
@@ -170,6 +176,20 @@
     </div>
   </section>
 
+  <section class="section" id="voz">
+    <div class="wrap">
+      <p class="kicker c reveal">Voz</p>
+      <h2 class="reveal">Mantén el micrófono. Pide como a un amigo.</h2>
+      <p class="section-lede reveal">Un panel propio, como Siri en el Apple TV: tus palabras aparecen en vivo sobre lo que se esté viendo, y hace lo que dijiste: abre una app, un género, un temporizador. Lo que solo sabe un buscador pasa a Google.</p>
+      <div class="voice reveal" data-voice>
+        <img src="../img/home-dark.webp" alt="" loading="lazy">
+        <div class="v-scrim"></div>
+        <div class="v-capsule"><span class="v-orb"></span><span class="v-text"></span></div>
+        <p class="v-hint">Prueba: «películas de terror» · «abre Netflix» · «apaga en 30 minutos»</p>
+      </div>
+    </div>
+  </section>
+
   <section class="section lyrics-sec">
     <div class="wrap">
       <div class="split">
@@ -178,7 +198,23 @@
           <h2 class="reveal">Canta lo que esté sonando.</h2>
           <p class="section-lede reveal">Spotify, YouTube Music o cualquier reproductor: la letra aparece línea por línea al ritmo de la canción, grande para toda la sala. Gratis, sin cuenta y guardada para la próxima.</p>
         </div>
-        <div class="shot reveal"><img src="../img/lyrics-800.webp" srcset="../img/lyrics-800.webp 800w, ../img/lyrics.webp 1600w" sizes="(max-width: 900px) 100vw, 640px" alt="La letra de una canción tradicional en líneas grandes blancas sobre negro" loading="lazy"></div>
+        <div class="karaoke reveal" aria-hidden="true" data-karaoke>
+          <div class="k-head">
+            <span class="k-art"></span>
+            <span><b>Sonando ahora</b>al ritmo de la canción</span>
+            <span class="k-eq"><i></i><i></i><i></i><i></i></span>
+          </div>
+          <div class="k-view"><ul class="k-lines">
+            <li data-dur="2.4">Cielito lindo de mis amores</li>
+            <li data-dur="2.6">Ay, ay, ay, ay, canta y no llores</li>
+            <li data-dur="2.8">Porque cantando se alegran</li>
+            <li data-dur="2.4">Cielito lindo, los corazones</li>
+            <li data-dur="2.6">De la sierra morena</li>
+            <li data-dur="2.6">Cielito lindo, vienen bajando</li>
+            <li data-dur="2.8">Un par de ojitos negros</li>
+            <li data-dur="2.4">Cielito lindo, de contrabando</li>
+          </ul></div>
+        </div>
       </div>
     </div>
   </section>
@@ -282,6 +318,6 @@ adb install -r FreeMyTV.apk</pre><button type="button" data-done="Copiado">Copia
   </div>
 </footer>
 
-<script src="../app.js?v=4" defer></script>
+<script src="../app.js?v=5" defer></script>
 </body>
 </html>

@@ -206,8 +206,7 @@ h2 {
 
 /* Projector controls grid */
 .feats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-top: 56px; }
-.feat { padding: 26px; border-radius: 22px; background: var(--card); border: 1px solid var(--line); transition: background .3s, transform .3s; }
-.feat:hover { background: var(--card-2); transform: translateY(-3px); }
+.feat { position: relative; overflow: hidden; padding: 26px; border-radius: 22px; background: var(--card); border: 1px solid var(--line); }
 .feat i { width: 30px; height: 30px; color: var(--c, #b49bff); }
 .feat h3 { margin: 18px 0 0; font-size: 18px; letter-spacing: -0.015em; font-weight: 650; }
 .feat p { margin: 6px 0 0; font-size: 15px; color: var(--ink-2); line-height: 1.5; }
@@ -280,3 +279,135 @@ footer nav { display: flex; gap: 22px; flex-wrap: wrap; }
 .reveal { opacity: 0; transform: translateY(28px); transition: opacity .9s cubic-bezier(.2,.7,.2,1), transform .9s cubic-bezier(.2,.7,.2,1); }
 .reveal.in { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } .screen { transform: none !important; } }
+
+/* ═════════ Motion, v5: a projector turning on, a lens finding focus ═════════ */
+
+/* Reading progress: a thin beam along the top */
+.progress { position: fixed; inset: 0 0 auto; height: 2px; z-index: 60; background: var(--grad); transform-origin: 0 50%; transform: scaleX(0); pointer-events: none; }
+@supports (animation-timeline: scroll()) {
+  .progress { animation: progress linear both; animation-timeline: scroll(root); }
+  @keyframes progress { to { transform: scaleX(1); } }
+}
+@supports not (animation-timeline: scroll()) { .progress { display: none; } }
+
+/* 1 · The hero turns on: the lens lights, the beam opens, the lamp warms up, the wall takes the picture's colors */
+.stage .ambient {
+  position: absolute; inset: 4% 2% -6%; pointer-events: none; border-radius: 40px;
+  background: var(--amb, none) center / cover; filter: blur(80px) saturate(1.8); opacity: 0; transform: scale(1.04);
+  transition: opacity 2.4s ease 1.2s;
+}
+.stage.on .ambient { opacity: .5; }
+.stage .lens {
+  position: absolute; left: 50%; bottom: -14%; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%;
+  background: #fff; box-shadow: 0 0 34px 12px rgba(200, 180, 255, .85), 0 0 90px 30px rgba(123, 77, 255, .45); opacity: 0; pointer-events: none;
+}
+.stage.on .lens { animation: lens 1.6s cubic-bezier(.2,.7,.2,1) forwards; }
+@keyframes lens { 0% { opacity: 0; transform: scale(.2); } 25% { opacity: 1; transform: scale(1.5); } 100% { opacity: .55; transform: scale(1); } }
+.stage .beam { transform-origin: 50% 100%; transform: translateX(-50%) scaleY(0); opacity: 0; }
+.stage.on .beam { animation: beam 1.7s cubic-bezier(.2,.7,.2,1) .3s forwards; }
+@keyframes beam { 0% { opacity: 0; transform: translateX(-50%) scaleY(0); } 55% { opacity: 1; } 100% { opacity: .9; transform: translateX(-50%) scaleY(1); } }
+.screen .power { position: absolute; inset: 0; z-index: 2; background: #000; pointer-events: none; }
+.stage.on .screen .power { animation: warm 2s ease .7s forwards; }
+@keyframes warm { 0% { opacity: 1; } 10% { opacity: .3; } 16% { opacity: .9; } 24% { opacity: .15; } 32% { opacity: .55; } 100% { opacity: 0; } }
+
+/* 2 · Headings come into focus word by word, like the lens */
+.reveal.focus { opacity: 1; transform: none; }
+.focus .w { display: inline-block; opacity: 0; filter: blur(14px); transform: translateY(.22em) scale(1.06);
+  transition: opacity .8s ease, filter 1.1s cubic-bezier(.2,.7,.2,1), transform 1.1s cubic-bezier(.2,.7,.2,1);
+  transition-delay: calc(var(--i) * 70ms); }
+.focus.in .w { opacity: 1; filter: blur(0); transform: none; }
+
+/* 3 · Control Center rises from below, as when you press the menu button */
+.cc .press { display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 22px; color: var(--ink-3); font-size: 14px; font-weight: 600; }
+.cc .press kbd { position: relative; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%;
+  font: 600 20px/1 "Inter", sans-serif; color: var(--ink); background: var(--card-2); border: 1px solid var(--line); box-shadow: 0 6px 18px rgba(0,0,0,.5); }
+.cc .press kbd::after { content: ""; position: absolute; inset: -1px; border-radius: 50%; border: 2px solid var(--cyan); opacity: 0; }
+.cc.in .press kbd { animation: press .5s ease .35s both; }
+.cc.in .press kbd::after { animation: ring 1.1s ease-out .45s both; }
+@keyframes press { 40% { transform: scale(.86); background: rgba(255,255,255,.2); } }
+@keyframes ring { 0% { opacity: .9; transform: scale(1); } 100% { opacity: 0; transform: scale(2.4); } }
+@supports (animation-timeline: view()) {
+  .cc .shot { transform-origin: 50% 100%; animation: rise linear both; animation-timeline: view(); animation-range: entry 0% cover 42%; }
+  @keyframes rise { from { transform: perspective(1400px) translateY(160px) rotateX(20deg) scale(.88); opacity: .15; } to { transform: none; opacity: 1; } }
+}
+
+/* 4 · Lyrics, live: the line fills as it's sung, the rest drift up out of focus */
+@property --fill { syntax: "<percentage>"; inherits: false; initial-value: 0%; }
+.karaoke { position: relative; border-radius: 24px; overflow: hidden; padding: 26px 32px 30px; min-height: 430px;
+  background: radial-gradient(110% 80% at 0% 0%, rgba(123,77,255,.38), transparent 60%), radial-gradient(90% 70% at 100% 100%, rgba(255,122,182,.26), transparent 60%), #08080c;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.07), 0 30px 80px rgba(0,0,0,.55); }
+.k-head { display: flex; gap: 14px; align-items: center; font-size: 14px; color: var(--ink-2); }
+.k-art { width: 48px; height: 48px; border-radius: 11px; background: var(--grad); box-shadow: 0 8px 24px rgba(123,77,255,.45); flex: none; }
+.k-head b { display: block; color: var(--ink); font-size: 16px; font-weight: 650; }
+.k-eq { margin-left: auto; display: flex; gap: 3px; align-items: flex-end; height: 18px; }
+.k-eq i { width: 3px; height: 100%; border-radius: 2px; background: var(--pink); transform-origin: 50% 100%; animation: eq 1.1s ease-in-out infinite; }
+.k-eq i:nth-child(2) { animation-delay: -.4s; } .k-eq i:nth-child(3) { animation-delay: -.8s; } .k-eq i:nth-child(4) { animation-delay: -.2s; }
+@keyframes eq { 0%, 100% { transform: scaleY(.25); } 50% { transform: scaleY(1); } }
+.k-view { position: relative; height: 320px; overflow: hidden; margin-top: 20px;
+  -webkit-mask-image: linear-gradient(transparent, #000 20%, #000 68%, transparent); mask-image: linear-gradient(transparent, #000 20%, #000 68%, transparent); }
+.k-lines { list-style: none; margin: 0; padding: 0; transition: transform .9s cubic-bezier(.2,.7,.2,1); }
+.k-lines li { font-size: clamp(22px, 2.6vw, 32px); font-weight: 720; letter-spacing: -.025em; line-height: 1.22; padding: 9px 0;
+  color: rgba(255,255,255,.2); filter: blur(1.6px); transform: scale(.94); transform-origin: 0 50%;
+  transition: color .6s, filter .6s, transform .7s cubic-bezier(.2,.7,.2,1); }
+.k-lines li.past { color: rgba(255,255,255,.38); filter: blur(.6px); }
+.k-lines li.now { filter: none; transform: none; color: transparent; transition: color .6s, filter .6s, transform .7s cubic-bezier(.2,.7,.2,1), --fill var(--dur, 2.8s) linear;
+  background: linear-gradient(90deg, #fff var(--fill), rgba(255,255,255,.36) var(--fill)); -webkit-background-clip: text; background-clip: text; }
+.k-lines li.now.go { --fill: 100%; }
+
+/* 5 · Voice: the orb listens, the words appear, it answers */
+@property --a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.voice { position: relative; margin-top: 56px; aspect-ratio: 16 / 9; border-radius: 20px; overflow: hidden; background: #111;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.07), 0 30px 80px rgba(0,0,0,.55); }
+.voice > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(1.03); filter: brightness(.82); }
+.v-scrim { position: absolute; inset: 0; background: linear-gradient(transparent 30%, rgba(0,0,0,.78)); }
+.v-capsule { position: absolute; left: 50%; bottom: 14%; width: min(80%, 840px); transform: translate(-50%, 30px); opacity: 0;
+  display: flex; align-items: center; gap: clamp(10px, 1.6vw, 20px); padding: clamp(8px, 1vw, 14px) clamp(16px, 2.4vw, 30px) clamp(8px, 1vw, 14px) clamp(8px, 1vw, 14px);
+  border-radius: 99px; background: rgba(28,28,34,.6); backdrop-filter: blur(24px) saturate(160%); -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgba(255,255,255,.13); box-shadow: 0 24px 70px rgba(0,0,0,.55); transition: opacity .6s, transform .7s cubic-bezier(.2,.7,.2,1); }
+.voice.in .v-capsule { opacity: 1; transform: translate(-50%, 0); }
+.v-orb { flex: none; width: clamp(30px, 4.4vw, 62px); aspect-ratio: 1; border-radius: 50%;
+  background: conic-gradient(from var(--a), #7b4dff, #ff7ab6, #64d2ff, #b49bff, #7b4dff);
+  box-shadow: 0 0 calc(18px + 30px * (var(--s, 1) - 1) * 5) rgba(170,130,255,.75); transform: scale(var(--s, 1)); transition: transform .12s ease-out, box-shadow .12s;
+  animation: orb 3.2s linear infinite; }
+@keyframes orb { to { --a: 360deg; } }
+.v-text { min-width: 0; font-size: clamp(15px, 2.4vw, 34px); font-weight: 620; letter-spacing: -.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; }
+.v-text.dim { color: rgba(255,255,255,.62); }
+.v-text.answer { animation: answer .5s cubic-bezier(.2,.7,.2,1); }
+@keyframes answer { from { opacity: 0; transform: translateY(8px); filter: blur(6px); } }
+.v-text .caret { display: inline-block; width: 2px; height: .95em; margin-left: 3px; vertical-align: -.1em; background: currentColor; animation: caret 1s steps(1) infinite; }
+@keyframes caret { 50% { opacity: 0; } }
+.v-hint { position: absolute; left: 0; right: 0; bottom: 5%; margin: 0; text-align: center; font-size: clamp(10px, 1.25vw, 16px); color: rgba(255,255,255,.58); }
+
+/* 6 · Projector controls: a spotlight follows the pointer, the card tilts, the icon wakes up */
+.feat::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity .4s;
+  background: radial-gradient(240px circle at var(--mx, 50%) var(--my, 30%), color-mix(in srgb, var(--c, #b49bff) 30%, transparent), transparent 70%); }
+.feats .feat.in { transform: perspective(900px) rotateX(var(--ty, 0deg)) rotateY(var(--tx, 0deg)) translateY(var(--lift, 0px));
+  transition: transform .45s cubic-bezier(.2,.7,.2,1), border-color .35s, background .35s, opacity .9s; }
+.feat:hover::before, .feat.lit::before { opacity: 1; }
+.feat:hover, .feat.lit { --lift: -4px; background: var(--card-2); border-color: color-mix(in srgb, var(--c, #b49bff) 45%, transparent); }
+.feat i { transition: transform .55s cubic-bezier(.3,1.6,.5,1), filter .4s; }
+.feat:hover i, .feat.lit i { transform: scale(1.2) rotate(-8deg); filter: drop-shadow(0 0 10px var(--c, #b49bff)); }
+
+/* The screensaver drifts, like its own Ken Burns */
+.big-shot { position: relative; }
+.big-shot img { animation: drift 26s ease-in-out infinite alternate; transform-origin: 60% 40%; }
+@keyframes drift { to { transform: scale(1.09) translate(-1.5%, 1%); } }
+
+/* 7 · English ↔ Spanish: the page dissolves into the other one */
+@view-transition { navigation: auto; }
+.nav { view-transition-name: nav; }
+::view-transition-old(root) { animation: vt-out .32s ease both; }
+::view-transition-new(root) { animation: vt-in .55s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes vt-out { to { opacity: 0; filter: blur(10px); transform: scale(.985); } }
+@keyframes vt-in { from { opacity: 0; filter: blur(10px); transform: scale(1.015); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .stage .beam { animation: none !important; transform: translateX(-50%); opacity: .9; }
+  .stage .lens, .screen .power { display: none; }
+  .stage .ambient { transition: none; }
+  .focus .w { opacity: 1; filter: none; transform: none; transition: none; }
+  .cc .shot, .big-shot img, .v-orb, .k-eq i, .cc.in .press kbd, .cc.in .press kbd::after { animation: none !important; }
+  .feats .feat.in { transform: none; }
+  .v-capsule { opacity: 1; transform: translate(-50%, 0); transition: none; }
+  ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+}
