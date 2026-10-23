@@ -19,6 +19,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="../assets/logo.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="../assets/icon-180.png">
+  <link rel="preconnect" href="https://api.github.com" crossorigin>
   <link rel="preload" href="../assets/fonts/InterVariable.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="stylesheet" href="../styles.css?v=5">
 </head>
@@ -45,7 +46,7 @@
 
   <section class="hero">
     <div class="wrap">
-      <span class="eyebrow reveal"><span class="dot"></span>Versión <span data-version>1.1.0</span> · Android 9 o superior</span>
+      <span class="eyebrow reveal"><span class="dot"></span>Versión <span data-version>1.5.0</span> · Android 9 o superior</span>
       <h1 class="reveal">Tu proyector, <span class="grad">libre.</span></h1>
       <p class="lede reveal">Un inicio rápido y sin anuncios para proyectores Android, diseñado como tvOS. Tus apps primero, qué ver esta noche y todos los controles del proyector a un botón.</p>
       <div class="cta reveal">
@@ -94,12 +95,12 @@
         <article class="tile glow reveal" style="--glow: rgba(255,122,182,.28)">
           <h3>Una ficha para cada título.</h3>
           <p>Sinopsis, reparto, puntuación y tráiler sobre su propio arte. “Más como esta” te sigue llevando.</p>
-          <div class="shot"><img src="../img/title-800.webp" alt="La ficha de una película con su logo, sinopsis, los botones Ver y Tráiler, y otras parecidas" loading="lazy"></div>
+          <div class="shot"><img decoding="async" src="../img/title-800.webp" alt="La ficha de una película con su logo, sinopsis, los botones Ver y Tráiler, y otras parecidas" loading="lazy"></div>
         </article>
         <article class="tile glow reveal" style="--glow: rgba(100,210,255,.22)">
           <h3>Una búsqueda que conoce tus apps.</h3>
           <p>Escribe unas letras con el control: primero aparecen tus apps y los interruptores del proyector, luego lo que puedes ver.</p>
-          <div class="shot zoom"><img src="../img/search.webp" alt="La búsqueda con un teclado de una fila, con una app como primer resultado" loading="lazy"></div>
+          <div class="shot zoom"><img decoding="async" src="../img/search.webp" alt="La búsqueda con un teclado de una fila, con una app como primer resultado" loading="lazy"></div>
         </article>
         <article class="tile third reveal">
           <i class="tile-icon" style="--icon:url(assets/symbols/play.png)"></i>
@@ -129,9 +130,9 @@
       <div class="cc reveal">
         <div class="press" aria-hidden="true"><kbd>≡</kbd><span>Pulsa menú</span></div>
         <div class="shot">
-          <img src="../img/control-center.webp" alt="El Centro de control: el dock de apps, una fila de atajos del proyector y las tarjetas de clima, Wi-Fi y proyector" loading="lazy">
-          <img src="../img/widgets.webp" alt="La fila de widgets: calidad del aire, sol y luna, calendario con el próximo feriado y un temporizador" loading="lazy" style="opacity:0">
-          <img src="../img/control-center-dark.webp" alt="El Centro de control de noche, con el tema oscuro" loading="lazy" style="opacity:0">
+          <img decoding="async" src="../img/control-center.webp" alt="El Centro de control: el dock de apps, una fila de atajos del proyector y las tarjetas de clima, Wi-Fi y proyector" loading="lazy">
+          <img decoding="async" src="../img/widgets.webp" alt="La fila de widgets: calidad del aire, sol y luna, calendario con el próximo feriado y un temporizador" loading="lazy" style="opacity:0">
+          <img decoding="async" src="../img/control-center-dark.webp" alt="El Centro de control de noche, con el tema oscuro" loading="lazy" style="opacity:0">
         </div>
         <div class="cc-dots" role="group" aria-label="Vistas del Centro de control">
           <button aria-label="Atajos"></button><button aria-label="Widgets"></button><button aria-label="De noche"></button>
@@ -182,7 +183,7 @@
       <h2 class="reveal">Mantén el micrófono. Pide como a un amigo.</h2>
       <p class="section-lede reveal">Un panel propio, como Siri en el Apple TV: tus palabras aparecen en vivo sobre lo que se esté viendo, y hace lo que dijiste: abre una app, un género, un temporizador. Lo que solo sabe un buscador pasa a Google.</p>
       <div class="voice reveal" data-voice>
-        <img src="../img/home-dark.webp" alt="" loading="lazy">
+        <img decoding="async" src="../img/home-dark.webp" alt="" loading="lazy">
         <div class="v-scrim"></div>
         <div class="v-capsule"><span class="v-orb"></span><span class="v-text"></span></div>
         <p class="v-hint">Prueba: «películas de terror» · «abre Netflix» · «apaga en 30 minutos»</p>
@@ -224,17 +225,17 @@
       <p class="kicker v reveal">Protector de pantalla</p>
       <h2 class="reveal">Cuando pausas, la pared se vuelve ventana.</h2>
       <p class="section-lede reveal">Un paisaje por minuto, con la hora, el clima y lo que suena, como los fondos aéreos del Apple TV. O busca fotos libres y elige las tuyas.</p>
-      <div class="shot big-shot reveal"><img src="../img/screensaver.webp" srcset="../img/screensaver-800.webp 800w, ../img/screensaver.webp 1600w" sizes="(max-width: 1200px) 100vw, 1180px" alt="El protector: una montaña nevada con la hora, la fecha y el clima" loading="lazy"></div>
+      <div class="shot big-shot reveal"><img decoding="async" src="../img/screensaver.webp" srcset="../img/screensaver-800.webp 800w, ../img/screensaver.webp 1600w" sizes="(max-width: 1200px) 100vw, 1180px" alt="El protector: una montaña nevada con la hora, la fecha y el clima" loading="lazy"></div>
       <div class="bento">
         <article class="tile reveal">
           <h3>Tus propios fondos.</h3>
           <p>Busca fotos destacadas de Wikimedia Commons con el control y guarda las que te gusten.</p>
-          <div class="shot"><img src="../img/backgrounds-800.webp" alt="El buscador de fondos: sugerencias sobre una cuadrícula de fotos de playa" loading="lazy"></div>
+          <div class="shot"><img decoding="async" src="../img/backgrounds-800.webp" alt="El buscador de fondos: sugerencias sobre una cuadrícula de fotos de playa" loading="lazy"></div>
         </article>
         <article class="tile reveal">
           <h3>Novedades tras cada actualización.</h3>
           <p>Se actualiza solo desde GitHub, revisa la firma y te cuenta qué cambió.</p>
-          <div class="shot"><img src="../img/whats-new-800.webp" alt="La hoja de Novedades con los cambios de la versión" loading="lazy"></div>
+          <div class="shot"><img decoding="async" src="../img/whats-new-800.webp" alt="La hoja de Novedades con los cambios de la versión" loading="lazy"></div>
         </article>
       </div>
     </div>
@@ -246,8 +247,8 @@
       <h2 class="reveal">Vidrio y pósters, o una lista tranquila.</h2>
       <p class="section-lede reveal">El diseño clásico muestra arte grande. El diseño ligero es una lista de nombres sobre un paisaje que se mueve despacio: el más fluido en hardware modesto. Arrastra para comparar.</p>
       <div class="compare reveal" tabindex="0" role="slider" aria-label="Comparar los dos diseños" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50">
-        <img src="../img/home-dark.webp" alt="Diseño clásico" loading="lazy">
-        <img class="after" src="../img/light-design.webp" alt="Diseño ligero" loading="lazy">
+        <img decoding="async" src="../img/home-dark.webp" alt="Diseño clásico" loading="lazy">
+        <img decoding="async" class="after" src="../img/light-design.webp" alt="Diseño ligero" loading="lazy">
         <div class="handle"></div>
         <span class="tag l">Clásico</span><span class="tag r">Ligero</span>
       </div>
